@@ -6,7 +6,7 @@ Shader "Milkdrop/DarkenCenter"
     }
     SubShader
     {
-        Cull Off ZWrite Off ZTest Always
+        Cull Off
 
         Pass
         {

@@ -59,7 +59,7 @@ Shader "Milkdrop/DefaultWarpShader"
     }
     SubShader
     {
-        Cull Off ZWrite Off ZTest Always
+        Cull Off
 
         Pass
         {
@@ -208,7 +208,7 @@ Shader "Milkdrop/DefaultWarpShader"
                 // part that changes
                 ret = tex2D(_MainTex, uv).rgb * decay;
 
-                return float4(ret, 1.0) * i.color;
+                return float4(lerp(tex2D(_MainTex, uv_orig).rgb, ret * i.color.rgb, i.color.a), 1.0);
             }
             ENDCG
         }

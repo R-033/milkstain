@@ -58,6 +58,7 @@ public class Milkdrop : MonoBehaviour
     public Vector2Int MeshSize = new Vector2Int(48, 36);
     public Vector2Int MeshSizeComp = new Vector2Int(32, 24);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
+    public int BasicWaveformNumAudioSamples = 512;
 
     public float Bass;
     public float BassAtt;
@@ -70,6 +71,7 @@ public class Milkdrop : MonoBehaviour
 
     public bool EnableWarp = true;
     public bool EnableDarkenCenter = true;
+    public bool EnableBasicWaveform = true;
     public bool EnableComp = true;
 
     public RawImage TargetGraphic;
@@ -77,11 +79,18 @@ public class Milkdrop : MonoBehaviour
     public MeshFilter TargetMeshFilter;
     public MeshRenderer TargetMeshRenderer;
 
+    public LineRenderer WaveformRenderer;
+    public LineRenderer WaveformRenderer2;
+
     public Camera TargetCamera;
+
+    public AudioSource TargetAudio;
 
     public Shader DefaultWarpShader;
     public Shader DarkenCenterShader;
     public Shader DefaultCompShader;
+
+    public Material DoNothingMaterial;
 
     public Texture TestBackground;
 
@@ -154,6 +163,12 @@ public class Milkdrop : MonoBehaviour
     private Mesh TargetMeshDarkenCenter;
     private Mesh TargetMeshComp;
 
+    private float[] timeArrayL;
+    private float[] timeArrayR;
+
+    private Vector3[] BasicWaveFormPositions;
+    private Vector3[] BasicWaveFormPositions2;
+
     Dictionary<string, float> Pick(Dictionary<string, float> source, string[] keys)
     {
         Dictionary<string, float> result = new Dictionary<string, float>();
@@ -191,6 +206,12 @@ public class Milkdrop : MonoBehaviour
         WarpUVs = new Vector2[(MeshSize.x + 1) * (MeshSize.y + 1)];
         WarpColor = new Color[(MeshSize.x + 1) * (MeshSize.y + 1)];
         CompColor = new Color[(MeshSizeComp.x + 1) * (MeshSizeComp.y + 1)];
+
+        BasicWaveFormPositions = new Vector3[BasicWaveformNumAudioSamples];
+        BasicWaveFormPositions2 = new Vector3[BasicWaveformNumAudioSamples];
+
+        timeArrayL = new float[BasicWaveformNumAudioSamples];
+        timeArrayR = new float[BasicWaveformNumAudioSamples];
 
         FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
 
@@ -287,6 +308,11 @@ public class Milkdrop : MonoBehaviour
         TargetMeshComp.triangles = triangles;
 
         TargetMeshFilter.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+
+        WaveformRenderer.enabled = false;
+        WaveformRenderer2.enabled = false;
 
         PlayPreset(CurrentPreset);
     }
@@ -304,7 +330,68 @@ public class Milkdrop : MonoBehaviour
         CurrentTime += Time.deltaTime;
         FrameNum++;
 
-        // todo update audio
+        TargetAudio.GetSpectrumData(timeArrayL, 0, FFTWindow.Rectangular);
+        TargetAudio.GetSpectrumData(timeArrayR, 1, FFTWindow.Rectangular);
+
+        Bass = 0f;
+        BassAtt = 0f;
+        Mid = 0f;
+        MidAtt = 0f;
+        Treb = 0f;
+        TrebAtt = 0f;
+
+        float sampleRate = AudioSettings.outputSampleRate * 0.5f;
+
+        float bassLow = Mathf.Clamp(
+            0,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        float bassHigh = Mathf.Clamp(
+            BasicWaveformNumAudioSamples / 3f,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        float midHigh = Mathf.Clamp(
+            BasicWaveformNumAudioSamples / 3f * 2f,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        float trebHigh = BasicWaveformNumAudioSamples - 1;
+
+        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
+        {
+            timeArrayL[i] *= 5000f;
+            timeArrayR[i] *= 5000f;
+        }
+
+        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
+        {
+            if (i >= bassLow && i < bassHigh)
+            {
+                Bass += timeArrayL[i] + timeArrayR[i];
+            }
+            else if (i >= bassHigh && i < midHigh)
+            {
+                Mid += timeArrayL[i] + timeArrayR[i];
+            }
+            else if (i >= midHigh && i < trebHigh)
+            {
+                Treb += timeArrayL[i] + timeArrayR[i];
+            }
+        }
+
+        Bass /= (bassHigh - bassLow) * 2f;
+        Mid /= (midHigh - bassHigh) * 2f;
+        Treb /= (trebHigh - midHigh) * 2f;
+
+        // todo average
+        BassAtt = Bass;
+        MidAtt = Mid;
+        TrebAtt = Treb;
 
         RunFrameEquations();
         RunPixelEquations();
@@ -571,7 +658,10 @@ public class Milkdrop : MonoBehaviour
 
         // todo shapes & waves blending
 
-        // draw basic waveform
+        if (EnableBasicWaveform)
+        {
+            DrawBasicWaveform();
+        }
 
         if (EnableDarkenCenter)
         {
@@ -837,6 +927,528 @@ public class Milkdrop : MonoBehaviour
 
         TargetCamera.targetTexture = FinalTexture;
         TargetCamera.Render();
+    }
+
+    void DrawBasicWaveform()
+    {
+        float alpha = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_a");
+
+        float vol = (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass") + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid") + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb")) / 3f;
+
+        if (vol <= -0.01f || alpha <= 0.001f || timeArrayL.Length == 0f)
+        {
+            return;
+        }
+
+        float scale = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_scale") / 128f;
+        float smooth = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_smoothing");
+        float smooth2 = scale * (1f - smooth);
+
+        List<float> waveL = new List<float>();
+
+        waveL.Add(timeArrayL[0] * scale);
+
+        for (int i = 1; i < timeArrayL.Length; i++)
+        {
+            waveL.Add(timeArrayL[i] * smooth2 + waveL[i - 1] * smooth);
+        }
+
+        List<float> waveR = new List<float>();
+
+        waveR.Add(timeArrayR[0] * scale);
+
+        for (int i = 1; i < timeArrayR.Length; i++)
+        {
+            waveR.Add(timeArrayR[i] * smooth2 + waveR[i - 1] * smooth);
+        }
+
+        float newWaveMode = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_mode") % 8;
+        float oldWaveMode = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "old_wave_mode") % 8;
+
+        float wavePosX = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_x") * 2f - 1f;
+        float wavePosY = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_y") * 2f - 1f;
+
+        int numVert = 0;
+        //int oldNumVert = 0;
+
+        int its = 1; // if blending 2
+
+        for (int it = 0; it < its; it++)
+        {
+            float waveMode = (it == 0) ? newWaveMode : oldWaveMode;
+
+            float fWaveParam2 = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_mystery");
+
+            if (
+                (waveMode == 0 || waveMode == 1 || waveMode == 4) &&
+                (fWaveParam2 < -1 || fWaveParam2 > 1)
+            )
+            {
+                fWaveParam2 = fWaveParam2 * 0.5f + 0.5f;
+                fWaveParam2 -= Mathf.Floor(fWaveParam2);
+                fWaveParam2 = Mathf.Abs(fWaveParam2);
+                fWaveParam2 = fWaveParam2 * 2f - 1f;
+            }
+
+            int localNumVert = 0;
+
+            Vector3[] positions;
+            Vector3[] positions2;
+
+            //if (it == 0)
+            {
+                positions = BasicWaveFormPositions;
+                positions2 = BasicWaveFormPositions2;
+            }
+            //else
+            //{
+                // old positions
+            //
+            
+            alpha = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_a");
+
+            if (waveMode == 0)
+            {
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+                
+                localNumVert = Mathf.FloorToInt(waveL.Count / 2f) + 1;
+                float numVertInv = 1f / (localNumVert - 1f);
+                int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+
+                for (int i = 0; i < localNumVert - 1; i++)
+                {
+                    float rad = 0.5f + 0.4f * waveR[i + sampleOffset] + fWaveParam2;
+                    float ang = i * numVertInv * 2f * Mathf.PI + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.2f;
+
+                    if (i < localNumVert / 10f)
+                    {
+                        float mix = i / (localNumVert * 0.1f);
+                        mix = 0.5f - 0.5f * Mathf.Cos(mix * Mathf.PI);
+                        float rad2 = 0.5f + 0.4f * waveR[i + localNumVert + sampleOffset] + fWaveParam2;
+                        rad = (1f - mix) * rad2 + rad * mix;
+                    }
+
+                    positions[i] = new Vector3
+                    (
+                        rad * Mathf.Cos(ang) * 1f + wavePosX,
+                        rad * Mathf.Sin(ang) * 1f + wavePosY,
+                        0f
+                    );
+                }
+
+                positions[localNumVert - 1] = positions[0];
+            }
+            else if (waveMode == 1)
+            {
+                alpha *= 1.25f;
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
+
+                for (int i = 0; i < localNumVert - 1; i++)
+                {
+                    float rad = 0.53f + 0.43f * waveR[i] + fWaveParam2;
+                    float ang = waveL[i + 32] * 0.5f * Mathf.PI + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 2.3f;
+
+                    positions[i] = new Vector3
+                    (
+                        rad * Mathf.Cos(ang) * 1f + wavePosX,
+                        rad * Mathf.Sin(ang) * 1f + wavePosY,
+                        0f
+                    );
+                }
+            }
+            else if (waveMode == 2)
+            {
+                if (Resolution.x < 1024)
+                {
+                    alpha *= 0.09f;
+                }
+                else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                {
+                    alpha *= 0.11f;
+                }
+                else
+                {
+                    alpha *= 0.13f;
+                }
+
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                localNumVert = waveL.Count;
+
+                for (int i = 0; i < waveL.Count; i++)
+                {
+                    positions[i] = new Vector3
+                    (
+                        waveR[i] * 1f + wavePosX,
+                        waveL[(i + 32) % waveL.Count] * 1f + wavePosY,
+                        0f
+                    );
+                }
+            }
+            else if (waveMode == 3)
+            {
+                if (Resolution.x < 1024)
+                {
+                    alpha *= 0.15f;
+                }
+                else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                {
+                    alpha *= 0.22f;
+                }
+                else
+                {
+                    alpha *= 0.33f;
+                }
+
+                alpha *= 1.3f;
+                alpha *= GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb") * GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb");
+
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                localNumVert = waveL.Count;
+
+                for (int i = 0; i < waveL.Count; i++)
+                {
+                    positions[i] = new Vector3
+                    (
+                        waveR[i] * 1f + wavePosX,
+                        waveL[(i + 32) % waveL.Count] * 1f + wavePosY,
+                        0f
+                    );
+                }
+            }
+            else if (waveMode == 4)
+            {
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                localNumVert = waveL.Count;
+
+                if (localNumVert > Resolution.x / 3f)
+                {
+                    localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
+                }
+
+                float numVertInv = 1f / localNumVert;
+                int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+
+                float w1 = 0.45f + 0.5f * (fWaveParam2 * 0.5f + 0.5f);
+                float w2 = 1.0f - w1;
+
+                for (int i = 0; i < localNumVert; i++)
+                {
+                    float x =
+                        2.0f * i * numVertInv +
+                        (wavePosX - 1) +
+                        waveR[(i + 25 + sampleOffset) % waveL.Count] * 0.44f;
+                    float y = waveL[i + sampleOffset] * 0.47f + wavePosY;
+
+                    if (i > 1)
+                    {
+                        x =
+                            x * w2 +
+                            w1 *
+                                (positions[i - 1].x * 2f -
+                                positions[i - 2].x);
+                        y =
+                            y * w2 +
+                            w1 *
+                                (positions[i - 1].y * 2f -
+                                positions[i - 2].y);
+                    }
+
+                    positions[i] = new Vector3(x, y, 0f);
+                }
+            }
+            else if (waveMode == 5)
+            {
+                if (Resolution.x < 1024)
+                {
+                    alpha *= 0.09f;
+                }
+                else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                {
+                    alpha *= 0.11f;
+                }
+                else
+                {
+                    alpha *= 0.13f;
+                }
+
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                float cosRot = Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f);
+                float sinRot = Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f);
+
+                localNumVert = waveL.Count;
+
+                for (int i = 0; i < waveL.Count; i++)
+                {
+                    int ioff = (i + 32) % waveL.Count;
+                    float x0 = waveR[i] * waveL[ioff] + waveL[i] * waveR[ioff];
+                    float y0 = waveR[i] * waveR[i] - waveL[ioff] * waveL[ioff];
+
+                    positions[i] = new Vector3
+                    (
+                        (x0 * cosRot - y0 * sinRot) * (1f + wavePosX),
+                        (x0 * sinRot + y0 * cosRot) * (1f + wavePosY),
+                        0f
+                    );
+                }
+            }
+            else if (waveMode == 6 || waveMode == 7)
+            {
+                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                {
+                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                }
+                alpha = Mathf.Clamp01(alpha);
+
+                localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
+
+                if (localNumVert > Resolution.x / 3f)
+                {
+                    localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
+                }
+
+                int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+                float ang = Mathf.PI * 0.5f * fWaveParam2;
+                float dx = Mathf.Cos(ang);
+                float dy = Mathf.Sin(ang);
+
+                float[] edgex = new float[]
+                {
+                    wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) - dx * 3.0f,
+                    wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) + dx * 3.0f
+                };
+
+                float[] edgey = new float[]
+                {
+                    wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) - dy * 3.0f,
+                    wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) + dy * 3.0f
+                };
+
+                for (int i = 0; i < 2; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        float t = 0f;
+                        bool bClip = false;
+
+                        switch (j)
+                        {
+                            case 0:
+                                if (edgex[i] > 1.1f)
+                                {
+                                    t = (1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
+                                    bClip = true;
+                                }
+                                break;
+                            case 1:
+                                if (edgex[i] < -1.1f)
+                                {
+                                    t = (-1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
+                                    bClip = true;
+                                }
+                                break;
+                            case 2:
+                                if (edgey[i] > 1.1f)
+                                {
+                                    t = (1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
+                                    bClip = true;
+                                }
+                                break;
+                            case 3:
+                                if (edgey[i] < -1.1f)
+                                {
+                                    t = (-1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
+                                    bClip = true;
+                                }
+                                break;
+                        }
+
+                        if (bClip)
+                        {
+                            float dxi = edgex[i] - edgex[1 - i];
+                            float dyi = edgey[i] - edgey[1 - i];
+                            edgex[i] = edgex[1 - i] + dxi * t;
+                            edgey[i] = edgey[1 - i] + dyi * t;
+                        }
+                    }
+                }
+
+                dx = (edgex[1] - edgex[0]) / localNumVert;
+                dy = (edgey[1] - edgey[0]) / localNumVert;
+
+                float ang2 = Mathf.Atan2(dy, dx);
+                float perpDx = Mathf.Cos(ang2 + Mathf.PI * 0.5f);
+                float perpDy = Mathf.Sin(ang2 + Mathf.PI * 0.5f);
+
+                if (waveMode == 6)
+                {
+                    for (int i = 0; i < localNumVert; i++)
+                    {
+                        float sample = waveL[i + sampleOffset];
+                        positions[i] = new Vector3
+                        (
+                            edgex[0] + dx * i + perpDx * 0.25f * sample,
+                            edgey[0] + dy * i + perpDy * 0.25f * sample,
+                            0f
+                        );
+                    }
+                }
+                else if (waveMode == 7)
+                {
+                    float sep = Mathf.Pow(wavePosY * 0.5f + 0.5f, 2);
+
+                    for (int i = 0; i < localNumVert; i++)
+                    {
+                        float sample = waveL[i + sampleOffset];
+                        positions[i] = new Vector3
+                        (
+                            edgex[0] + dx * i + perpDx * (0.25f * sample + sep),
+                            edgey[0] + dy * i + perpDy * (0.25f * sample + sep),
+                            0f
+                        );
+                    }
+
+                    for (int i = 0; i < localNumVert; i++)
+                    {
+                        float sample = waveR[i + sampleOffset];
+                        positions2[i] = new Vector3
+                        (
+                            edgex[0] + dx * i + perpDx * (0.25f * sample - sep),
+                            edgey[0] + dy * i + perpDy * (0.25f * sample - sep),
+                            0f
+                        );
+                    }
+                }
+            }
+
+            //if (it == 0)
+            //{
+                BasicWaveFormPositions = positions;
+                BasicWaveFormPositions2 = positions2;
+                numVert = localNumVert;
+            //}
+            //else
+            //{
+                // old
+            //}
+        }
+
+        //float blendMix = 0.5f - 0.5f * Mathf.Cos(0f * Mathf.PI);
+        //float blendMix2 = 1f - blendMix;
+
+        //if (oldNumVert > 0)
+        //{
+        //    alpha = blendMix * alpha + blendMix2 * oldAlpha;
+        //}
+
+        float r = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_r"));
+        float g = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_g"));
+        float b = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_b"));
+
+        if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_brighten") != 0f)
+        {
+            float maxc = Mathf.Max(r, g, b);
+
+            if (maxc > 0.01f)
+            {
+                r /= maxc;
+                g /= maxc;
+                b /= maxc;
+            }
+        }
+
+        Color color = new Color(r, g, b, alpha);
+
+        // if oldNumVert stuff
+
+        int smoothedNumVert = numVert * 2 - 1;
+
+        // smooth positions
+
+        if (newWaveMode == 7 || oldWaveMode == 7)
+        {
+            // smooth positions2
+        }
+
+        WaveformRenderer.enabled = true;
+        
+        WaveformRenderer.positionCount = numVert;
+        WaveformRenderer.SetPositions(BasicWaveFormPositions);
+
+        if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_thick") != 0f || GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_dots") != 0f)
+        {
+            WaveformRenderer.widthMultiplier = 4f;
+        }
+        else
+        {
+            WaveformRenderer.widthMultiplier = 1f;
+        }
+
+        if (newWaveMode == 7 || oldWaveMode == 7)
+        {
+            WaveformRenderer2.enabled = true;
+
+            WaveformRenderer2.positionCount = numVert;
+            WaveformRenderer2.SetPositions(BasicWaveFormPositions2);
+
+            if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_thick") != 0f || GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_dots") != 0f)
+            {
+                WaveformRenderer2.widthMultiplier = 4f;
+            }
+            else
+            {
+                WaveformRenderer2.widthMultiplier = 1f;
+            }
+        }
+
+        WaveformRenderer.sharedMaterial.SetColor("_Color", color);
+
+        TargetMeshFilter.sharedMesh = TargetMeshWarp;
+        TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+        DoNothingMaterial.mainTexture = FinalTexture;
+
+        TargetCamera.targetTexture = FinalTexture;
+        TargetCamera.Render();
+
+        WaveformRenderer.enabled = false;
+        WaveformRenderer2.enabled = false;
     }
 
     void DrawComp()
@@ -1143,6 +1755,11 @@ public class Milkdrop : MonoBehaviour
         }
     }
 
+    static float Func_Abs(float x)
+    {
+        return Mathf.Abs(x);
+    }
+
     static float Func_Sqr(float x)
     {
         return x * x;
@@ -1251,6 +1868,16 @@ public class Milkdrop : MonoBehaviour
         return x < y ? 1f : 0f;
     }
 
+    static float Func_Min(float x, float y)
+    {
+        return Mathf.Min(x, y);
+    }
+
+    static float Func_Max(float x, float y)
+    {
+        return Mathf.Max(x, y);
+    }
+
     static float Func_Ifcond(float x, float y, float z)
     {
         return Mathf.Abs(x) > Mathf.Epsilon ? y : z;
@@ -1280,7 +1907,8 @@ public class Milkdrop : MonoBehaviour
         {"randint", Func_RandInt},
         {"bnot", Func_Bnot},
         {"sin", Func_Sin},
-        {"cos", Func_Cos}
+        {"cos", Func_Cos},
+        {"abs", Func_Abs}
     };
 
     Dictionary<string, Func2> Funcs2Arg = new Dictionary<string, Func2>
@@ -1295,7 +1923,9 @@ public class Milkdrop : MonoBehaviour
         {"band", Func_Band},
         {"equal", Func_Equal},
         {"above", Func_Above},
-        {"below", Func_Below}
+        {"below", Func_Below},
+        {"min", Func_Min},
+        {"max", Func_Max}
     };
 
     Dictionary<string, Func3> Funcs3Arg = new Dictionary<string, Func3>
@@ -1311,7 +1941,7 @@ public class Milkdrop : MonoBehaviour
 
         foreach (char c in Expression)
         {
-            if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')')
+            if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')' || c == ',')
             {
                 if (tokenBuffer != "")
                 {
@@ -1384,11 +2014,22 @@ public class Milkdrop : MonoBehaviour
 
                                 arguments.Add(new List<string>());
 
+                                int depth2 = 0;
+
                                 for (int i = tokenNum + 1; i < tokenNum2; i++)
                                 {
                                     string token3 = Tokens[i];
-                                    
-                                    if (token3 == ",")
+
+                                    if (token3 == "(")
+                                    {
+                                        depth2++;
+                                    }
+                                    else if (token3 == ")")
+                                    {
+                                        depth2--;
+                                    }
+
+                                    if (depth2 == 0 && token3 == ",")
                                     {
                                         arguments.Add(new List<string>());
 
@@ -1484,6 +2125,8 @@ public class Milkdrop : MonoBehaviour
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
                 Tokens[tokenNum - 1] = result.ToString();
+
+                tokenNum--;
             }
 
             if (token == "/")
@@ -1499,6 +2142,8 @@ public class Milkdrop : MonoBehaviour
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
                 Tokens[tokenNum - 1] = result.ToString();
+
+                tokenNum--;
             }
         }
 
@@ -1519,6 +2164,8 @@ public class Milkdrop : MonoBehaviour
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
                 Tokens[tokenNum - 1] = result.ToString();
+
+                tokenNum--;
             }
 
             if (token == "-")
@@ -1534,12 +2181,19 @@ public class Milkdrop : MonoBehaviour
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
                 Tokens[tokenNum - 1] = result.ToString();
+
+                tokenNum--;
             }
         }
 
         if (Tokens.Count != 1)
         {
-            throw new System.Exception("evaluation failed: " + Tokens.Count);
+            string a = "";
+            foreach (var token in Tokens)
+            {
+                a += token + ", ";
+            }
+            throw new System.Exception("evaluation failed: " + a);
         }
 
         return EvalVariable(Tokens[0], Variables);

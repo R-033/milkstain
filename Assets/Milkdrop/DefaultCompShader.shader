@@ -66,7 +66,7 @@ Shader "Milkdrop/DefaultCompShader"
     }
     SubShader
     {
-        Cull Off ZWrite Off ZTest Always
+        Cull Off
 
         Pass
         {
@@ -252,7 +252,7 @@ Shader "Milkdrop/DefaultCompShader"
                 if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
                 if(invert != 0) ret = 1.0 - ret;
 
-                return float4(ret, i.color.a);
+                return float4(lerp(tex2D(_MainTex, uv).rgb, ret * 0.5, i.color.a), 1.0);
             }
             ENDCG
         }
