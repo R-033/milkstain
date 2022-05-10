@@ -4,34 +4,38 @@ using UnityEngine;
 using System.IO;
 using System.Linq;
 using UnityEngine.UI;
+using System;
 
 public class Milkdrop : MonoBehaviour
 {
     public class Wave
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<string> InitEquation = new List<string>();
-        public List<string> FrameEquation = new List<string>();
-        public List<string> PointEquation = new List<string>();
+        public List<List<string>> InitEquation = new List<List<string>>();
+        public List<List<string>> FrameEquation = new List<List<string>>();
+        public List<List<string>> PointEquation = new List<List<string>>();
     }
 
     public class Shape
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<string> InitEquation = new List<string>();
-        public List<string> FrameEquation = new List<string>();
+        public List<List<string>> InitEquation = new List<List<string>>();
+        public List<List<string>> FrameEquation = new List<List<string>>();
     }
 
     public class Preset
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<string> InitEquation = new List<string>();
-        public List<string> FrameEquation = new List<string>();
-        public List<string> PixelEquation = new List<string>();
+        public List<List<string>> InitEquation = new List<List<string>>();
+        public Action<Dictionary<string, float>> InitEquationCompiled;
+        public List<List<string>> FrameEquation = new List<List<string>>();
+        public Action<Dictionary<string, float>> FrameEquationCompiled;
+        public List<List<string>> PixelEquation = new List<List<string>>();
+        public Action<Dictionary<string, float>> PixelEquationCompiled;
         public List<Wave> Waves = new List<Wave>();
         public List<Shape> Shapes = new List<Shape>();
-        public List<string> WarpEquation = new List<string>();
-        public List<string> CompEquation = new List<string>();
+        public List<List<string>> WarpEquation = new List<List<string>>();
+        public List<List<string>> CompEquation = new List<List<string>>();
         public string Warp;
         public string Comp;
 
@@ -53,12 +57,14 @@ public class Milkdrop : MonoBehaviour
     public Dictionary<string, Preset> LoadedPresets = new Dictionary<string, Preset>();
 
     public string PresetPath;
-    public string CurrentPreset;
+
+    private Preset CurrentPreset;
 
     public Vector2Int MeshSize = new Vector2Int(48, 36);
     public Vector2Int MeshSizeComp = new Vector2Int(32, 24);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
     public int BasicWaveformNumAudioSamples = 512;
+    public float MaxFPS = 30f;
 
     public float Bass;
     public float BassAtt;
@@ -169,6 +175,17 @@ public class Milkdrop : MonoBehaviour
     private Vector3[] BasicWaveFormPositions;
     private Vector3[] BasicWaveFormPositions2;
 
+    private float sampleRate;
+
+    private float bassLow;
+    private float bassHigh;
+    private float midHigh;
+    private float trebHigh;
+
+    private float timeSinceLastFrame = 0f;
+
+    public float FPS;
+
     Dictionary<string, float> Pick(Dictionary<string, float> source, string[] keys)
     {
         Dictionary<string, float> result = new Dictionary<string, float>();
@@ -213,7 +230,7 @@ public class Milkdrop : MonoBehaviour
         timeArrayL = new float[BasicWaveformNumAudioSamples];
         timeArrayR = new float[BasicWaveformNumAudioSamples];
 
-        FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
+        FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
 
         TargetGraphic.texture = FinalTexture;
 
@@ -314,20 +331,49 @@ public class Milkdrop : MonoBehaviour
         WaveformRenderer.enabled = false;
         WaveformRenderer2.enabled = false;
 
-        PlayPreset(CurrentPreset);
+        PlayPreset(Path.GetFileNameWithoutExtension(PresetPath));
+
+        sampleRate = AudioSettings.outputSampleRate * 0.5f;
+
+        bassLow = Mathf.Clamp(
+            0,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        bassHigh = Mathf.Clamp(
+            BasicWaveformNumAudioSamples / 3f,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        midHigh = Mathf.Clamp(
+            BasicWaveformNumAudioSamples / 3f * 2f,
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        trebHigh = BasicWaveformNumAudioSamples - 1;
     }
 
     void Update()
     {
         if (Time.timeScale == 0f)
             return;
+        
+        timeSinceLastFrame += Time.deltaTime;
 
-        Render();
+        if (timeSinceLastFrame >= 1f / MaxFPS)
+        {
+            timeSinceLastFrame -= 1f / MaxFPS;
+            FPS = Mathf.Min(1f / Time.deltaTime, MaxFPS);
+            Render();
+        }
     }
 
     void Render()
     {
-        CurrentTime += Time.deltaTime;
+        CurrentTime += 1f / FPS;
         FrameNum++;
 
         TargetAudio.GetSpectrumData(timeArrayL, 0, FFTWindow.Rectangular);
@@ -340,32 +386,10 @@ public class Milkdrop : MonoBehaviour
         Treb = 0f;
         TrebAtt = 0f;
 
-        float sampleRate = AudioSettings.outputSampleRate * 0.5f;
-
-        float bassLow = Mathf.Clamp(
-            0,
-            0,
-            BasicWaveformNumAudioSamples - 1
-        );
-
-        float bassHigh = Mathf.Clamp(
-            BasicWaveformNumAudioSamples / 3f,
-            0,
-            BasicWaveformNumAudioSamples - 1
-        );
-
-        float midHigh = Mathf.Clamp(
-            BasicWaveformNumAudioSamples / 3f * 2f,
-            0,
-            BasicWaveformNumAudioSamples - 1
-        );
-
-        float trebHigh = BasicWaveformNumAudioSamples - 1;
-
         for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
         {
-            timeArrayL[i] *= 5000f;
-            timeArrayR[i] *= 5000f;
+            timeArrayL[i] *= sampleRate * 0.2f;
+            timeArrayR[i] *= sampleRate * 0.2f;
         }
 
         for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
@@ -403,35 +427,35 @@ public class Milkdrop : MonoBehaviour
 
     void RunFrameEquations()
     {
-        LoadedPresets[CurrentPreset].FrameVariables = new Dictionary<string, float>(LoadedPresets[CurrentPreset].Variables);
+        CurrentPreset.FrameVariables = new Dictionary<string, float>(CurrentPreset.Variables);
 
-        foreach (var v in LoadedPresets[CurrentPreset].InitVariables.Keys)
+        foreach (var v in CurrentPreset.InitVariables.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].FrameVariables, v, LoadedPresets[CurrentPreset].InitVariables[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables[v]);
         }
 
-        foreach (var v in LoadedPresets[CurrentPreset].FrameMap.Keys)
+        foreach (var v in CurrentPreset.FrameMap.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].FrameVariables, v, LoadedPresets[CurrentPreset].FrameMap[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.FrameMap[v]);
         }
 
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "frame", FrameNum);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time", CurrentTime);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "fps", 1f / Time.deltaTime);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass", Bass);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass_att", BassAtt);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid", Mid);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid_att", MidAtt);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb", Treb);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb_att", TrebAtt);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "meshx", MeshSize.x);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "meshy", MeshSize.y);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "aspectx", 1f);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "aspecty", 1f);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "pixelsx", Resolution.x);
-        SetVariable(LoadedPresets[CurrentPreset].FrameVariables, "pixelsy", Resolution.y);
+        SetVariable(CurrentPreset.FrameVariables, "frame", FrameNum);
+        SetVariable(CurrentPreset.FrameVariables, "time", CurrentTime);
+        SetVariable(CurrentPreset.FrameVariables, "fps", FPS);
+        SetVariable(CurrentPreset.FrameVariables, "bass", Bass);
+        SetVariable(CurrentPreset.FrameVariables, "bass_att", BassAtt);
+        SetVariable(CurrentPreset.FrameVariables, "mid", Mid);
+        SetVariable(CurrentPreset.FrameVariables, "mid_att", MidAtt);
+        SetVariable(CurrentPreset.FrameVariables, "treb", Treb);
+        SetVariable(CurrentPreset.FrameVariables, "treb_att", TrebAtt);
+        SetVariable(CurrentPreset.FrameVariables, "meshx", MeshSize.x);
+        SetVariable(CurrentPreset.FrameVariables, "meshy", MeshSize.y);
+        SetVariable(CurrentPreset.FrameVariables, "aspectx", 1f);
+        SetVariable(CurrentPreset.FrameVariables, "aspecty", 1f);
+        SetVariable(CurrentPreset.FrameVariables, "pixelsx", Resolution.x);
+        SetVariable(CurrentPreset.FrameVariables, "pixelsy", Resolution.y);
 
-        RunEquation(LoadedPresets[CurrentPreset].FrameEquation, LoadedPresets[CurrentPreset].FrameVariables);
+        CurrentPreset.FrameEquationCompiled(CurrentPreset.FrameVariables);
     }
 
     void RunPixelEquations()
@@ -442,8 +466,8 @@ public class Milkdrop : MonoBehaviour
         int gridX1 = gridX + 1;
         int gridZ1 = gridZ + 1;
 
-        float warpTimeV = CurrentTime * GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "warpanimspeed");
-        float warpScaleInv = 1f / GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "warpscale");
+        float warpTimeV = CurrentTime * GetVariable(CurrentPreset.FrameVariables, "warpanimspeed");
+        float warpScaleInv = 1f / GetVariable(CurrentPreset.FrameVariables, "warpscale");
 
         float warpf0 = 11.68f + 4f * Mathf.Cos(warpTimeV * 1.413f + 1f);
         float warpf1 = 8.77f + 3f * Mathf.Cos(warpTimeV * 1.113f + 7f);
@@ -459,21 +483,32 @@ public class Milkdrop : MonoBehaviour
         int offset = 0;
         int offsetColor = 0;
 
-        foreach (var v in LoadedPresets[CurrentPreset].FrameVariables.Keys)
+        foreach (var v in CurrentPreset.FrameVariables.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].PixelVariables, v, LoadedPresets[CurrentPreset].FrameVariables[v]);
+            SetVariable(CurrentPreset.PixelVariables, v, CurrentPreset.FrameVariables[v]);
         }
 
-        float warp = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "warp");
-        float zoom = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoom");
-        float zoomExp = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoomexp");
-        float cx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cx");
-        float cy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cy");
-        float sx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sx");
-        float sy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sy");
-        float dx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dx");
-        float dy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dy");
-        float rot = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "rot");
+        float warp = GetVariable(CurrentPreset.PixelVariables, "warp");
+        float zoom = GetVariable(CurrentPreset.PixelVariables, "zoom");
+        float zoomExp = GetVariable(CurrentPreset.PixelVariables, "zoomexp");
+        float cx = GetVariable(CurrentPreset.PixelVariables, "cx");
+        float cy = GetVariable(CurrentPreset.PixelVariables, "cy");
+        float sx = GetVariable(CurrentPreset.PixelVariables, "sx");
+        float sy = GetVariable(CurrentPreset.PixelVariables, "sy");
+        float dx = GetVariable(CurrentPreset.PixelVariables, "dx");
+        float dy = GetVariable(CurrentPreset.PixelVariables, "dy");
+        float rot = GetVariable(CurrentPreset.PixelVariables, "rot");
+
+        float frameZoom = zoom;
+        float frameZoomExp = zoomExp;
+        float frameRot = rot;
+        float frameWarp = warp;
+        float framecx = cx;
+        float framecy = cy;
+        float framesx = sx;
+        float framesy = sy;
+        float framedx = dx;
+        float framedy = dy;
 
         for (int iz = 0; iz < gridZ1; iz++)
         {
@@ -497,34 +532,34 @@ public class Milkdrop : MonoBehaviour
                     }
                 }
 
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "x", x * 0.5f * aspectx + 0.5f);
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "y", y * -0.5f * aspecty + 0.5f);
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "rad", rad);
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "ang", ang);
+                SetVariable(CurrentPreset.PixelVariables, "x", x * 0.5f * aspectx + 0.5f);
+                SetVariable(CurrentPreset.PixelVariables, "y", y * -0.5f * aspecty + 0.5f);
+                SetVariable(CurrentPreset.PixelVariables, "rad", rad);
+                SetVariable(CurrentPreset.PixelVariables, "ang", ang);
 
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoom", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "zoom"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoomexp", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "zoomexp"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "rot", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rot"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "warp", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "warp"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cx", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "cx"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cy", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "cy"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dx", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "dx"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dy", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "dy"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sx", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "sx"));
-                SetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sy", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "sy"));
+                SetVariable(CurrentPreset.PixelVariables, "zoom", frameZoom);
+                SetVariable(CurrentPreset.PixelVariables, "zoomexp", frameZoomExp);
+                SetVariable(CurrentPreset.PixelVariables, "rot", frameRot);
+                SetVariable(CurrentPreset.PixelVariables, "warp", frameWarp);
+                SetVariable(CurrentPreset.PixelVariables, "cx", framecx);
+                SetVariable(CurrentPreset.PixelVariables, "cy", framecy);
+                SetVariable(CurrentPreset.PixelVariables, "dx", framedx);
+                SetVariable(CurrentPreset.PixelVariables, "dy", framedy);
+                SetVariable(CurrentPreset.PixelVariables, "sx", framesx);
+                SetVariable(CurrentPreset.PixelVariables, "sy", framesy);
 
-                RunEquation(LoadedPresets[CurrentPreset].PixelEquation, LoadedPresets[CurrentPreset].PixelVariables);
+                CurrentPreset.PixelEquationCompiled(CurrentPreset.PixelVariables);
 
-                warp = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "warp");
-                zoom = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoom");
-                zoomExp = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "zoomexp");
-                cx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cx");
-                cy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "cy");
-                sx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sx");
-                sy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "sy");
-                dx = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dx");
-                dy = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "dy");
-                rot = GetVariable(LoadedPresets[CurrentPreset].PixelVariables, "rot");
+                warp = GetVariable(CurrentPreset.PixelVariables, "warp");
+                zoom = GetVariable(CurrentPreset.PixelVariables, "zoom");
+                zoomExp = GetVariable(CurrentPreset.PixelVariables, "zoomexp");
+                cx = GetVariable(CurrentPreset.PixelVariables, "cx");
+                cy = GetVariable(CurrentPreset.PixelVariables, "cy");
+                sx = GetVariable(CurrentPreset.PixelVariables, "sx");
+                sy = GetVariable(CurrentPreset.PixelVariables, "sy");
+                dx = GetVariable(CurrentPreset.PixelVariables, "dx");
+                dy = GetVariable(CurrentPreset.PixelVariables, "dy");
+                rot = GetVariable(CurrentPreset.PixelVariables, "rot");
 
                 float zoom2V = Mathf.Pow(zoom, Mathf.Pow(zoomExp, (rad * 2f - 1f)));
                 float zoom2Inv = 1f / zoom2V;
@@ -639,7 +674,7 @@ public class Milkdrop : MonoBehaviour
 
     void RenderImage()
     {
-        FinalTexture.wrapMode = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+        FinalTexture.wrapMode = GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
 
         if (EnableWarp)
         {
@@ -682,7 +717,7 @@ public class Milkdrop : MonoBehaviour
 
     void DrawWarp()
     {
-        if (LoadedPresets[CurrentPreset].WarpMaterial == null)
+        if (CurrentPreset.WarpMaterial == null)
         {
             return;
         }
@@ -691,24 +726,24 @@ public class Milkdrop : MonoBehaviour
         TargetMeshWarp.SetUVs(0, WarpUVs);
         TargetMeshWarp.SetColors(WarpColor);
 
-        (float[], float[]) blurValues = GetBlurValues(LoadedPresets[CurrentPreset].FrameVariables);
+        //(float[], float[]) blurValues = GetBlurValues(CurrentPreset.FrameVariables);
 
-        TargetMeshRenderer.sharedMaterial = LoadedPresets[CurrentPreset].WarpMaterial;
+        TargetMeshRenderer.sharedMaterial = CurrentPreset.WarpMaterial;
 
         if (ResetBG)
         {
             ResetBG = false;
-            LoadedPresets[CurrentPreset].WarpMaterial.mainTexture = TestBackground;
+            CurrentPreset.WarpMaterial.mainTexture = TestBackground;
         }
         else
         {
-            LoadedPresets[CurrentPreset].WarpMaterial.mainTexture = FinalTexture;
+            CurrentPreset.WarpMaterial.mainTexture = FinalTexture;
         }
 
-        LoadedPresets[CurrentPreset].WarpMaterial.SetTexture("_MainTex2", FinalTexture);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetTexture("_MainTex3", FinalTexture);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetTexture("_MainTex4", FinalTexture);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetTexture("_MainTex5", FinalTexture);
+        /*CurrentPreset.WarpMaterial.SetTexture("_MainTex2", FinalTexture);
+        CurrentPreset.WarpMaterial.SetTexture("_MainTex3", FinalTexture);
+        CurrentPreset.WarpMaterial.SetTexture("_MainTex4", FinalTexture);
+        CurrentPreset.WarpMaterial.SetTexture("_MainTex5", FinalTexture);*/
 
         // sampler_blur1
         // sampler_blur2
@@ -724,44 +759,36 @@ public class Milkdrop : MonoBehaviour
 
         // user textures
 
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("decay", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "decay"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("bass", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("mid", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("treb", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("vol",
-            (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb")) / 3f
-        );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("bass_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass_att"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("mid_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid_att"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("treb_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb_att"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("vol_att",
-            (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass_att") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid_att") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb_att")) / 3f
-        );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("time", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("frame", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "frame"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("fps", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "fps"));
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("rand_preset", 
+        CurrentPreset.WarpMaterial.SetFloat("decay", GetVariable(CurrentPreset.FrameVariables, "decay"));
+        /*CurrentPreset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+        CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
+        CurrentPreset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.WarpMaterial.SetFloat("bass", Bass);
+        CurrentPreset.WarpMaterial.SetFloat("mid", Mid);
+        CurrentPreset.WarpMaterial.SetFloat("treb", Treb);
+        CurrentPreset.WarpMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+        CurrentPreset.WarpMaterial.SetFloat("bass_att", BassAtt);
+        CurrentPreset.WarpMaterial.SetFloat("mid_att", MidAtt);
+        CurrentPreset.WarpMaterial.SetFloat("treb_att", TrebAtt);
+        CurrentPreset.WarpMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+        CurrentPreset.WarpMaterial.SetFloat("time", CurrentTime);
+        CurrentPreset.WarpMaterial.SetFloat("frame", FrameNum);
+        CurrentPreset.WarpMaterial.SetFloat("fps", FPS);
+        CurrentPreset.WarpMaterial.SetVector("rand_preset", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.x"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.y"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.z"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.w")
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.x"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.y"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.z"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.w")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("rand_frame", 
+        CurrentPreset.WarpMaterial.SetVector("rand_frame", 
             new Vector4(
                 Random.Range(0f, 1f),
                 Random.Range(0f, 1f),
@@ -769,100 +796,100 @@ public class Milkdrop : MonoBehaviour
                 Random.Range(0f, 1f)
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qa", 
+        CurrentPreset.WarpMaterial.SetVector("_qa", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q1"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q2"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q3"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q4")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q1"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q2"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q3"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q4")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qb", 
+        CurrentPreset.WarpMaterial.SetVector("_qb", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q5"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q6"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q7"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q8")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q5"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q6"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q7"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q8")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qc", 
+        CurrentPreset.WarpMaterial.SetVector("_qc", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q9"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q10"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q11"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q12")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q9"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q10"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q11"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q12")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qd", 
+        CurrentPreset.WarpMaterial.SetVector("_qd", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q13"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q14"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q15"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q16")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q13"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q14"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q15"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q16")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qe", 
+        CurrentPreset.WarpMaterial.SetVector("_qe", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q17"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q18"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q19"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q20")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q17"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q18"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q19"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q20")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qf", 
+        CurrentPreset.WarpMaterial.SetVector("_qf", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q21"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q22"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q23"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q24")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q21"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q22"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q23"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q24")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qg", 
+        CurrentPreset.WarpMaterial.SetVector("_qg", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q25"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q26"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q27"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q28")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q25"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q26"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q27"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q28")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("_qh", 
+        CurrentPreset.WarpMaterial.SetVector("_qh", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q29"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q30"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q31"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q32")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q29"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q30"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q31"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q32")
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("slow_roam_cos", 
+        CurrentPreset.WarpMaterial.SetVector("slow_roam_cos", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.005f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.008f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.013f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.022f)
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.013f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("roam_cos", 
+        CurrentPreset.WarpMaterial.SetVector("roam_cos", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 1.3f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 5.0f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 20.0f)
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 5.0f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("slow_roam_sin", 
+        CurrentPreset.WarpMaterial.SetVector("slow_roam_sin", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.005f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.008f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.013f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.022f)
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.013f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
             )
         );
-        LoadedPresets[CurrentPreset].WarpMaterial.SetVector("roam_sin", 
+        CurrentPreset.WarpMaterial.SetVector("roam_sin", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 1.3f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 5.0f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 20.0f)
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 5.0f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 20.0f)
             )
         );
 
@@ -882,18 +909,18 @@ public class Milkdrop : MonoBehaviour
         float scale3 = blurMax3 - blurMin3;
         float bias3 = blurMin3;
 
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur1_min", blurMin1);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur1_max", blurMax1);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur2_min", blurMin2);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur2_max", blurMax2);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur3_min", blurMin3);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("blur3_max", blurMax3);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("scale1", scale1);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("scale2", scale2);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("scale3", scale3);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("bias1", bias1);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("bias2", bias2);
-        LoadedPresets[CurrentPreset].WarpMaterial.SetFloat("bias3", bias3);
+        CurrentPreset.WarpMaterial.SetFloat("blur1_min", blurMin1);
+        CurrentPreset.WarpMaterial.SetFloat("blur1_max", blurMax1);
+        CurrentPreset.WarpMaterial.SetFloat("blur2_min", blurMin2);
+        CurrentPreset.WarpMaterial.SetFloat("blur2_max", blurMax2);
+        CurrentPreset.WarpMaterial.SetFloat("blur3_min", blurMin3);
+        CurrentPreset.WarpMaterial.SetFloat("blur3_max", blurMax3);
+        CurrentPreset.WarpMaterial.SetFloat("scale1", scale1);
+        CurrentPreset.WarpMaterial.SetFloat("scale2", scale2);
+        CurrentPreset.WarpMaterial.SetFloat("scale3", scale3);
+        CurrentPreset.WarpMaterial.SetFloat("bias1", bias1);
+        CurrentPreset.WarpMaterial.SetFloat("bias2", bias2);
+        CurrentPreset.WarpMaterial.SetFloat("bias3", bias3);*/
 
         TargetCamera.targetTexture = FinalTexture;
         TargetCamera.Render();
@@ -901,28 +928,28 @@ public class Milkdrop : MonoBehaviour
 
     void DrawDarkenCenter()
     {
-        if (LoadedPresets[CurrentPreset].DarkenCenterMaterial == null)
+        if (CurrentPreset.DarkenCenterMaterial == null)
         {
             return;
         }
 
-        if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "darken_center") == 0f)
+        if (GetVariable(CurrentPreset.FrameVariables, "darken_center") == 0f)
         {
             return;
         }
 
         TargetMeshFilter.sharedMesh = TargetMeshDarkenCenter;
 
-        TargetMeshRenderer.sharedMaterial = LoadedPresets[CurrentPreset].DarkenCenterMaterial;
+        TargetMeshRenderer.sharedMaterial = CurrentPreset.DarkenCenterMaterial;
 
         if (ResetBG)
         {
             ResetBG = false;
-            LoadedPresets[CurrentPreset].DarkenCenterMaterial.mainTexture = TestBackground;
+            CurrentPreset.DarkenCenterMaterial.mainTexture = TestBackground;
         }
         else
         {
-            LoadedPresets[CurrentPreset].DarkenCenterMaterial.mainTexture = FinalTexture;
+            CurrentPreset.DarkenCenterMaterial.mainTexture = FinalTexture;
         }
 
         TargetCamera.targetTexture = FinalTexture;
@@ -931,17 +958,17 @@ public class Milkdrop : MonoBehaviour
 
     void DrawBasicWaveform()
     {
-        float alpha = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_a");
+        float alpha = GetVariable(CurrentPreset.FrameVariables, "wave_a");
 
-        float vol = (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass") + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid") + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb")) / 3f;
+        float vol = (Bass + Mid + Treb) / 3f;
 
         if (vol <= -0.01f || alpha <= 0.001f || timeArrayL.Length == 0f)
         {
             return;
         }
 
-        float scale = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_scale") / 128f;
-        float smooth = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_smoothing");
+        float scale = GetVariable(CurrentPreset.FrameVariables, "wave_scale") / 128f;
+        float smooth = GetVariable(CurrentPreset.FrameVariables, "wave_smoothing");
         float smooth2 = scale * (1f - smooth);
 
         List<float> waveL = new List<float>();
@@ -962,11 +989,11 @@ public class Milkdrop : MonoBehaviour
             waveR.Add(timeArrayR[i] * smooth2 + waveR[i - 1] * smooth);
         }
 
-        float newWaveMode = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_mode") % 8;
-        float oldWaveMode = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "old_wave_mode") % 8;
+        float newWaveMode = GetVariable(CurrentPreset.FrameVariables, "wave_mode") % 8;
+        float oldWaveMode = GetVariable(CurrentPreset.FrameVariables, "old_wave_mode") % 8;
 
-        float wavePosX = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_x") * 2f - 1f;
-        float wavePosY = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_y") * 2f - 1f;
+        float wavePosX = GetVariable(CurrentPreset.FrameVariables, "wave_x") * 2f - 1f;
+        float wavePosY = GetVariable(CurrentPreset.FrameVariables, "wave_y") * 2f - 1f;
 
         int numVert = 0;
         //int oldNumVert = 0;
@@ -977,7 +1004,7 @@ public class Milkdrop : MonoBehaviour
         {
             float waveMode = (it == 0) ? newWaveMode : oldWaveMode;
 
-            float fWaveParam2 = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_mystery");
+            float fWaveParam2 = GetVariable(CurrentPreset.FrameVariables, "wave_mystery");
 
             if (
                 (waveMode == 0 || waveMode == 1 || waveMode == 4) &&
@@ -1005,14 +1032,14 @@ public class Milkdrop : MonoBehaviour
                 // old positions
             //
             
-            alpha = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_a");
+            alpha = GetVariable(CurrentPreset.FrameVariables, "wave_a");
 
             if (waveMode == 0)
             {
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
                 
@@ -1023,7 +1050,7 @@ public class Milkdrop : MonoBehaviour
                 for (int i = 0; i < localNumVert - 1; i++)
                 {
                     float rad = 0.5f + 0.4f * waveR[i + sampleOffset] + fWaveParam2;
-                    float ang = i * numVertInv * 2f * Mathf.PI + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.2f;
+                    float ang = i * numVertInv * 2f * Mathf.PI + CurrentTime * 0.2f;
 
                     if (i < localNumVert / 10f)
                     {
@@ -1046,10 +1073,10 @@ public class Milkdrop : MonoBehaviour
             else if (waveMode == 1)
             {
                 alpha *= 1.25f;
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
@@ -1058,7 +1085,7 @@ public class Milkdrop : MonoBehaviour
                 for (int i = 0; i < localNumVert - 1; i++)
                 {
                     float rad = 0.53f + 0.43f * waveR[i] + fWaveParam2;
-                    float ang = waveL[i + 32] * 0.5f * Mathf.PI + GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 2.3f;
+                    float ang = waveL[i + 32] * 0.5f * Mathf.PI + CurrentTime * 2.3f;
 
                     positions[i] = new Vector3
                     (
@@ -1083,10 +1110,10 @@ public class Milkdrop : MonoBehaviour
                     alpha *= 0.13f;
                 }
 
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
@@ -1118,12 +1145,12 @@ public class Milkdrop : MonoBehaviour
                 }
 
                 alpha *= 1.3f;
-                alpha *= GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb") * GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb");
+                alpha *= Treb * Treb;
 
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
@@ -1141,10 +1168,10 @@ public class Milkdrop : MonoBehaviour
             }
             else if (waveMode == 4)
             {
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
@@ -1201,15 +1228,15 @@ public class Milkdrop : MonoBehaviour
                     alpha *= 0.13f;
                 }
 
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
-                float cosRot = Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f);
-                float sinRot = Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f);
+                float cosRot = Mathf.Cos(CurrentTime * 0.3f);
+                float sinRot = Mathf.Sin(CurrentTime * 0.3f);
 
                 localNumVert = waveL.Count;
 
@@ -1229,10 +1256,10 @@ public class Milkdrop : MonoBehaviour
             }
             else if (waveMode == 6 || waveMode == 7)
             {
-                if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphabyvolume") > 0f)
+                if (GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
                 {
-                    float alphaDiff = GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphaend") - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart");
-                    alpha *= (vol - GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "modwavealphastart")) / alphaDiff;
+                    float alphaDiff = GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
+                    alpha *= (vol - GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
                 }
                 alpha = Mathf.Clamp01(alpha);
 
@@ -1377,11 +1404,11 @@ public class Milkdrop : MonoBehaviour
         //    alpha = blendMix * alpha + blendMix2 * oldAlpha;
         //}
 
-        float r = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_r"));
-        float g = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_g"));
-        float b = Mathf.Clamp01(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_b"));
+        float r = Mathf.Clamp01(GetVariable(CurrentPreset.FrameVariables, "wave_r"));
+        float g = Mathf.Clamp01(GetVariable(CurrentPreset.FrameVariables, "wave_g"));
+        float b = Mathf.Clamp01(GetVariable(CurrentPreset.FrameVariables, "wave_b"));
 
-        if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_brighten") != 0f)
+        if (GetVariable(CurrentPreset.FrameVariables, "wave_brighten") != 0f)
         {
             float maxc = Mathf.Max(r, g, b);
 
@@ -1411,7 +1438,7 @@ public class Milkdrop : MonoBehaviour
         WaveformRenderer.positionCount = numVert;
         WaveformRenderer.SetPositions(BasicWaveFormPositions);
 
-        if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_thick") != 0f || GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_dots") != 0f)
+        if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f || GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
         {
             WaveformRenderer.widthMultiplier = 4f;
         }
@@ -1427,7 +1454,7 @@ public class Milkdrop : MonoBehaviour
             WaveformRenderer2.positionCount = numVert;
             WaveformRenderer2.SetPositions(BasicWaveFormPositions2);
 
-            if (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_thick") != 0f || GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "wave_dots") != 0f)
+            if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f || GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
             {
                 WaveformRenderer2.widthMultiplier = 4f;
             }
@@ -1453,14 +1480,14 @@ public class Milkdrop : MonoBehaviour
 
     void DrawComp()
     {
-        if (LoadedPresets[CurrentPreset].CompMaterial == null)
+        if (CurrentPreset.CompMaterial == null)
         {
             return;
         }
 
-        (float[], float[]) blurValues = GetBlurValues(LoadedPresets[CurrentPreset].FrameVariables);
+        //(float[], float[]) blurValues = GetBlurValues(CurrentPreset.FrameVariables);
 
-        TargetMeshRenderer.sharedMaterial = LoadedPresets[CurrentPreset].CompMaterial;
+        TargetMeshRenderer.sharedMaterial = CurrentPreset.CompMaterial;
 
         float[] hueBase = new float[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
@@ -1470,28 +1497,28 @@ public class Milkdrop : MonoBehaviour
                 0.6f +
                 0.3f *
                 Mathf.Sin(
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 30.0f * 0.0143f +
+                    CurrentTime * 30.0f * 0.0143f +
                     3f +
                     i * 21f +
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_start.w")
+                    GetVariable(CurrentPreset.FrameVariables, "rand_start.w")
                 );
             hueBase[i * 3 + 1] =
                 0.6f +
                 0.3f *
                 Mathf.Sin(
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 30.0f * 0.0107f +
+                    CurrentTime * 30.0f * 0.0107f +
                     1f +
                     i * 13f +
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_start.y")
+                    GetVariable(CurrentPreset.FrameVariables, "rand_start.y")
                 );
             hueBase[i * 3 + 2] =
                 0.6f +
                 0.3f *
                 Mathf.Sin(
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 30.0f * 0.0129f +
+                    CurrentTime * 30.0f * 0.0129f +
                     6f +
                     i * 9f +
-                    GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_start.z")
+                    GetVariable(CurrentPreset.FrameVariables, "rand_start.z")
                 );
             float maxShade = Mathf.Max(hueBase[i * 3], hueBase[i * 3 + 1], hueBase[i * 3 + 2]);
             for (int k = 0; k < 3; k++)
@@ -1535,17 +1562,17 @@ public class Milkdrop : MonoBehaviour
         if (ResetBG)
         {
             ResetBG = false;
-            LoadedPresets[CurrentPreset].CompMaterial.mainTexture = TestBackground;
+            CurrentPreset.CompMaterial.mainTexture = TestBackground;
         }
         else
         {
-            LoadedPresets[CurrentPreset].CompMaterial.mainTexture = FinalTexture;
+            CurrentPreset.CompMaterial.mainTexture = FinalTexture;
         }
 
-        LoadedPresets[CurrentPreset].CompMaterial.SetTexture("_MainTex2", FinalTexture);
-        LoadedPresets[CurrentPreset].CompMaterial.SetTexture("_MainTex3", FinalTexture);
-        LoadedPresets[CurrentPreset].CompMaterial.SetTexture("_MainTex4", FinalTexture);
-        LoadedPresets[CurrentPreset].CompMaterial.SetTexture("_MainTex5", FinalTexture);
+        /*CurrentPreset.CompMaterial.SetTexture("_MainTex2", FinalTexture);
+        CurrentPreset.CompMaterial.SetTexture("_MainTex3", FinalTexture);
+        CurrentPreset.CompMaterial.SetTexture("_MainTex4", FinalTexture);
+        CurrentPreset.CompMaterial.SetTexture("_MainTex5", FinalTexture);*/
 
         // sampler_blur1
         // sampler_blur2
@@ -1561,153 +1588,145 @@ public class Milkdrop : MonoBehaviour
 
         // user textures
 
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("time", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("gammaAdj", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "gammaadj"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("echo_zoom", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "echo_zoom"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("echo_alpha", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "echo_alpha"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("echo_orientation", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "echo_orient"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("invert", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "invert"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("brighten", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "brighten"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("_darken", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "darken"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("solarize", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "solarize"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("bass", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("mid", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("treb", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("vol",
-            (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb")) / 3f
-        );
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("bass_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass_att"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("mid_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid_att"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("treb_att", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb_att"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("vol_att",
-            (GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "bass_att") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "mid_att") +
-            GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "treb_att")) / 3f
-        );
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("frame", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "frame"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("fps", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "fps"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("rand_preset", 
+        //CurrentPreset.CompMaterial.SetFloat("time", CurrentTime);
+        CurrentPreset.CompMaterial.SetFloat("gammaAdj", GetVariable(CurrentPreset.FrameVariables, "gammaadj"));
+        CurrentPreset.CompMaterial.SetFloat("echo_zoom", GetVariable(CurrentPreset.FrameVariables, "echo_zoom"));
+        CurrentPreset.CompMaterial.SetFloat("echo_alpha", GetVariable(CurrentPreset.FrameVariables, "echo_alpha"));
+        CurrentPreset.CompMaterial.SetFloat("echo_orientation", GetVariable(CurrentPreset.FrameVariables, "echo_orient"));
+        CurrentPreset.CompMaterial.SetFloat("invert", GetVariable(CurrentPreset.FrameVariables, "invert"));
+        CurrentPreset.CompMaterial.SetFloat("brighten", GetVariable(CurrentPreset.FrameVariables, "brighten"));
+        CurrentPreset.CompMaterial.SetFloat("_darken", GetVariable(CurrentPreset.FrameVariables, "darken"));
+        CurrentPreset.CompMaterial.SetFloat("solarize", GetVariable(CurrentPreset.FrameVariables, "solarize"));
+        /*CurrentPreset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+        CurrentPreset.CompMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
+        CurrentPreset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+        CurrentPreset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+        CurrentPreset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+        CurrentPreset.CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+        CurrentPreset.CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+        CurrentPreset.CompMaterial.SetFloat("bass", Bass);
+        CurrentPreset.CompMaterial.SetFloat("mid", Mid);
+        CurrentPreset.CompMaterial.SetFloat("treb", Treb);
+        CurrentPreset.CompMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+        CurrentPreset.CompMaterial.SetFloat("bass_att", BassAtt);
+        CurrentPreset.CompMaterial.SetFloat("mid_att", MidAtt);
+        CurrentPreset.CompMaterial.SetFloat("treb_att", TrebAtt);
+        CurrentPreset.CompMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+        CurrentPreset.CompMaterial.SetFloat("frame", FrameNum);
+        CurrentPreset.CompMaterial.SetFloat("fps", FPS);
+        CurrentPreset.CompMaterial.SetVector("rand_preset", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.x"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.y"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.z"),
-                GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "rand_preset.w")
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.x"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.y"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.z"),
+                GetVariable(CurrentPreset.FrameVariables, "rand_preset.w")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("rand_frame", 
+        CurrentPreset.CompMaterial.SetVector("rand_frame", 
             new Vector4(
                 Random.Range(0f, 1f),
                 Random.Range(0f, 1f),
                 Random.Range(0f, 1f),
                 Random.Range(0f, 1f)
             )
-        );
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("fShader", GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "fshader"));
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qa", 
+        );*/
+        CurrentPreset.CompMaterial.SetFloat("fShader", GetVariable(CurrentPreset.FrameVariables, "fshader"));
+        /*CurrentPreset.CompMaterial.SetVector("_qa", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q1"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q2"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q3"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q4")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q1"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q2"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q3"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q4")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qb", 
+        CurrentPreset.CompMaterial.SetVector("_qb", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q5"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q6"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q7"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q8")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q5"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q6"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q7"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q8")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qc", 
+        CurrentPreset.CompMaterial.SetVector("_qc", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q9"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q10"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q11"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q12")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q9"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q10"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q11"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q12")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qd", 
+        CurrentPreset.CompMaterial.SetVector("_qd", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q13"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q14"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q15"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q16")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q13"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q14"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q15"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q16")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qe", 
+        CurrentPreset.CompMaterial.SetVector("_qe", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q17"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q18"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q19"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q20")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q17"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q18"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q19"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q20")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qf", 
+        CurrentPreset.CompMaterial.SetVector("_qf", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q21"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q22"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q23"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q24")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q21"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q22"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q23"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q24")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qg", 
+        CurrentPreset.CompMaterial.SetVector("_qg", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q25"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q26"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q27"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q28")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q25"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q26"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q27"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q28")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("_qh", 
+        CurrentPreset.CompMaterial.SetVector("_qh", 
             new Vector4(
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q29"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q30"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q31"),
-                GetVariable(LoadedPresets[CurrentPreset].AfterFrameVariables, "q32")
+                GetVariable(CurrentPreset.AfterFrameVariables, "q29"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q30"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q31"),
+                GetVariable(CurrentPreset.AfterFrameVariables, "q32")
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("slow_roam_cos", 
+        CurrentPreset.CompMaterial.SetVector("slow_roam_cos", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.005f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.008f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.013f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.022f)
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.013f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("roam_cos", 
+        CurrentPreset.CompMaterial.SetVector("roam_cos", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 1.3f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 5.0f),
-                0.5f + 0.5f * Mathf.Cos(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 20.0f)
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 5.0f),
+                0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("slow_roam_sin", 
+        CurrentPreset.CompMaterial.SetVector("slow_roam_sin", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.005f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.008f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.013f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.022f)
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.013f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
             )
         );
-        LoadedPresets[CurrentPreset].CompMaterial.SetVector("roam_sin", 
+        CurrentPreset.CompMaterial.SetVector("roam_sin", 
             new Vector4(
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 0.3f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 1.3f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 5.0f),
-                0.5f + 0.5f * Mathf.Sin(GetVariable(LoadedPresets[CurrentPreset].FrameVariables, "time") * 20.0f)
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 5.0f),
+                0.5f + 0.5f * Mathf.Sin(CurrentTime * 20.0f)
             )
         );
 
@@ -1727,32 +1746,21 @@ public class Milkdrop : MonoBehaviour
         float scale3 = blurMax3 - blurMin3;
         float bias3 = blurMin3;
 
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur1_min", blurMin1);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur1_max", blurMax1);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur2_min", blurMin2);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur2_max", blurMax2);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur3_min", blurMin3);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("blur3_max", blurMax3);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("scale1", scale1);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("scale2", scale2);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("scale3", scale3);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("bias1", bias1);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("bias2", bias2);
-        LoadedPresets[CurrentPreset].CompMaterial.SetFloat("bias3", bias3);
+        CurrentPreset.CompMaterial.SetFloat("blur1_min", blurMin1);
+        CurrentPreset.CompMaterial.SetFloat("blur1_max", blurMax1);
+        CurrentPreset.CompMaterial.SetFloat("blur2_min", blurMin2);
+        CurrentPreset.CompMaterial.SetFloat("blur2_max", blurMax2);
+        CurrentPreset.CompMaterial.SetFloat("blur3_min", blurMin3);
+        CurrentPreset.CompMaterial.SetFloat("blur3_max", blurMax3);
+        CurrentPreset.CompMaterial.SetFloat("scale1", scale1);
+        CurrentPreset.CompMaterial.SetFloat("scale2", scale2);
+        CurrentPreset.CompMaterial.SetFloat("scale3", scale3);
+        CurrentPreset.CompMaterial.SetFloat("bias1", bias1);
+        CurrentPreset.CompMaterial.SetFloat("bias2", bias2);
+        CurrentPreset.CompMaterial.SetFloat("bias3", bias3);*/
 
         TargetCamera.targetTexture = FinalTexture;
         TargetCamera.Render();
-    }
-
-    void RunEquation(List<string> Equation, Dictionary<string, float> Variables)
-    {
-        foreach (string line in Equation)
-        {
-            int eqIndex = line.IndexOf('=');
-            string varName = line.Substring(0, eqIndex);
-            string expression = line.Substring(eqIndex + 1);
-            SetVariable(Variables, varName, EvaluateExpression(expression, Variables));
-        }
     }
 
     static float Func_Abs(float x)
@@ -1782,12 +1790,12 @@ public class Milkdrop : MonoBehaviour
 
     static float Func_Rand(float x)
     {
-        return Random.Range(0f, x);
+        return UnityEngine.Random.Range(0f, x);
     }
 
     static float Func_RandInt(float x)
     {
-        return Mathf.Floor(Random.Range(0, x));
+        return Mathf.Floor(UnityEngine.Random.Range(0, x));
     }
 
     static float Func_Bnot(float x)
@@ -1933,9 +1941,15 @@ public class Milkdrop : MonoBehaviour
         {"if", Func_Ifcond}
     };
 
-    float EvaluateExpression(string Expression, Dictionary<string, float> Variables)
+    List<string> TokenizeExpression(string Expression)
     {
         List<string> tokens = new List<string>();
+
+        int eqIndex = Expression.IndexOf('=');
+
+        tokens.Add(Expression.Substring(0, eqIndex));
+
+        Expression = Expression.Substring(eqIndex + 1);
 
         string tokenBuffer = "";
 
@@ -1962,287 +1976,16 @@ public class Milkdrop : MonoBehaviour
             tokens.Add(tokenBuffer);
         }
 
-        return EvaluateExpression(tokens, Variables);
-    }
-
-    float EvaluateExpression(List<string> Tokens, Dictionary<string, float> Variables)
-    {
-        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
-        {
-            string token = Tokens[tokenNum];
-
-            if (token == ")")
-            {
-                throw new System.Exception("Unmatched closing parenthesis");
-            }
-            
-            if (token == "(")
-            {
-                bool success = false;
-                bool isFunction = false;
-
-                if (tokenNum > 0)
-                {
-                    string prev = Tokens[tokenNum - 1];
-
-                    if (prev != "*" && prev != "/" && prev != "+" && prev != "-")
-                    {
-                        isFunction = true;
-                    }
-                }
-
-                int depth = 0;
-
-                for (int tokenNum2 = tokenNum + 1; tokenNum2 < Tokens.Count; tokenNum2++)
-                {
-                    string token2 = Tokens[tokenNum2];
-
-                    if (token2 == "(")
-                    {
-                        depth++;
-
-                        continue;
-                    }
-
-                    if (token2 == ")")
-                    {
-                        if (depth == 0)
-                        {
-                            if (isFunction)
-                            {
-                                List<List<string>> arguments = new List<List<string>>();
-
-                                arguments.Add(new List<string>());
-
-                                int depth2 = 0;
-
-                                for (int i = tokenNum + 1; i < tokenNum2; i++)
-                                {
-                                    string token3 = Tokens[i];
-
-                                    if (token3 == "(")
-                                    {
-                                        depth2++;
-                                    }
-                                    else if (token3 == ")")
-                                    {
-                                        depth2--;
-                                    }
-
-                                    if (depth2 == 0 && token3 == ",")
-                                    {
-                                        arguments.Add(new List<string>());
-
-                                        continue;
-                                    }
-
-                                    arguments[arguments.Count - 1].Add(token3);
-                                }
-
-                                List<float> argumentValues = new List<float>();
-
-                                foreach (List<string> argument in arguments)
-                                {
-                                    argumentValues.Add(EvaluateExpression(argument, Variables));
-                                }
-
-                                string functionName = Tokens[tokenNum - 1];
-
-                                float result = EvalFunction(functionName, argumentValues);
-
-                                Tokens.RemoveRange(tokenNum - 1, tokenNum2 - tokenNum + 1);
-
-                                Tokens[tokenNum - 1] = result.ToString();
-                                
-                                tokenNum--;
-                            }
-                            else
-                            {
-                                float result = EvaluateExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), Variables);
-
-                                Tokens.RemoveRange(tokenNum, tokenNum2 - tokenNum);
-
-                                Tokens[tokenNum] = result.ToString();
-                            }
-
-                            success = true;
-
-                            break;
-                        }
-                        else
-                        {
-                            depth--;
-
-                            continue;
-                        }
-                    }
-                }
-
-                if (!success)
-                {
-                    throw new System.Exception("Unmatched opening parenthesis");
-                }
-
-                continue;
-            }
-        }
-
-        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
-        {
-            string token = Tokens[tokenNum];
-
-            if (token == "-")
-            {
-                if (tokenNum == 0 || Tokens[tokenNum - 1] == "*" || Tokens[tokenNum - 1] == "/" || Tokens[tokenNum - 1] == "+" || Tokens[tokenNum - 1] == "-")
-                {
-                    string next = Tokens[tokenNum + 1];
-
-                    float nextValue = EvalVariable(next, Variables);
-
-                    float result = -nextValue;
-
-                    Tokens.RemoveRange(tokenNum, 1);
-
-                    Tokens[tokenNum] = result.ToString();
-                }
-            }
-        }
-
-        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
-        {
-            string token = Tokens[tokenNum];
-
-            if (token == "*")
-            {
-                string prev = Tokens[tokenNum - 1];
-                string next = Tokens[tokenNum + 1];
-
-                float prevValue = EvalVariable(prev, Variables);
-                float nextValue = EvalVariable(next, Variables);
-
-                float result = prevValue * nextValue;
-
-                Tokens.RemoveRange(tokenNum - 1, 2);
-
-                Tokens[tokenNum - 1] = result.ToString();
-
-                tokenNum--;
-            }
-
-            if (token == "/")
-            {
-                string prev = Tokens[tokenNum - 1];
-                string next = Tokens[tokenNum + 1];
-
-                float prevValue = EvalVariable(prev, Variables);
-                float nextValue = EvalVariable(next, Variables);
-
-                float result = prevValue / nextValue;
-
-                Tokens.RemoveRange(tokenNum - 1, 2);
-
-                Tokens[tokenNum - 1] = result.ToString();
-
-                tokenNum--;
-            }
-        }
-
-        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
-        {
-            string token = Tokens[tokenNum];
-
-            if (token == "+")
-            {
-                string prev = Tokens[tokenNum - 1];
-                string next = Tokens[tokenNum + 1];
-
-                float prevValue = EvalVariable(prev, Variables);
-                float nextValue = EvalVariable(next, Variables);
-
-                float result = prevValue + nextValue;
-
-                Tokens.RemoveRange(tokenNum - 1, 2);
-
-                Tokens[tokenNum - 1] = result.ToString();
-
-                tokenNum--;
-            }
-
-            if (token == "-")
-            {
-                string prev = Tokens[tokenNum - 1];
-                string next = Tokens[tokenNum + 1];
-
-                float prevValue = EvalVariable(prev, Variables);
-                float nextValue = EvalVariable(next, Variables);
-
-                float result = prevValue - nextValue;
-
-                Tokens.RemoveRange(tokenNum - 1, 2);
-
-                Tokens[tokenNum - 1] = result.ToString();
-
-                tokenNum--;
-            }
-        }
-
-        if (Tokens.Count != 1)
-        {
-            string a = "";
-            foreach (var token in Tokens)
-            {
-                a += token + ", ";
-            }
-            throw new System.Exception("evaluation failed: " + a);
-        }
-
-        return EvalVariable(Tokens[0], Variables);
-    }
-
-    float EvalFunction(string funcName, List<float> arguments)
-    {
-        if (arguments.Count == 1)
-        {
-            return Funcs1Arg[funcName](arguments[0]);
-        }
-
-        if (arguments.Count == 2)
-        {
-            return Funcs2Arg[funcName](arguments[0], arguments[1]);
-        }
-
-        if (arguments.Count == 3)
-        {
-            return Funcs3Arg[funcName](arguments[0], arguments[1], arguments[2]);
-        }
-
-        throw new System.Exception("Invalid number of arguments");
-    }
-
-    float EvalVariable(string token, Dictionary<string, float> Variables)
-    {
-        if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
-        {
-            return float.Parse(token);
-        }
-
-        return GetVariable(Variables, token);
+        return tokens;
     }
 
     float GetVariable(Dictionary<string, float> Variables, string name)
     {
-        if (Variables.ContainsKey(name))
+        if (Variables.TryGetValue(name, out float value))
         {
-            return Variables[name];
+            return value;
         }
-        if (Variables.ContainsKey(name))
-        {
-            return Variables[name];
-        }
-        else
-        {
-            return 0f;
-        }
+        return 0f;
     }
 
     void SetVariable(Dictionary<string, float> Variables, string name, float value)
@@ -2347,11 +2090,15 @@ public class Milkdrop : MonoBehaviour
             }
             else if (arg.StartsWith("per_frame_"))
             {
-                preset.FrameEquation.Add(val);
+                preset.FrameEquation.Add(TokenizeExpression(val));
             }
             else if (arg.StartsWith("per_pixel_"))
             {
-                preset.PixelEquation.Add(val);
+                preset.PixelEquation.Add(TokenizeExpression(val));
+            }
+            else if (arg.StartsWith("per_frame_init_"))
+            {
+                preset.InitEquation.Add(TokenizeExpression(val));
             }
             else if (arg.StartsWith("warp_"))
             {
@@ -2374,98 +2121,448 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
+        preset.InitEquationCompiled = CompileEquation(preset.InitEquation);
+        preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation);
+        preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation);
+
         LoadedPresets.Add(Path.GetFileNameWithoutExtension(file), preset);
+    }
+
+    Action<Dictionary<string, float>> CompileEquation(List<List<string>> Equation)
+    {
+        Action<Dictionary<string, float>> result = null;
+        
+        foreach (var line in Equation)
+        {
+            if (line.Count == 0)
+                continue;
+
+            string varName = line[0];
+            Func<Dictionary<string, float>, float> compiledLine = CompileExpression(line.Skip(1).ToList());
+
+            result += (Dictionary<string, float> Variables) =>
+            {
+                SetVariable(Variables, varName, compiledLine(Variables));
+            };
+        }
+
+        if (result == null)
+        {
+            result = (Dictionary<string, float> Variables) => { };
+        }
+
+        return result;
+    }
+
+    Func<Dictionary<string, float>, float> CompileVariable(string token)
+    {
+        if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
+        {
+            var result = float.Parse(token);
+            return (Dictionary<string, float> Variables) => result;
+        }
+
+        return (Dictionary<string, float> Variables) => GetVariable(Variables, token);
+    }
+
+    Func<Dictionary<string, float>, float> CompileExpression(List<string> Tokens)
+    {
+        List<Action<Dictionary<string, float>>> innerActions = new List<Action<Dictionary<string, float>>>();
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == ")")
+            {
+                throw new System.Exception("Unmatched closing parenthesis");
+            }
+            
+            if (token == "(")
+            {
+                bool success = false;
+                bool isFunction = false;
+
+                if (tokenNum > 0)
+                {
+                    string prev = Tokens[tokenNum - 1];
+
+                    if (prev != "*" && prev != "/" && prev != "+" && prev != "-")
+                    {
+                        isFunction = true;
+                    }
+                }
+
+                int depth = 0;
+
+                for (int tokenNum2 = tokenNum + 1; tokenNum2 < Tokens.Count; tokenNum2++)
+                {
+                    string token2 = Tokens[tokenNum2];
+
+                    if (token2 == "(")
+                    {
+                        depth++;
+
+                        continue;
+                    }
+
+                    if (token2 == ")")
+                    {
+                        if (depth == 0)
+                        {
+                            if (isFunction)
+                            {
+                                List<List<string>> arguments = new List<List<string>>();
+
+                                arguments.Add(new List<string>());
+
+                                int depth2 = 0;
+
+                                for (int i = tokenNum + 1; i < tokenNum2; i++)
+                                {
+                                    string token3 = Tokens[i];
+
+                                    if (token3 == "(")
+                                    {
+                                        depth2++;
+                                    }
+                                    else if (token3 == ")")
+                                    {
+                                        depth2--;
+                                    }
+
+                                    if (depth2 == 0 && token3 == ",")
+                                    {
+                                        arguments.Add(new List<string>());
+
+                                        continue;
+                                    }
+
+                                    arguments[arguments.Count - 1].Add(token3);
+                                }
+
+                                List<Func<Dictionary<string, float>, float>> argumentValues = new List<Func<Dictionary<string, float>, float>>();
+
+                                foreach (List<string> argument in arguments)
+                                {
+                                    argumentValues.Add(CompileExpression(argument));
+                                }
+
+                                string functionName = Tokens[tokenNum - 1];
+
+                                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                                Action<Dictionary<string, float>> compiledFunction = (Dictionary<string, float> Variables) =>
+                                {
+                                    throw new Exception("Error compiling function " + functionName);
+                                };
+                                
+                                switch (arguments.Count)
+                                {
+                                    case 1:
+                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        {
+                                            SetVariable(Variables, funcId, Funcs1Arg[functionName](argumentValues[0](Variables)));
+                                        };
+                                        break;
+                                    case 2:
+                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        {
+                                            SetVariable(Variables, funcId, Funcs2Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables)));
+                                        };
+                                        break;
+                                    case 3:
+                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        {
+                                            SetVariable(Variables, funcId, Funcs3Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables), argumentValues[2](Variables)));
+                                        };
+                                        break;
+                                }
+
+                                innerActions.Add(compiledFunction);
+
+                                Tokens.RemoveRange(tokenNum - 1, tokenNum2 - tokenNum + 1);
+
+                                Tokens[tokenNum - 1] = funcId;
+                                
+                                tokenNum--;
+                            }
+                            else
+                            {
+                                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                                Func<Dictionary<string, float>, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList());
+
+                                innerActions.Add((Dictionary<string, float> Variables) =>
+                                {
+                                    SetVariable(Variables, funcId, exp(Variables));
+                                });
+
+                                Tokens.RemoveRange(tokenNum, tokenNum2 - tokenNum);
+
+                                Tokens[tokenNum] = funcId;
+                            }
+
+                            success = true;
+
+                            break;
+                        }
+                        else
+                        {
+                            depth--;
+
+                            continue;
+                        }
+                    }
+                }
+
+                if (!success)
+                {
+                    throw new System.Exception("Unmatched opening parenthesis");
+                }
+
+                continue;
+            }
+        }
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == "-")
+            {
+                if (tokenNum == 0 || Tokens[tokenNum - 1] == "*" || Tokens[tokenNum - 1] == "/" || Tokens[tokenNum - 1] == "+" || Tokens[tokenNum - 1] == "-")
+                {
+                    string next = Tokens[tokenNum + 1];
+
+                    string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                    Func<Dictionary<string, float>, float> exp = CompileVariable(next);
+
+                    innerActions.Add((Dictionary<string, float> Variables) =>
+                    {
+                        SetVariable(Variables, funcId, -exp(Variables));
+                    });
+
+                    Tokens.RemoveRange(tokenNum, 1);
+
+                    Tokens[tokenNum] = funcId;
+                }
+            }
+        }
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == "*")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, prevValue(Variables) * nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+
+            if (token == "/")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, prevValue(Variables) / nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+        }
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == "+")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, prevValue(Variables) + nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+
+            if (token == "-")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, prevValue(Variables) - nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+        }
+
+        if (Tokens.Count != 1)
+        {
+            string a = "";
+            foreach (var token in Tokens)
+            {
+                a += token + ", ";
+            }
+            throw new System.Exception("evaluation failed: " + a);
+        }
+
+        Func<Dictionary<string, float>, float> finalValue = CompileVariable(Tokens[0]);
+
+        Func<Dictionary<string, float>, float> result = (Dictionary<string, float> Variables) =>
+        {
+            for (int i = 0; i < innerActions.Count; i++)
+            {
+                innerActions[i](Variables);
+            }
+
+            return finalValue(Variables);
+        };
+
+        return result;
     }
 
     public void PlayPreset(string preset)
     {
-        CurrentPreset = preset;
+        CurrentPreset = LoadedPresets[preset];
 
-        LoadedPresets[CurrentPreset].Variables = new Dictionary<string, float>();
+        CurrentPreset.Variables = new Dictionary<string, float>();
 
-        foreach (var v in LoadedPresets[CurrentPreset].BaseVariables.Keys)
+        foreach (var v in CurrentPreset.BaseVariables.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].Variables, v, LoadedPresets[CurrentPreset].BaseVariables[v]);
+            SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables[v]);
         }
 
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "frame", FrameNum);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "time", CurrentTime);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "fps", 1f / Time.deltaTime);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "bass", Bass);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "bass_att", BassAtt);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "mid", Mid);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "mid_att", MidAtt);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "treb", Treb);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "treb_att", TrebAtt);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "meshx", MeshSize.x);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "meshy", MeshSize.y);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "aspectx", 1f);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "aspecty", 1f);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "pixelsx", Resolution.x);
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "pixelsy", Resolution.y);
+        SetVariable(CurrentPreset.Variables, "frame", FrameNum);
+        SetVariable(CurrentPreset.Variables, "time", CurrentTime);
+        SetVariable(CurrentPreset.Variables, "fps", FPS);
+        SetVariable(CurrentPreset.Variables, "bass", Bass);
+        SetVariable(CurrentPreset.Variables, "bass_att", BassAtt);
+        SetVariable(CurrentPreset.Variables, "mid", Mid);
+        SetVariable(CurrentPreset.Variables, "mid_att", MidAtt);
+        SetVariable(CurrentPreset.Variables, "treb", Treb);
+        SetVariable(CurrentPreset.Variables, "treb_att", TrebAtt);
+        SetVariable(CurrentPreset.Variables, "meshx", MeshSize.x);
+        SetVariable(CurrentPreset.Variables, "meshy", MeshSize.y);
+        SetVariable(CurrentPreset.Variables, "aspectx", 1f);
+        SetVariable(CurrentPreset.Variables, "aspecty", 1f);
+        SetVariable(CurrentPreset.Variables, "pixelsx", Resolution.x);
+        SetVariable(CurrentPreset.Variables, "pixelsy", Resolution.y);
 
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_start.x", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_start.y", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_start.z", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_start.w", Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_start.x", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_start.y", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_start.z", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_start.w", UnityEngine.Random.Range(0f, 1f));
 
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_preset.x", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_preset.y", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_preset.z", Random.Range(0f, 1f));
-        SetVariable(LoadedPresets[CurrentPreset].Variables, "rand_preset.w", Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_preset.x", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_preset.y", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_preset.z", UnityEngine.Random.Range(0f, 1f));
+        SetVariable(CurrentPreset.Variables, "rand_preset.w", UnityEngine.Random.Range(0f, 1f));
 
-        List<string> nonUserKeys = LoadedPresets[CurrentPreset].Variables.Keys.ToList();
+        List<string> nonUserKeys = CurrentPreset.Variables.Keys.ToList();
         nonUserKeys.AddRange(regs);
 
-        var afterInit = new Dictionary<string, float>(LoadedPresets[CurrentPreset].Variables);
+        var afterInit = new Dictionary<string, float>(CurrentPreset.Variables);
 
-        RunEquation(LoadedPresets[CurrentPreset].InitEquation, afterInit);
+        CurrentPreset.InitEquationCompiled(afterInit);
 
-        LoadedPresets[CurrentPreset].InitVariables = Pick(afterInit, qs);
-        LoadedPresets[CurrentPreset].RegVariables = Pick(afterInit, regs);
+        CurrentPreset.InitVariables = Pick(afterInit, qs);
+        CurrentPreset.RegVariables = Pick(afterInit, regs);
         var initUserVars = Pick(afterInit, nonUserKeys.ToArray());
 
-        LoadedPresets[CurrentPreset].FrameVariables = new Dictionary<string, float>(LoadedPresets[CurrentPreset].Variables);
+        CurrentPreset.FrameVariables = new Dictionary<string, float>(CurrentPreset.Variables);
 
-        foreach (var v in LoadedPresets[CurrentPreset].InitVariables.Keys)
+        foreach (var v in CurrentPreset.InitVariables.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].FrameVariables, v, LoadedPresets[CurrentPreset].InitVariables[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables[v]);
         }
 
-        foreach (var v in LoadedPresets[CurrentPreset].RegVariables.Keys)
+        foreach (var v in CurrentPreset.RegVariables.Keys)
         {
-            SetVariable(LoadedPresets[CurrentPreset].FrameVariables, v, LoadedPresets[CurrentPreset].RegVariables[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.RegVariables[v]);
         }
 
-        RunEquation(LoadedPresets[CurrentPreset].FrameEquation, LoadedPresets[CurrentPreset].FrameVariables);
+        CurrentPreset.FrameEquationCompiled(CurrentPreset.FrameVariables);
 
-        LoadedPresets[CurrentPreset].UserKeys = Omit(LoadedPresets[CurrentPreset].FrameVariables, nonUserKeys.ToArray()).Keys.ToArray();
-        LoadedPresets[CurrentPreset].FrameMap = Pick(LoadedPresets[CurrentPreset].FrameVariables, LoadedPresets[CurrentPreset].UserKeys);
-        LoadedPresets[CurrentPreset].AfterFrameVariables = Pick(LoadedPresets[CurrentPreset].FrameVariables, qs);
-        LoadedPresets[CurrentPreset].RegVariables = Pick(LoadedPresets[CurrentPreset].FrameVariables, regs);
+        CurrentPreset.UserKeys = Omit(CurrentPreset.FrameVariables, nonUserKeys.ToArray()).Keys.ToArray();
+        CurrentPreset.FrameMap = Pick(CurrentPreset.FrameVariables, CurrentPreset.UserKeys);
+        CurrentPreset.AfterFrameVariables = Pick(CurrentPreset.FrameVariables, qs);
+        CurrentPreset.RegVariables = Pick(CurrentPreset.FrameVariables, regs);
 
         // todo setup waves
 
         // todo setup shapes
 
-        if (string.IsNullOrEmpty(LoadedPresets[CurrentPreset].Warp))
+        if (string.IsNullOrEmpty(CurrentPreset.Warp))
         {
-            LoadedPresets[CurrentPreset].WarpMaterial = new Material(DefaultWarpShader);
+            CurrentPreset.WarpMaterial = new Material(DefaultWarpShader);
         }
         else
         {
             throw new System.NotImplementedException("Compiling shaders is not supported yet");
         }
 
-        if (string.IsNullOrEmpty(LoadedPresets[CurrentPreset].Comp))
+        if (string.IsNullOrEmpty(CurrentPreset.Comp))
         {
-            LoadedPresets[CurrentPreset].CompMaterial = new Material(DefaultCompShader);
+            CurrentPreset.CompMaterial = new Material(DefaultCompShader);
         }
         else
         {
             throw new System.NotImplementedException("Compiling shaders is not supported yet");
         }
 
-        LoadedPresets[CurrentPreset].DarkenCenterMaterial = new Material(DarkenCenterShader);
+        CurrentPreset.DarkenCenterMaterial = new Material(DarkenCenterShader);
     }
 }

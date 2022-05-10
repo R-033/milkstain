@@ -3,59 +3,61 @@ Shader "Milkdrop/DefaultWarpShader"
     Properties
     {
         _MainTex ("sampler_main", 2D) = "white" {}
-        _MainTex2 ("sampler_fw_main", 2D) = "white" {}
-        _MainTex3 ("sampler_fc_main", 2D) = "white" {}
-        _MainTex4 ("sampler_pw_main", 2D) = "white" {}
-        _MainTex5 ("sampler_pc_main", 2D) = "white" {}
-        _MainTex6 ("sampler_blur1", 2D) = "white" {}
-        _MainTex7 ("sampler_blur2", 2D) = "white" {}
-        _MainTex8 ("sampler_blur3", 2D) = "white" {}
-        _MainTex9 ("sampler_noise_lq", 2D) = "white" {}
-        _MainTex10 ("sampler_noise_lq_lite", 2D) = "white" {}
-        _MainTex11 ("sampler_noise_mq", 2D) = "white" {}
-        _MainTex12 ("sampler_noise_hq", 2D) = "white" {}
-        _MainTex13 ("sampler_pw_noise_lq", 2D) = "white" {}
-        _MainTex14 ("sampler_noisevol_lq", 3D) = "white" {}
-        _MainTex15 ("sampler_noisevol_hq", 3D) = "white" {}
-        time ("time", Float) = 1
+        //_MainTex2 ("sampler_fw_main", 2D) = "white" {}
+        //_MainTex3 ("sampler_fc_main", 2D) = "white" {}
+        //_MainTex4 ("sampler_pw_main", 2D) = "white" {}
+        //_MainTex5 ("sampler_pc_main", 2D) = "white" {}
+        //_MainTex6 ("sampler_blur1", 2D) = "white" {}
+        //_MainTex7 ("sampler_blur2", 2D) = "white" {}
+        //_MainTex8 ("sampler_blur3", 2D) = "white" {}
+        //_MainTex9 ("sampler_noise_lq", 2D) = "white" {}
+        //_MainTex10 ("sampler_noise_lq_lite", 2D) = "white" {}
+        //_MainTex11 ("sampler_noise_mq", 2D) = "white" {}
+        //_MainTex12 ("sampler_noise_hq", 2D) = "white" {}
+        //_MainTex13 ("sampler_pw_noise_lq", 2D) = "white" {}
+        //_MainTex14 ("sampler_noisevol_lq", 3D) = "white" {}
+        //_MainTex15 ("sampler_noisevol_hq", 3D) = "white" {}
+        //time ("time", Float) = 1
         decay ("decay", Float) = 1
-        resolution ("resolution", Vector) = (1,1,1,1)
-        aspect ("aspect", Vector) = (1,1,1,1)
-        texsize ("texsize", Vector) = (1,1,1,1)
-        texsize_noise_lq ("texsize_noise_lq", Vector) = (1,1,1,1)
-        texsize_noise_mq ("texsize_noise_mq", Vector) = (1,1,1,1)
-        texsize_noise_hq ("texsize_noise_hq", Vector) = (1,1,1,1)
-        texsize_noise_lq_lite ("texsize_noise_lq_lite", Vector) = (1,1,1,1)
-        texsize_noisevol_lq ("texsize_noisevol_lq", Vector) = (1,1,1,1)
-        texsize_noisevol_hq ("texsize_noisevol_hq", Vector) = (1,1,1,1)
-        bass ("bass", Float) = 1
-        mid ("mid", Float) = 1
-        treb ("treb", Float) = 1
-        vol ("vol", Float) = 1
-        bass_att ("bass_att", Float) = 1
-        mid_att ("mid_att", Float) = 1
-        treb_att ("treb_att", Float) = 1
-        vol_att ("vol_att", Float) = 1
-        frame ("frame", Float) = 1
-        fps ("fps", Float) = 1
-        _qa ("_qa", Vector) = (1,1,1,1)
-        _qb ("_qb", Vector) = (1,1,1,1)
-        _qc ("_qc", Vector) = (1,1,1,1)
-        _qd ("_qd", Vector) = (1,1,1,1)
-        _qe ("_qe", Vector) = (1,1,1,1)
-        _qf ("_qf", Vector) = (1,1,1,1)
-        _qg ("_qg", Vector) = (1,1,1,1)
-        _qh ("_qh", Vector) = (1,1,1,1)
-        slow_roam_cos ("slow_roam_cos", Vector) = (1,1,1,1)
-        roam_cos ("roam_cos", Vector) = (1,1,1,1)
-        slow_roam_sin ("slow_roam_sin", Vector) = (1,1,1,1)
-        roam_sin ("roam_sin", Vector) = (1,1,1,1)
-        blur1_min ("blur1_min", Float) = 1
-        blur1_max ("blur1_max", Float) = 1
-        blur2_min ("blur2_min", Float) = 1
-        blur2_max ("blur2_max", Float) = 1
-        blur3_min ("blur3_min", Float) = 1
-        blur3_max ("blur3_max", Float) = 1
+        //resolution ("resolution", Vector) = (1,1,1,1)
+        //aspect ("aspect", Vector) = (1,1,1,1)
+        //texsize ("texsize", Vector) = (1,1,1,1)
+        //texsize_noise_lq ("texsize_noise_lq", Vector) = (1,1,1,1)
+        //texsize_noise_mq ("texsize_noise_mq", Vector) = (1,1,1,1)
+        //texsize_noise_hq ("texsize_noise_hq", Vector) = (1,1,1,1)
+        //texsize_noise_lq_lite ("texsize_noise_lq_lite", Vector) = (1,1,1,1)
+        //texsize_noisevol_lq ("texsize_noisevol_lq", Vector) = (1,1,1,1)
+        //texsize_noisevol_hq ("texsize_noisevol_hq", Vector) = (1,1,1,1)
+        //bass ("bass", Float) = 1
+        //mid ("mid", Float) = 1
+        //treb ("treb", Float) = 1
+        //vol ("vol", Float) = 1
+        //bass_att ("bass_att", Float) = 1
+        //mid_att ("mid_att", Float) = 1
+        //treb_att ("treb_att", Float) = 1
+        //vol_att ("vol_att", Float) = 1
+        //frame ("frame", Float) = 1
+        //fps ("fps", Float) = 1
+        //_qa ("_qa", Vector) = (1,1,1,1)
+        //_qb ("_qb", Vector) = (1,1,1,1)
+        //_qc ("_qc", Vector) = (1,1,1,1)
+        //_qd ("_qd", Vector) = (1,1,1,1)
+        //_qe ("_qe", Vector) = (1,1,1,1)
+        //_qf ("_qf", Vector) = (1,1,1,1)
+        //_qg ("_qg", Vector) = (1,1,1,1)
+        //_qh ("_qh", Vector) = (1,1,1,1)
+        //slow_roam_cos ("slow_roam_cos", Vector) = (1,1,1,1)
+        //roam_cos ("roam_cos", Vector) = (1,1,1,1)
+        //slow_roam_sin ("slow_roam_sin", Vector) = (1,1,1,1)
+        //roam_sin ("roam_sin", Vector) = (1,1,1,1)
+        //blur1_min ("blur1_min", Float) = 1
+        //blur1_max ("blur1_max", Float) = 1
+        //blur2_min ("blur2_min", Float) = 1
+        //blur2_max ("blur2_max", Float) = 1
+        //blur3_min ("blur3_min", Float) = 1
+        //blur3_max ("blur3_max", Float) = 1
+        //rand_frame ("rand_frame", Vector) = (1,1,1,1)
+        //rand_preset ("rand_preset", Vector) = (1,1,1,1)
     }
     SubShader
     {
@@ -95,32 +97,32 @@ Shader "Milkdrop/DefaultWarpShader"
             }
 
             sampler2D _MainTex; // sampler_main
-            sampler2D _MainTex2; // sampler_fw_main
-            sampler2D _MainTex3; // sampler_fc_main
-            sampler2D _MainTex4; // sampler_pw_main
-            sampler2D _MainTex5; // sampler_pc_main
-            sampler2D _MainTex6; // sampler_blur1
-            sampler2D _MainTex7; // sampler_blur2
-            sampler2D _MainTex8; // sampler_blur3
-            sampler2D _MainTex9; // sampler_noise_lq
-            sampler2D _MainTex10; // sampler_noise_lq_lite
-            sampler2D _MainTex11; // sampler_noise_mq
-            sampler2D _MainTex12; // sampler_noise_hq
-            sampler2D _MainTex13; // sampler_pw_noise_lq
-            sampler3D _MainTex14; // sampler_noisevol_lq
-            sampler3D _MainTex15; // sampler_noisevol_hq
-            float time;
+            //sampler2D _MainTex2; // sampler_fw_main
+            //sampler2D _MainTex3; // sampler_fc_main
+            //sampler2D _MainTex4; // sampler_pw_main
+            //sampler2D _MainTex5; // sampler_pc_main
+            //sampler2D _MainTex6; // sampler_blur1
+            //sampler2D _MainTex7; // sampler_blur2
+            //sampler2D _MainTex8; // sampler_blur3
+            //sampler2D _MainTex9; // sampler_noise_lq
+            //sampler2D _MainTex10; // sampler_noise_lq_lite
+            //sampler2D _MainTex11; // sampler_noise_mq
+            //sampler2D _MainTex12; // sampler_noise_hq
+            //sampler2D _MainTex13; // sampler_pw_noise_lq
+            //sampler3D _MainTex14; // sampler_noisevol_lq
+            //sampler3D _MainTex15; // sampler_noisevol_hq
+            //float time;
             float decay;
-            float2 resolution;
-            float4 aspect;
-            float4 texsize;
-            float4 texsize_noise_lq;
-            float4 texsize_noise_mq;
-            float4 texsize_noise_hq;
-            float4 texsize_noise_lq_lite;
-            float4 texsize_noisevol_lq;
-            float4 texsize_noisevol_hq;
-            float bass;
+            //float2 resolution;
+            //float4 aspect;
+            //float4 texsize;
+            //float4 texsize_noise_lq;
+            //float4 texsize_noise_mq;
+            //float4 texsize_noise_hq;
+            //float4 texsize_noise_lq_lite;
+            //float4 texsize_noisevol_lq;
+            //float4 texsize_noisevol_hq;
+            /*float bass;
             float mid;
             float treb;
             float vol;
@@ -187,11 +189,11 @@ Shader "Milkdrop/DefaultWarpShader"
             float scale3;
             float bias1;
             float bias2;
-            float bias3;
-            float4 rand_frame;
-            float4 rand_preset;
+            float bias3;*/
+            //float4 rand_frame;
+            //float4 rand_preset;
 
-            float PI = 3.14159265359;
+            //float PI = 3.14159265359;
 
             // header text
 
