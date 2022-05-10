@@ -242,7 +242,7 @@ Shader "Milkdrop/DefaultCompShader"
                             tex2D(_MainTex, uv_echo).xyz,
                             echo_alpha);
 
-                ret *= gammaAdj * 0.5;
+                //ret *= gammaAdj;
 
                 if(fShader >= 1.0) {
                     ret *= hue_shader;
