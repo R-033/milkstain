@@ -92,7 +92,7 @@ Shader "Milkdrop/DefaultWarpShader"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 o.uv_orig = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-                o.color = v.color;
+                o.color = v.color * 2.0 - 1.0;
                 return o;
             }
 
@@ -208,9 +208,10 @@ Shader "Milkdrop/DefaultWarpShader"
                 float ang = atan2(uv_orig.x - 0.5, uv_orig.y - 0.5);
 
                 // part that changes
-                ret = tex2D(_MainTex, uv).rgb * decay;
+                ret = tex2D(_MainTex, uv).xyz * decay;
 
-                return float4(lerp(tex2D(_MainTex, uv_orig).rgb, ret * i.color.rgb, i.color.a), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv_orig).xyz, ret * i.color.xyz, i.color.w), 1.0);
+                //return float4(ret * i.color.xyz * i.color.w, 1.0);
             }
             ENDCG
         }

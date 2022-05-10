@@ -235,19 +235,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bc2e7b9ce37e4720abb6a8783f1e43a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PresetPath: /Volumes/FileTank/milkdrop_presets/presets_milkdrop/Rovastar - Trippy
-    S.milk
+  PresetPath: /Volumes/FileTank/milkdrop_presets/presets_milkdrop
   MeshSize: {x: 48, y: 36}
   MeshSizeComp: {x: 32, y: 24}
   Resolution: {x: 800, y: 600}
   BasicWaveformNumAudioSamples: 512
   MaxFPS: 30
-  Bass: 0
-  BassAtt: 0
-  Mid: 0
-  MidAtt: 0
-  Treb: 0
-  TrebAtt: 0
+  ChangePresetIn: 5
   ResetBG: 0
   EnableWarp: 1
   EnableDarkenCenter: 1
@@ -265,6 +259,7 @@ MonoBehaviour:
   DefaultCompShader: {fileID: 4800000, guid: 315b6a4d15a2749af9832897a3d7d844, type: 3}
   DoNothingMaterial: {fileID: 2100000, guid: 3f9651530f32b423aad8f1dc97067131, type: 2}
   TestBackground: {fileID: 2800000, guid: edb0124d057f34aaca628cd18b412201, type: 3}
+  FPS: 0
 --- !u!82 &364468476
 AudioSource:
   m_ObjectHideFlags: 0
@@ -275,7 +270,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: e063c0f09292c4582b6148e2b0b1a007, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 9149fdcc8ea674950a1c9a51837aaca9, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1

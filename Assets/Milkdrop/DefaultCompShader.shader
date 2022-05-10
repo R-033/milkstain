@@ -98,7 +98,7 @@ Shader "Milkdrop/DefaultCompShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-                o.color = v.color;
+                o.color = v.color * 2.0 - 1.0;
                 return o;
             }
 
@@ -238,11 +238,11 @@ Shader "Milkdrop/DefaultCompShader"
                                 (1.0 / echo_zoom) *
                                 float2(orient_x, orient_y)) + 0.5;
 
-                ret = lerp(tex2D(_MainTex, uv).rgb,
-                            tex2D(_MainTex, uv_echo).rgb,
+                ret = lerp(tex2D(_MainTex, uv).xyz,
+                            tex2D(_MainTex, uv_echo).xyz,
                             echo_alpha);
 
-                ret *= gammaAdj;
+                ret *= gammaAdj * 0.5;
 
                 if(fShader >= 1.0) {
                     ret *= hue_shader;
@@ -255,7 +255,8 @@ Shader "Milkdrop/DefaultCompShader"
                 if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
                 if(invert != 0) ret = 1.0 - ret;
 
-                return float4(lerp(tex2D(_MainTex, uv).rgb, ret * 0.5, i.color.a), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv).xyz, ret, i.color.w), 1.0);
+                //return float4(ret * i.color.w, 1.0);
             }
             ENDCG
         }

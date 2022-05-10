@@ -11,31 +11,31 @@ public class Milkdrop : MonoBehaviour
     public class Wave
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<List<string>> InitEquation = new List<List<string>>();
-        public List<List<string>> FrameEquation = new List<List<string>>();
-        public List<List<string>> PointEquation = new List<List<string>>();
+        public string InitEquation = "";
+        public string FrameEquation = "";
+        public string PointEquation = "";
     }
 
     public class Shape
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<List<string>> InitEquation = new List<List<string>>();
-        public List<List<string>> FrameEquation = new List<List<string>>();
+        public string InitEquation = "";
+        public string FrameEquation = "";
     }
 
     public class Preset
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
-        public List<List<string>> InitEquation = new List<List<string>>();
+        public string InitEquation = "";
         public Action<Dictionary<string, float>> InitEquationCompiled;
-        public List<List<string>> FrameEquation = new List<List<string>>();
+        public string FrameEquation = "";
         public Action<Dictionary<string, float>> FrameEquationCompiled;
-        public List<List<string>> PixelEquation = new List<List<string>>();
+        public string PixelEquation = "";
         public Action<Dictionary<string, float>> PixelEquationCompiled;
         public List<Wave> Waves = new List<Wave>();
         public List<Shape> Shapes = new List<Shape>();
-        public List<List<string>> WarpEquation = new List<List<string>>();
-        public List<List<string>> CompEquation = new List<List<string>>();
+        public string WarpEquation = "";
+        public string CompEquation = "";
         public string Warp;
         public string Comp;
 
@@ -66,12 +66,16 @@ public class Milkdrop : MonoBehaviour
     public int BasicWaveformNumAudioSamples = 512;
     public float MaxFPS = 30f;
 
-    public float Bass;
-    public float BassAtt;
-    public float Mid;
-    public float MidAtt;
-    public float Treb;
-    public float TrebAtt;
+    public float ChangePresetIn = 5f;
+
+    private float presetChangeTimer = 0f;
+
+    private float Bass;
+    private float BassAtt;
+    private float Mid;
+    private float MidAtt;
+    private float Treb;
+    private float TrebAtt;
 
     public bool ResetBG;
 
@@ -218,7 +222,7 @@ public class Milkdrop : MonoBehaviour
         }
         
         UnloadPresets();
-        LoadPreset(PresetPath);
+        LoadPresetsFolder(PresetPath);
 
         WarpUVs = new Vector2[(MeshSize.x + 1) * (MeshSize.y + 1)];
         WarpColor = new Color[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -331,8 +335,6 @@ public class Milkdrop : MonoBehaviour
         WaveformRenderer.enabled = false;
         WaveformRenderer2.enabled = false;
 
-        PlayPreset(Path.GetFileNameWithoutExtension(PresetPath));
-
         sampleRate = AudioSettings.outputSampleRate * 0.5f;
 
         bassLow = Mathf.Clamp(
@@ -354,12 +356,36 @@ public class Milkdrop : MonoBehaviour
         );
 
         trebHigh = BasicWaveformNumAudioSamples - 1;
+
+        PlayRandomPreset();
+    }
+
+    int index = 0;
+
+    public void PlayRandomPreset()
+    {
+        var keys = LoadedPresets.Keys.ToArray();
+        //int ind = UnityEngine.Random.Range(0, keys.Length);
+        int ind = index++;
+        if (index >= keys.Length)
+        {
+            index = 0;
+        }
+        PlayPreset(keys[ind]);
     }
 
     void Update()
     {
         if (Time.timeScale == 0f)
             return;
+        
+        presetChangeTimer += Time.deltaTime;
+
+        if (presetChangeTimer >= ChangePresetIn)
+        {
+            presetChangeTimer -= ChangePresetIn;
+            PlayRandomPreset();
+        }
         
         timeSinceLastFrame += Time.deltaTime;
 
@@ -388,8 +414,8 @@ public class Milkdrop : MonoBehaviour
 
         for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
         {
-            timeArrayL[i] *= sampleRate * 0.2f;
-            timeArrayR[i] *= sampleRate * 0.2f;
+            timeArrayL[i] *= 8000f;
+            timeArrayR[i] *= 8000f;
         }
 
         for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
@@ -1420,7 +1446,7 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        Color color = new Color(r, g, b, alpha);
+        Vector4 color = new Vector4(r, g, b, alpha);
 
         // if oldNumVert stuff
 
@@ -1440,7 +1466,7 @@ public class Milkdrop : MonoBehaviour
 
         if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f || GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
         {
-            WaveformRenderer.widthMultiplier = 4f;
+            WaveformRenderer.widthMultiplier = 2f;
         }
         else
         {
@@ -1456,7 +1482,7 @@ public class Milkdrop : MonoBehaviour
 
             if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f || GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
             {
-                WaveformRenderer2.widthMultiplier = 4f;
+                WaveformRenderer2.widthMultiplier = 2f;
             }
             else
             {
@@ -1464,7 +1490,11 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        WaveformRenderer.sharedMaterial.SetColor("_Color", color);
+        WaveformRenderer.sharedMaterial.mainTexture = FinalTexture;
+        WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
+        WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentPreset.FrameVariables, "additivewave"));
+        WaveformRenderer.sharedMaterial.SetFloat("wave_dots", GetVariable(CurrentPreset.FrameVariables, "wave_dots"));
+        WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
         TargetMeshFilter.sharedMesh = TargetMeshWarp;
         TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
@@ -1546,10 +1576,10 @@ public class Milkdrop : MonoBehaviour
 
                 CompColor[offsetColor] = new Color
                 (
-                    hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y),
-                    hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y),
-                    hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y),
-                    alpha
+                    0.5f + (hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y))* 0.5f,
+                    0.5f + (hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y)) * 0.5f,
+                    0.5f + (hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y)) * 0.5f,
+                    0.5f + alpha * 0.5f
                 );
 
                 offsetColor++;
@@ -1763,6 +1793,11 @@ public class Milkdrop : MonoBehaviour
         TargetCamera.Render();
     }
 
+    static float Func_Int(float x)
+    {
+        return Mathf.Floor(x);
+    }
+
     static float Func_Abs(float x)
     {
         return Mathf.Abs(x);
@@ -1776,6 +1811,11 @@ public class Milkdrop : MonoBehaviour
     static float Func_Sqrt(float x)
     {
         return Mathf.Sqrt(Mathf.Abs(x));
+    }
+
+    static float Func_Log(float x)
+    {
+        return Mathf.Log(x);
     }
 
     static float Func_Log10(float x)
@@ -1901,9 +1941,29 @@ public class Milkdrop : MonoBehaviour
         return Mathf.Cos(x);
     }
 
+    static float Func_Asin(float x)
+    {
+        return Mathf.Asin(x);
+    }
+
+    static float Func_Acos(float x)
+    {
+        return Mathf.Acos(x);
+    }
+
     static float Func_Tan(float x)
     {
         return Mathf.Tan(x);
+    }
+
+    static float Func_Atan(float x)
+    {
+        return Mathf.Atan(x);
+    }
+
+    static float Func_Atan2(float x, float y)
+    {
+        return Mathf.Atan2(x, y);
     }
 
     delegate float Func1(float x);
@@ -1914,6 +1974,7 @@ public class Milkdrop : MonoBehaviour
     {
         {"sqr", Func_Sqr},
         {"sqrt", Func_Sqrt},
+        {"log", Func_Log},
         {"log10", Func_Log10},
         {"sign", Func_Sign},
         {"rand", Func_Rand},
@@ -1923,6 +1984,10 @@ public class Milkdrop : MonoBehaviour
         {"cos", Func_Cos},
         {"abs", Func_Abs},
         {"tan", Func_Tan},
+        {"int", Func_Int},
+        {"asin", Func_Asin},
+        {"acos", Func_Acos},
+        {"atan", Func_Atan}
     };
 
     Dictionary<string, Func2> Funcs2Arg = new Dictionary<string, Func2>
@@ -1939,7 +2004,8 @@ public class Milkdrop : MonoBehaviour
         {"above", Func_Above},
         {"below", Func_Below},
         {"min", Func_Min},
-        {"max", Func_Max}
+        {"max", Func_Max},
+        {"atan2", Func_Atan2}
     };
 
     Dictionary<string, Func3> Funcs3Arg = new Dictionary<string, Func3>
@@ -1951,7 +2017,17 @@ public class Milkdrop : MonoBehaviour
     {
         List<string> tokens = new List<string>();
 
+        if (string.IsNullOrEmpty(Expression))
+        {
+            return tokens;
+        }
+
         int eqIndex = Expression.IndexOf('=');
+
+        if (eqIndex < 0)
+        {
+            throw new Exception("no assignment in expression " + Expression);
+        }
 
         tokens.Add(Expression.Substring(0, eqIndex));
 
@@ -1961,7 +2037,7 @@ public class Milkdrop : MonoBehaviour
 
         foreach (char c in Expression)
         {
-            if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')' || c == ',')
+            if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')' || c == ',' || c == '%' || c == '|' || c == '&')
             {
                 if (tokenBuffer != "")
                 {
@@ -2024,6 +2100,8 @@ public class Milkdrop : MonoBehaviour
 
     public void LoadPreset(string file)
     {
+        //Debug.Log("Loading " + Path.GetFileNameWithoutExtension(file));
+
         var preset = new Preset();
 
         string[] lines = File.ReadAllLines(file);
@@ -2059,11 +2137,11 @@ public class Milkdrop : MonoBehaviour
             }
             else
             {
-                var lineTrimmed = line.Replace(" ", "").Replace(";", "").ToLower();
+                var lineTrimmed = line.Replace(" ", "").ToLower();
 
-                if (lineTrimmed.Contains("////"))
+                if (lineTrimmed.Contains("//"))
                 {
-                    lineTrimmed = lineTrimmed.Substring(0, lineTrimmed.IndexOf("////"));
+                    lineTrimmed = lineTrimmed.Substring(0, lineTrimmed.IndexOf("//"));
                 }
 
                 int eqIndex = lineTrimmed.IndexOf('=');
@@ -2096,15 +2174,15 @@ public class Milkdrop : MonoBehaviour
             }
             else if (arg.StartsWith("per_frame_"))
             {
-                preset.FrameEquation.Add(TokenizeExpression(val));
+                preset.FrameEquation += val;
             }
             else if (arg.StartsWith("per_pixel_"))
             {
-                preset.PixelEquation.Add(TokenizeExpression(val));
+                preset.PixelEquation += val;
             }
             else if (arg.StartsWith("per_frame_init_"))
             {
-                preset.InitEquation.Add(TokenizeExpression(val));
+                preset.InitEquation += val;
             }
             else if (arg.StartsWith("warp_"))
             {
@@ -2127,9 +2205,9 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        preset.InitEquationCompiled = CompileEquation(preset.InitEquation);
-        preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation);
-        preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation);
+        preset.InitEquationCompiled = CompileEquation(preset.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
 
         LoadedPresets.Add(Path.GetFileNameWithoutExtension(file), preset);
     }
@@ -2142,8 +2220,9 @@ public class Milkdrop : MonoBehaviour
         {
             if (line.Count == 0)
                 continue;
-
+            
             string varName = line[0];
+
             Func<Dictionary<string, float>, float> compiledLine = CompileExpression(line.Skip(1).ToList());
 
             result += (Dictionary<string, float> Variables) =>
@@ -2175,13 +2254,20 @@ public class Milkdrop : MonoBehaviour
     {
         List<Action<Dictionary<string, float>>> innerActions = new List<Action<Dictionary<string, float>>>();
 
+        string debugOut = "";
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            debugOut += Tokens[tokenNum] + ", ";
+        }
+
         for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
         {
             string token = Tokens[tokenNum];
 
             if (token == ")")
             {
-                throw new System.Exception("Unmatched closing parenthesis");
+                throw new System.Exception("Unmatched closing parenthesis: " + debugOut);
             }
             
             if (token == "(")
@@ -2193,7 +2279,7 @@ public class Milkdrop : MonoBehaviour
                 {
                     string prev = Tokens[tokenNum - 1];
 
-                    if (prev != "*" && prev != "/" && prev != "+" && prev != "-")
+                    if (prev != "*" && prev != "/" && prev != "+" && prev != "-" && prev != "%" && prev != "|" && prev != "&")
                     {
                         isFunction = true;
                     }
@@ -2260,7 +2346,7 @@ public class Milkdrop : MonoBehaviour
 
                                 Action<Dictionary<string, float>> compiledFunction = (Dictionary<string, float> Variables) =>
                                 {
-                                    throw new Exception("Error compiling function " + functionName);
+                                    throw new Exception("Error compiling function " + functionName + ": " + debugOut);
                                 };
                                 
                                 switch (arguments.Count)
@@ -2324,7 +2410,7 @@ public class Milkdrop : MonoBehaviour
 
                 if (!success)
                 {
-                    throw new System.Exception("Unmatched opening parenthesis");
+                    throw new System.Exception("Unmatched opening parenthesis: " + debugOut);
                 }
 
                 continue;
@@ -2335,9 +2421,30 @@ public class Milkdrop : MonoBehaviour
         {
             string token = Tokens[tokenNum];
 
+            if (token == "+")
+            {
+                if (tokenNum == 0 || Tokens[tokenNum - 1] == "*" || Tokens[tokenNum - 1] == "/" || Tokens[tokenNum - 1] == "+" || Tokens[tokenNum - 1] == "-" || Tokens[tokenNum - 1] == "%" || Tokens[tokenNum - 1] == "|" || Tokens[tokenNum - 1] == "&")
+                {
+                    string next = Tokens[tokenNum + 1];
+
+                    string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                    Func<Dictionary<string, float>, float> exp = CompileVariable(next);
+
+                    innerActions.Add((Dictionary<string, float> Variables) =>
+                    {
+                        SetVariable(Variables, funcId, +exp(Variables));
+                    });
+
+                    Tokens.RemoveRange(tokenNum, 1);
+
+                    Tokens[tokenNum] = funcId;
+                }
+            }
+
             if (token == "-")
             {
-                if (tokenNum == 0 || Tokens[tokenNum - 1] == "*" || Tokens[tokenNum - 1] == "/" || Tokens[tokenNum - 1] == "+" || Tokens[tokenNum - 1] == "-")
+                if (tokenNum == 0 || Tokens[tokenNum - 1] == "*" || Tokens[tokenNum - 1] == "/" || Tokens[tokenNum - 1] == "+" || Tokens[tokenNum - 1] == "-" || Tokens[tokenNum - 1] == "%" || Tokens[tokenNum - 1] == "|" || Tokens[tokenNum - 1] == "&")
                 {
                     string next = Tokens[tokenNum + 1];
 
@@ -2404,6 +2511,28 @@ public class Milkdrop : MonoBehaviour
 
                 tokenNum--;
             }
+
+            if (token == "%")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, (int)prevValue(Variables) % (int)nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
         }
 
         for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
@@ -2455,6 +2584,60 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == "&")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, (int)prevValue(Variables) & (int)nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+        }
+
+        for (int tokenNum = 0; tokenNum < Tokens.Count; tokenNum++)
+        {
+            string token = Tokens[tokenNum];
+
+            if (token == "|")
+            {
+                string prev = Tokens[tokenNum - 1];
+                string next = Tokens[tokenNum + 1];
+
+                string funcId = "#" + System.Guid.NewGuid().ToString();
+
+                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+
+                innerActions.Add((Dictionary<string, float> Variables) =>
+                {
+                    SetVariable(Variables, funcId, (int)prevValue(Variables) | (int)nextValue(Variables));
+                });
+
+                Tokens.RemoveRange(tokenNum - 1, 2);
+
+                Tokens[tokenNum - 1] = funcId;
+
+                tokenNum--;
+            }
+        }
+
         if (Tokens.Count != 1)
         {
             string a = "";
@@ -2462,7 +2645,7 @@ public class Milkdrop : MonoBehaviour
             {
                 a += token + ", ";
             }
-            throw new System.Exception("evaluation failed: " + a);
+            throw new System.Exception("evaluation failed: " + debugOut + " => " + a);
         }
 
         Func<Dictionary<string, float>, float> finalValue = CompileVariable(Tokens[0]);
@@ -2482,6 +2665,8 @@ public class Milkdrop : MonoBehaviour
 
     public void PlayPreset(string preset)
     {
+        Debug.Log("Playing " + preset);
+
         CurrentPreset = LoadedPresets[preset];
 
         CurrentPreset.Variables = new Dictionary<string, float>();
