@@ -1901,6 +1901,11 @@ public class Milkdrop : MonoBehaviour
         return Mathf.Cos(x);
     }
 
+    static float Func_Tan(float x)
+    {
+        return Mathf.Tan(x);
+    }
+
     delegate float Func1(float x);
     delegate float Func2(float x, float y);
     delegate float Func3(float x, float y, float z);
@@ -1916,7 +1921,8 @@ public class Milkdrop : MonoBehaviour
         {"bnot", Func_Bnot},
         {"sin", Func_Sin},
         {"cos", Func_Cos},
-        {"abs", Func_Abs}
+        {"abs", Func_Abs},
+        {"tan", Func_Tan},
     };
 
     Dictionary<string, Func2> Funcs2Arg = new Dictionary<string, Func2>
