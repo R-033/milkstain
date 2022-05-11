@@ -62,6 +62,7 @@ public class Milkdrop : MonoBehaviour
 
     public Vector2Int MeshSize = new Vector2Int(48, 36);
     public Vector2Int MeshSizeComp = new Vector2Int(32, 24);
+    public Vector2Int MotionVectorsSize = new Vector2Int(64, 48);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
     public int BasicWaveformNumAudioSamples = 512;
     public float MaxFPS = 30f;
@@ -76,13 +77,6 @@ public class Milkdrop : MonoBehaviour
     private float MidAtt;
     private float Treb;
     private float TrebAtt;
-
-    public bool ResetBG;
-
-    public bool EnableWarp = true;
-    public bool EnableDarkenCenter = true;
-    public bool EnableBasicWaveform = true;
-    public bool EnableComp = true;
 
     public RawImage TargetGraphic;
 
@@ -102,7 +96,13 @@ public class Milkdrop : MonoBehaviour
 
     public Material DoNothingMaterial;
 
-    public Texture TestBackground;
+    public Material BorderMaterial;
+
+    public Transform BorderSideLeft;
+    public Transform BorderSideRight;
+    public Transform BorderSideTop;
+    public Transform BorderSideBottom;
+    public Transform BorderParent;
 
     private ulong FrameNum = 0;
     private float CurrentTime = 0f;
@@ -167,6 +167,7 @@ public class Milkdrop : MonoBehaviour
     private Color[] WarpColor;
     private Color[] CompColor;
 
+    private RenderTexture TempTexture;
     private RenderTexture FinalTexture;
 
     private Mesh TargetMeshWarp;
@@ -178,6 +179,8 @@ public class Milkdrop : MonoBehaviour
 
     private Vector3[] BasicWaveFormPositions;
     private Vector3[] BasicWaveFormPositions2;
+
+    private Vector3[] MotionVectorsPositions;
 
     private float sampleRate;
 
@@ -231,9 +234,12 @@ public class Milkdrop : MonoBehaviour
         BasicWaveFormPositions = new Vector3[BasicWaveformNumAudioSamples];
         BasicWaveFormPositions2 = new Vector3[BasicWaveformNumAudioSamples];
 
+        MotionVectorsPositions = new Vector3[MotionVectorsSize.x * MotionVectorsSize.y * 2];
+
         timeArrayL = new float[BasicWaveformNumAudioSamples];
         timeArrayR = new float[BasicWaveformNumAudioSamples];
 
+        TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
         FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
 
         TargetGraphic.texture = FinalTexture;
@@ -331,9 +337,15 @@ public class Milkdrop : MonoBehaviour
         TargetMeshFilter.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        BorderParent.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
 
         WaveformRenderer.enabled = false;
         WaveformRenderer2.enabled = false;
+
+        BorderSideLeft.gameObject.SetActive(false);
+        BorderSideRight.gameObject.SetActive(false);
+        BorderSideTop.gameObject.SetActive(false);
+        BorderSideBottom.gameObject.SetActive(false);
 
         sampleRate = AudioSettings.outputSampleRate * 0.5f;
 
@@ -700,45 +712,43 @@ public class Milkdrop : MonoBehaviour
 
     void RenderImage()
     {
-        FinalTexture.wrapMode = GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+        TempTexture.wrapMode = GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
 
-        if (EnableWarp)
-        {
-            DrawWarp();
-        }
+        DrawWarp();
 
         // todo blending support
 
         // todo blur
 
-        // todo motion vectors
+        DrawMotionVectors();
 
-        // todo shapes
+        DrawShapes();
 
-        // todo waves
+        DrawWaves();
 
         // todo shapes & waves blending
 
-        if (EnableBasicWaveform)
-        {
-            DrawBasicWaveform();
-        }
+        DrawBasicWaveform();
 
-        if (EnableDarkenCenter)
-        {
-            DrawDarkenCenter();
-        }
+        DrawDarkenCenter();
 
-        // outer border
+        DrawOuterBorder();
 
-        // inner border
+        DrawInnerBorder();
 
         // text
 
-        if (EnableComp)
-        {
-            DrawComp();
-        }
+        DrawComp();
+    }
+
+    void DrawShapes()
+    {
+
+    }
+
+    void DrawWaves()
+    {
+
     }
 
     void DrawWarp()
@@ -756,15 +766,7 @@ public class Milkdrop : MonoBehaviour
 
         TargetMeshRenderer.sharedMaterial = CurrentPreset.WarpMaterial;
 
-        if (ResetBG)
-        {
-            ResetBG = false;
-            CurrentPreset.WarpMaterial.mainTexture = TestBackground;
-        }
-        else
-        {
-            CurrentPreset.WarpMaterial.mainTexture = FinalTexture;
-        }
+        CurrentPreset.WarpMaterial.mainTexture = TempTexture;
 
         /*CurrentPreset.WarpMaterial.SetTexture("_MainTex2", FinalTexture);
         CurrentPreset.WarpMaterial.SetTexture("_MainTex3", FinalTexture);
@@ -948,7 +950,7 @@ public class Milkdrop : MonoBehaviour
         CurrentPreset.WarpMaterial.SetFloat("bias2", bias2);
         CurrentPreset.WarpMaterial.SetFloat("bias3", bias3);*/
 
-        TargetCamera.targetTexture = FinalTexture;
+        TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
     }
 
@@ -968,18 +970,235 @@ public class Milkdrop : MonoBehaviour
 
         TargetMeshRenderer.sharedMaterial = CurrentPreset.DarkenCenterMaterial;
 
-        if (ResetBG)
+        CurrentPreset.DarkenCenterMaterial.mainTexture = TempTexture;
+
+        TargetCamera.targetTexture = TempTexture;
+        TargetCamera.Render();
+    }
+
+    void DrawOuterBorder()
+    {
+        Vector4 outerColor = new Vector4
+        (
+            GetVariable(CurrentPreset.FrameVariables, "ob_r"),
+            GetVariable(CurrentPreset.FrameVariables, "ob_g"),
+            GetVariable(CurrentPreset.FrameVariables, "ob_b"),
+            GetVariable(CurrentPreset.FrameVariables, "ob_a")
+        );
+
+        float borderSize = GetVariable(CurrentPreset.FrameVariables, "ob_size");
+
+        DrawBorder(outerColor, borderSize, 0f);
+    }
+
+    void DrawInnerBorder()
+    {
+        Vector4 innerColor = new Vector4
+        (
+            GetVariable(CurrentPreset.FrameVariables, "ib_r"),
+            GetVariable(CurrentPreset.FrameVariables, "ib_g"),
+            GetVariable(CurrentPreset.FrameVariables, "ib_b"),
+            GetVariable(CurrentPreset.FrameVariables, "ib_a")
+        );
+
+        float borderSize = GetVariable(CurrentPreset.FrameVariables, "ib_size");
+        float prevBorderSize = GetVariable(CurrentPreset.FrameVariables, "ob_size");
+
+        DrawBorder(innerColor, borderSize, prevBorderSize);
+    }
+
+    void DrawBorder(Vector4 borderColor, float borderSize, float prevBorderSize)
+    {
+        if (borderSize == 0f || borderColor.w == 0f)
         {
-            ResetBG = false;
-            CurrentPreset.DarkenCenterMaterial.mainTexture = TestBackground;
-        }
-        else
-        {
-            CurrentPreset.DarkenCenterMaterial.mainTexture = FinalTexture;
+            return;
         }
 
-        TargetCamera.targetTexture = FinalTexture;
+        BorderSideLeft.gameObject.SetActive(true);
+        BorderSideRight.gameObject.SetActive(true);
+        BorderSideTop.gameObject.SetActive(true);
+        BorderSideBottom.gameObject.SetActive(true);
+
+        BorderSideLeft.localPosition = new Vector3(-1f + prevBorderSize + borderSize * 0.5f, 0f, 0f);
+        BorderSideRight.localPosition = new Vector3(1f - prevBorderSize - borderSize * 0.5f, 0f, 0f);
+        BorderSideTop.localPosition = new Vector3(0f, 1f - prevBorderSize - borderSize * 0.5f, 0f);
+        BorderSideBottom.localPosition = new Vector3(0f, -1f + prevBorderSize + borderSize * 0.5f, 0f);
+
+        BorderSideLeft.localScale = new Vector3(borderSize, 1f, 2f - (prevBorderSize + borderSize) * 2f) * 0.1f;
+        BorderSideRight.localScale = new Vector3(borderSize, 1f, 2f - (prevBorderSize + borderSize) * 2f) * 0.1f;
+        BorderSideTop.localScale = new Vector3(2f - prevBorderSize * 2f, 1f, borderSize) * 0.1f;
+        BorderSideBottom.localScale = new Vector3(2f - prevBorderSize * 2f, 1f, borderSize) * 0.1f;
+
+        BorderMaterial.SetVector("borderColor", borderColor);
+
+        TargetMeshFilter.sharedMesh = TargetMeshWarp;
+        TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+        DoNothingMaterial.mainTexture = TempTexture;
+
+        TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
+
+        BorderSideLeft.gameObject.SetActive(false);
+        BorderSideRight.gameObject.SetActive(false);
+        BorderSideTop.gameObject.SetActive(false);
+        BorderSideBottom.gameObject.SetActive(false);
+    }
+
+    Vector2 GetMotionDir(float fx, float fy)
+    {
+        int y0 = Mathf.FloorToInt(fy * MeshSize.y);
+        float dy = fy * MeshSize.y - y0;
+
+        int x0 = Mathf.FloorToInt(fx * MeshSize.x);
+        float dx = fx * MeshSize.x - x0;
+
+        int x1 = x0 + 1;
+        int y1 = y0 + 1;
+
+        int gridX1 = MeshSize.x + 1;
+
+        float fx2;
+        float fy2;
+        fx2 = WarpUVs[y0 * gridX1 + x0].x * (1 - dx) * (1 - dy);
+        fy2 = WarpUVs[y0 * gridX1 + x0].y * (1 - dx) * (1 - dy);
+        fx2 += WarpUVs[y0 * gridX1 + x1].x * dx * (1 - dy);
+        fy2 += WarpUVs[y0 * gridX1 + x1].y * dx * (1 - dy);
+        fx2 += WarpUVs[y1 * gridX1 + x0].x * (1 - dx) * dy;
+        fy2 += WarpUVs[y1 * gridX1 + x0].y * (1 - dx) * dy;
+        fx2 += WarpUVs[y1 * gridX1 + x1].x * dx * dy;
+        fy2 += WarpUVs[y1 * gridX1 + x1].y * dx * dy;
+
+        return new Vector2(fx2, fy2);
+    }
+
+    void DrawMotionVectors()
+    {
+        float mvOn = GetVariable(CurrentPreset.FrameVariables, "bmotionvectorson");
+        float mvA = mvOn == 0f ? 0f : GetVariable(CurrentPreset.FrameVariables, "mv_a");
+
+        float mv_x = GetVariable(CurrentPreset.FrameVariables, "mv_x");
+        float mv_y = GetVariable(CurrentPreset.FrameVariables, "mv_y");
+
+        int nX = Mathf.FloorToInt(mv_x);
+        int nY = Mathf.FloorToInt(mv_y);
+
+        if (mvA <= 0.001f || nX <= 0f || nY <= 0f)
+        {
+            return;
+        }
+
+        float dx = mv_x - nX;
+        float dy = mv_y - nY;
+
+        if (nX > MotionVectorsSize.x)
+        {
+            nX = MotionVectorsSize.x;
+            dx = 0f;
+        }
+
+        if (nY > MotionVectorsSize.y)
+        {
+            nY = MotionVectorsSize.y;
+            dy = 0f;
+        }
+
+        float dx2 = GetVariable(CurrentPreset.FrameVariables, "mv_dx");
+        float dy2 = GetVariable(CurrentPreset.FrameVariables, "mv_dy");
+
+        float lenMult = GetVariable(CurrentPreset.FrameVariables, "mv_l");
+
+        float minLen = 1f / Resolution.x;
+
+        int numVecVerts = 0;
+
+        for (int j = 0; j < nY; j++)
+        {
+            float fy = (j + 0.25f) / (nY + dy + 0.25f - 1.0f);
+            fy -= dy2;
+
+            if (fy > 0.0001f && fy < 0.9999f)
+            {
+                for (int i = 0; i < nX; i++)
+                {
+                    float fx = (i + 0.25f) / (nX + dx + 0.25f - 1.0f);
+                    fx += dx2;
+
+                    if (fx > 0.0001f && fx < 0.9999f)
+                    {
+                        Vector2 fx2arr = GetMotionDir(fx, fy);
+                        float fx2 = fx2arr.x;
+                        float fy2 = fx2arr.y;
+
+                        float dxi = fx2 - fx;
+                        float dyi = fy2 - fy;
+                        dxi *= lenMult;
+                        dyi *= lenMult;
+
+                        float fdist = Mathf.Sqrt(dxi * dxi + dyi * dyi);
+
+                        if (fdist < minLen && fdist > 0.00000001f)
+                        {
+                            fdist = minLen / fdist;
+                            dxi *= fdist;
+                            dyi *= fdist;
+                        } else
+                        {
+                            dxi = minLen;
+                            dxi = minLen;
+                        }
+
+                        fx2 = fx + dxi;
+                        fy2 = fy + dyi;
+
+                        float vx1 = 2.0f * fx - 1.0f;
+                        float vy1 = 2.0f * fy - 1.0f;
+                        float vx2 = 2.0f * fx2 - 1.0f;
+                        float vy2 = 2.0f * fy2 - 1.0f;
+
+                        MotionVectorsPositions[numVecVerts] = new Vector3(vx1, vy1, 0f);
+                        MotionVectorsPositions[numVecVerts + 1] = new Vector3(vx2, vy2, 0f);
+
+                        numVecVerts += 2;
+                    }
+                }
+            }
+        }
+
+        if (numVecVerts == 0)
+        {
+            return;
+        }
+
+        Vector4 color = new Vector4
+        (
+            GetVariable(CurrentPreset.FrameVariables, "mv_r"),
+            GetVariable(CurrentPreset.FrameVariables, "mv_g"), 
+            GetVariable(CurrentPreset.FrameVariables, "mv_b"),
+            mvA
+        );
+
+        WaveformRenderer.enabled = true;
+        
+        WaveformRenderer.positionCount = numVecVerts;
+        WaveformRenderer.SetPositions(MotionVectorsPositions);
+        WaveformRenderer.widthMultiplier = 1f;
+
+        WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
+        WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
+        WaveformRenderer.sharedMaterial.SetFloat("additivewave", 0f);
+        WaveformRenderer.sharedMaterial.SetFloat("wave_dots", 0f);
+        WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
+
+        TargetMeshFilter.sharedMesh = TargetMeshWarp;
+        TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+        DoNothingMaterial.mainTexture = TempTexture;
+
+        TargetCamera.targetTexture = TempTexture;
+        TargetCamera.Render();
+
+        WaveformRenderer.enabled = false;
     }
 
     void DrawBasicWaveform()
@@ -1490,7 +1709,7 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        WaveformRenderer.sharedMaterial.mainTexture = FinalTexture;
+        WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
         WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
         WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentPreset.FrameVariables, "additivewave"));
         WaveformRenderer.sharedMaterial.SetFloat("wave_dots", GetVariable(CurrentPreset.FrameVariables, "wave_dots"));
@@ -1499,9 +1718,9 @@ public class Milkdrop : MonoBehaviour
         TargetMeshFilter.sharedMesh = TargetMeshWarp;
         TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
 
-        DoNothingMaterial.mainTexture = FinalTexture;
+        DoNothingMaterial.mainTexture = TempTexture;
 
-        TargetCamera.targetTexture = FinalTexture;
+        TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
 
         WaveformRenderer.enabled = false;
@@ -1589,15 +1808,7 @@ public class Milkdrop : MonoBehaviour
         TargetMeshFilter.sharedMesh = TargetMeshComp;
         TargetMeshComp.SetColors(CompColor);
 
-        if (ResetBG)
-        {
-            ResetBG = false;
-            CurrentPreset.CompMaterial.mainTexture = TestBackground;
-        }
-        else
-        {
-            CurrentPreset.CompMaterial.mainTexture = FinalTexture;
-        }
+        CurrentPreset.CompMaterial.mainTexture = TempTexture;
 
         /*CurrentPreset.CompMaterial.SetTexture("_MainTex2", FinalTexture);
         CurrentPreset.CompMaterial.SetTexture("_MainTex3", FinalTexture);
