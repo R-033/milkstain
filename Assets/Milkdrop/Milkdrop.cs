@@ -12,15 +12,38 @@ public class Milkdrop : MonoBehaviour
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
         public string InitEquation = "";
+        public Action<Dictionary<string, float>> InitEquationCompiled;
         public string FrameEquation = "";
+        public Action<Dictionary<string, float>> FrameEquationCompiled;
         public string PointEquation = "";
+        public Action<Dictionary<string, float>> PointEquationCompiled;
+        public Dictionary<string, float> Variables = new Dictionary<string, float>();
+        public Dictionary<string, float> InitVariables = new Dictionary<string, float>();
+        public Dictionary<string, float> FrameVariables = new Dictionary<string, float>();
+        public Dictionary<string, float> PointVariables = new Dictionary<string, float>();
+        public string[] UserKeys = new string[0];
+        public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
+        public Dictionary<string, float> Inits = new Dictionary<string, float>();
     }
 
     public class Shape
     {
         public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
         public string InitEquation = "";
+        public Action<Dictionary<string, float>> InitEquationCompiled;
         public string FrameEquation = "";
+        public Action<Dictionary<string, float>> FrameEquationCompiled;
+        public Dictionary<string, float> Variables = new Dictionary<string, float>();
+        public Dictionary<string, float> InitVariables = new Dictionary<string, float>();
+        public Dictionary<string, float> FrameVariables = new Dictionary<string, float>();
+        public string[] UserKeys = new string[0];
+        public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
+        public Dictionary<string, float> Inits = new Dictionary<string, float>();
+
+        public Vector3[] Positions;
+        public Color[] Colors;
+        public Vector2[] UVs;
+        public Vector3[] BorderPositions;
     }
 
     public class Preset
@@ -64,6 +87,7 @@ public class Milkdrop : MonoBehaviour
     public Vector2Int MeshSizeComp = new Vector2Int(32, 24);
     public Vector2Int MotionVectorsSize = new Vector2Int(64, 48);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
+    public int MaxShapeSides = 101;
     public int BasicWaveformNumAudioSamples = 512;
     public float MaxFPS = 30f;
 
@@ -176,6 +200,8 @@ public class Milkdrop : MonoBehaviour
 
     private float[] timeArrayL;
     private float[] timeArrayR;
+    private float[] freqArrayL;
+    private float[] freqArrayR;
 
     private Vector3[] BasicWaveFormPositions;
     private Vector3[] BasicWaveFormPositions2;
@@ -238,6 +264,9 @@ public class Milkdrop : MonoBehaviour
 
         timeArrayL = new float[BasicWaveformNumAudioSamples];
         timeArrayR = new float[BasicWaveformNumAudioSamples];
+
+        freqArrayL = new float[BasicWaveformNumAudioSamples];
+        freqArrayR = new float[BasicWaveformNumAudioSamples];
 
         TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
         FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
@@ -743,12 +772,184 @@ public class Milkdrop : MonoBehaviour
 
     void DrawShapes()
     {
+        if (CurrentPreset.Shapes.Count == 0)
+        {
+            return;
+        }
 
+        foreach (var CurrentShape in CurrentPreset.Shapes)
+        {
+            if (GetVariable(CurrentShape.BaseVariables, "enabled") == 0f)
+            {
+                continue;
+            }
+
+            CurrentShape.FrameVariables = new Dictionary<string, float>(CurrentShape.Variables);
+
+            foreach (var v in CurrentShape.Variables.Keys)
+            {
+                SetVariable(CurrentPreset.FrameVariables, v, CurrentShape.Variables[v]);
+            }
+
+            foreach (var v in CurrentShape.FrameMap.Keys)
+            {
+                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.FrameMap[v]);
+            }
+
+            if (string.IsNullOrEmpty(CurrentShape.FrameEquation))
+            {
+                foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
+                {
+                    SetVariable(CurrentShape.FrameVariables, v, CurrentPreset.AfterFrameVariables[v]);
+                }
+
+                foreach (var v in CurrentShape.Inits.Keys)
+                {
+                    SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits[v]);
+                }
+            }
+
+            SetVariable(CurrentShape.FrameVariables, "frame", FrameNum);
+            SetVariable(CurrentShape.FrameVariables, "time", CurrentTime);
+            SetVariable(CurrentShape.FrameVariables, "fps", FPS);
+            SetVariable(CurrentShape.FrameVariables, "bass", Bass);
+            SetVariable(CurrentShape.FrameVariables, "bass_att", BassAtt);
+            SetVariable(CurrentShape.FrameVariables, "mid", Mid);
+            SetVariable(CurrentShape.FrameVariables, "mid_att", MidAtt);
+            SetVariable(CurrentShape.FrameVariables, "treb", Treb);
+            SetVariable(CurrentShape.FrameVariables, "treb_att", TrebAtt);
+            SetVariable(CurrentShape.FrameVariables, "meshx", MeshSize.x);
+            SetVariable(CurrentShape.FrameVariables, "meshy", MeshSize.y);
+            SetVariable(CurrentShape.FrameVariables, "aspectx", 1f);
+            SetVariable(CurrentShape.FrameVariables, "aspecty", 1f);
+            SetVariable(CurrentShape.FrameVariables, "pixelsx", Resolution.x);
+            SetVariable(CurrentShape.FrameVariables, "pixelsy", Resolution.y);
+
+            int numInst = Mathf.FloorToInt(Mathf.Clamp(GetVariable(CurrentShape.BaseVariables, "num_inst"), 1f, 1024f));
+
+            float baseX = GetVariable(CurrentShape.BaseVariables, "x");
+            float baseY = GetVariable(CurrentShape.BaseVariables, "y");
+            float baseRad = GetVariable(CurrentShape.BaseVariables, "rad");
+            float baseAng = GetVariable(CurrentShape.BaseVariables, "ang");
+            float baseR = GetVariable(CurrentShape.BaseVariables, "r");
+            float baseG = GetVariable(CurrentShape.BaseVariables, "g");
+            float baseB = GetVariable(CurrentShape.BaseVariables, "b");
+            float baseA = GetVariable(CurrentShape.BaseVariables, "a");
+            float baseR2 = GetVariable(CurrentShape.BaseVariables, "r2");
+            float baseG2 = GetVariable(CurrentShape.BaseVariables, "g2");
+            float baseB2 = GetVariable(CurrentShape.BaseVariables, "b2");
+            float baseA2 = GetVariable(CurrentShape.BaseVariables, "a2");
+            float baseBorderR = GetVariable(CurrentShape.BaseVariables, "border_r");
+            float baseBorderG = GetVariable(CurrentShape.BaseVariables, "border_g");
+            float baseBorderB = GetVariable(CurrentShape.BaseVariables, "border_b");
+            float baseBorderA = GetVariable(CurrentShape.BaseVariables, "border_a");
+            float baseThickOutline = GetVariable(CurrentShape.BaseVariables, "thickouline");
+            float baseTextured = GetVariable(CurrentShape.BaseVariables, "textured");
+            float baseTexZoom = GetVariable(CurrentShape.BaseVariables, "tex_zoom");
+            float baseTexAng = GetVariable(CurrentShape.BaseVariables, "tex_ang");
+            float baseAdditive = GetVariable(CurrentShape.BaseVariables, "additive");
+
+            for (int j = 0; j < numInst; j++)
+            {
+                SetVariable(CurrentShape.FrameVariables, "instance", j);
+                SetVariable(CurrentShape.FrameVariables, "x", baseX);
+                SetVariable(CurrentShape.FrameVariables, "y", baseY);
+                SetVariable(CurrentShape.FrameVariables, "rad", baseRad);
+                SetVariable(CurrentShape.FrameVariables, "ang", baseAng);
+                SetVariable(CurrentShape.FrameVariables, "r", baseR);
+                SetVariable(CurrentShape.FrameVariables, "g", baseG);
+                SetVariable(CurrentShape.FrameVariables, "b", baseB);
+                SetVariable(CurrentShape.FrameVariables, "a", baseA);
+                SetVariable(CurrentShape.FrameVariables, "r2", baseR2);
+                SetVariable(CurrentShape.FrameVariables, "g2", baseG2);
+                SetVariable(CurrentShape.FrameVariables, "b2", baseB2);
+                SetVariable(CurrentShape.FrameVariables, "a2", baseA2);
+                SetVariable(CurrentShape.FrameVariables, "border_r", baseBorderR);
+                SetVariable(CurrentShape.FrameVariables, "border_g", baseBorderG);
+                SetVariable(CurrentShape.FrameVariables, "border_b", baseBorderB);
+                SetVariable(CurrentShape.FrameVariables, "border_a", baseBorderA);
+                SetVariable(CurrentShape.FrameVariables, "thickouline", baseThickOutline);
+                SetVariable(CurrentShape.FrameVariables, "textured", baseTextured);
+                SetVariable(CurrentShape.FrameVariables, "tex_zoom", baseTexZoom);
+                SetVariable(CurrentShape.FrameVariables, "tex_ang", baseTexAng);
+                SetVariable(CurrentShape.FrameVariables, "additive", baseAdditive);
+
+                if (string.IsNullOrEmpty(CurrentShape.FrameEquation))
+                {
+                    foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
+                    {
+                        SetVariable(CurrentShape.FrameVariables, v, CurrentPreset.AfterFrameVariables[v]);
+                    }
+
+                    foreach (var v in CurrentShape.Inits.Keys)
+                    {
+                        SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits[v]);
+                    }
+
+                    CurrentShape.FrameEquationCompiled(CurrentShape.FrameVariables);
+                }
+
+                //
+            }
+        }
     }
 
     void DrawWaves()
     {
+        if (CurrentPreset.Waves.Count == 0)
+        {
+            return;
+        }
 
+        foreach (var CurrentWave in CurrentPreset.Waves)
+        {
+            if (GetVariable(CurrentWave.BaseVariables, "enabled") == 0f)
+            {
+                continue;
+            }
+
+            CurrentWave.FrameVariables = new Dictionary<string, float>(CurrentWave.Variables);
+
+            foreach (var v in CurrentWave.Variables.Keys)
+            {
+                SetVariable(CurrentPreset.FrameVariables, v, CurrentWave.Variables[v]);
+            }
+
+            foreach (var v in CurrentWave.FrameMap.Keys)
+            {
+                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.FrameMap[v]);
+            }
+
+            foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
+            {
+                SetVariable(CurrentWave.FrameVariables, v, CurrentPreset.AfterFrameVariables[v]);
+            }
+
+            foreach (var v in CurrentWave.Inits.Keys)
+            {
+                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits[v]);
+            }
+
+            SetVariable(CurrentWave.FrameVariables, "frame", FrameNum);
+            SetVariable(CurrentWave.FrameVariables, "time", CurrentTime);
+            SetVariable(CurrentWave.FrameVariables, "fps", FPS);
+            SetVariable(CurrentWave.FrameVariables, "bass", Bass);
+            SetVariable(CurrentWave.FrameVariables, "bass_att", BassAtt);
+            SetVariable(CurrentWave.FrameVariables, "mid", Mid);
+            SetVariable(CurrentWave.FrameVariables, "mid_att", MidAtt);
+            SetVariable(CurrentWave.FrameVariables, "treb", Treb);
+            SetVariable(CurrentWave.FrameVariables, "treb_att", TrebAtt);
+            SetVariable(CurrentWave.FrameVariables, "meshx", MeshSize.x);
+            SetVariable(CurrentWave.FrameVariables, "meshy", MeshSize.y);
+            SetVariable(CurrentWave.FrameVariables, "aspectx", 1f);
+            SetVariable(CurrentWave.FrameVariables, "aspecty", 1f);
+            SetVariable(CurrentWave.FrameVariables, "pixelsx", Resolution.x);
+            SetVariable(CurrentWave.FrameVariables, "pixelsy", Resolution.y);
+
+            CurrentWave.FrameEquationCompiled(CurrentWave.FrameVariables);
+
+            // todo
+        }
     }
 
     void DrawWarp()
@@ -2278,13 +2479,13 @@ public class Milkdrop : MonoBehaviour
         return tokens;
     }
 
-    float GetVariable(Dictionary<string, float> Variables, string name)
+    float GetVariable(Dictionary<string, float> Variables, string name, float defaultValue = 0f)
     {
         if (Variables.TryGetValue(name, out float value))
         {
             return value;
         }
-        return 0f;
+        return defaultValue;
     }
 
     void SetVariable(Dictionary<string, float> Variables, string name, float value)
@@ -2373,21 +2574,97 @@ public class Milkdrop : MonoBehaviour
                 continue;
             }
 
-            if (arg.StartsWith("wave_"))
+            if (arg.StartsWith("wave_") && char.IsDigit(arg[5]))
             {
-                // todo
+                int num = int.Parse(arg.Split('_')[1]);
+
+                while (num >= preset.Waves.Count)
+                {
+                    preset.Waves.Add(new Wave());
+                }
+
+                string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
+
+                if (codeName.StartsWith("init"))
+                {
+                    preset.Waves[num].InitEquation += val;
+                }
+                else if (codeName.StartsWith("per_frame"))
+                {
+                    preset.Waves[num].FrameEquation += val;
+                }
+                else if (codeName.StartsWith("per_point"))
+                {
+                    preset.Waves[num].PointEquation += val;
+                }
+                else
+                {
+                    throw new Exception("Unknown wave code name " + codeName);
+                }
             }
             else if (arg.StartsWith("wavecode_"))
             {
-                // todo
+                int num = int.Parse(arg.Split('_')[1]);
+
+                while (num >= preset.Waves.Count)
+                {
+                    preset.Waves.Add(new Wave());
+                }
+
+                string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
+
+                if (VariableNameLookup.ContainsKey(varName))
+                {
+                    SetVariable(preset.Waves[num].BaseVariables, VariableNameLookup[varName], float.Parse(val));
+                }
+                else
+                {
+                    SetVariable(preset.Waves[num].BaseVariables, varName, float.Parse(val));
+                }
             }
-            else if (arg.StartsWith("shape_"))
+            else if (arg.StartsWith("shape_") && char.IsDigit(arg[6]))
             {
-                // todo
+                int num = int.Parse(arg.Split('_')[1]);
+
+                while (num >= preset.Shapes.Count)
+                {
+                    preset.Shapes.Add(new Shape());
+                }
+
+                string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
+
+                if (codeName.StartsWith("init"))
+                {
+                    preset.Shapes[num].InitEquation += val;
+                }
+                else if (codeName.StartsWith("per_frame"))
+                {
+                    preset.Shapes[num].FrameEquation += val;
+                }
+                else
+                {
+                    throw new Exception("Unknown shape code name " + codeName);
+                }
             }
             else if (arg.StartsWith("shapecode_"))
             {
-                // todo
+                int num = int.Parse(arg.Split('_')[1]);
+
+                while (num >= preset.Shapes.Count)
+                {
+                    preset.Shapes.Add(new Shape());
+                }
+
+                string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
+
+                if (VariableNameLookup.ContainsKey(varName))
+                {
+                    SetVariable(preset.Shapes[num].BaseVariables, VariableNameLookup[varName], float.Parse(val));
+                }
+                else
+                {
+                    SetVariable(preset.Shapes[num].BaseVariables, varName, float.Parse(val));
+                }
             }
             else if (arg.StartsWith("per_frame_"))
             {
@@ -2425,6 +2702,19 @@ public class Milkdrop : MonoBehaviour
         preset.InitEquationCompiled = CompileEquation(preset.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
         preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
         preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+
+        foreach (var wave in preset.Waves)
+        {
+            wave.InitEquationCompiled = CompileEquation(wave.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            wave.FrameEquationCompiled = CompileEquation(wave.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            wave.PointEquationCompiled = CompileEquation(wave.PointEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        }
+
+        foreach (var shape in preset.Shapes)
+        {
+            shape.InitEquationCompiled = CompileEquation(shape.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            shape.FrameEquationCompiled = CompileEquation(shape.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        }
 
         LoadedPresets.Add(Path.GetFileNameWithoutExtension(file), preset);
     }
@@ -2908,12 +3198,10 @@ public class Milkdrop : MonoBehaviour
         SetVariable(CurrentPreset.Variables, "aspecty", 1f);
         SetVariable(CurrentPreset.Variables, "pixelsx", Resolution.x);
         SetVariable(CurrentPreset.Variables, "pixelsy", Resolution.y);
-
         SetVariable(CurrentPreset.Variables, "rand_start.x", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_start.y", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_start.z", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_start.w", UnityEngine.Random.Range(0f, 1f));
-
         SetVariable(CurrentPreset.Variables, "rand_preset.x", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_preset.y", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_preset.z", UnityEngine.Random.Range(0f, 1f));
@@ -2949,9 +3237,144 @@ public class Milkdrop : MonoBehaviour
         CurrentPreset.AfterFrameVariables = Pick(CurrentPreset.FrameVariables, qs);
         CurrentPreset.RegVariables = Pick(CurrentPreset.FrameVariables, regs);
 
-        // todo setup waves
+        if (CurrentPreset.Waves.Count > 0)
+        {
+            foreach (var CurrentWave in CurrentPreset.Waves)
+            {
+                if (GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
+                {
+                    CurrentWave.Variables = new Dictionary<string, float>();
 
-        // todo setup shapes
+                    foreach (var v in CurrentWave.BaseVariables.Keys)
+                    {
+                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables[v]);
+                    }
+
+                    SetVariable(CurrentWave.Variables, "frame", FrameNum);
+                    SetVariable(CurrentWave.Variables, "time", CurrentTime);
+                    SetVariable(CurrentWave.Variables, "fps", FPS);
+                    SetVariable(CurrentWave.Variables, "bass", Bass);
+                    SetVariable(CurrentWave.Variables, "bass_att", BassAtt);
+                    SetVariable(CurrentWave.Variables, "mid", Mid);
+                    SetVariable(CurrentWave.Variables, "mid_att", MidAtt);
+                    SetVariable(CurrentWave.Variables, "treb", Treb);
+                    SetVariable(CurrentWave.Variables, "treb_att", TrebAtt);
+                    SetVariable(CurrentWave.Variables, "meshx", MeshSize.x);
+                    SetVariable(CurrentWave.Variables, "meshy", MeshSize.y);
+                    SetVariable(CurrentWave.Variables, "aspectx", 1f);
+                    SetVariable(CurrentWave.Variables, "aspecty", 1f);
+                    SetVariable(CurrentWave.Variables, "pixelsx", Resolution.x);
+                    SetVariable(CurrentWave.Variables, "pixelsy", Resolution.y);
+                    SetVariable(CurrentWave.Variables, "rand_start.x", GetVariable(CurrentWave.BaseVariables, "rand_start.x"));
+                    SetVariable(CurrentWave.Variables, "rand_start.y", GetVariable(CurrentWave.BaseVariables, "rand_start.y"));
+                    SetVariable(CurrentWave.Variables, "rand_start.z", GetVariable(CurrentWave.BaseVariables, "rand_start.z"));
+                    SetVariable(CurrentWave.Variables, "rand_start.w", GetVariable(CurrentWave.BaseVariables, "rand_start.w"));
+                    SetVariable(CurrentWave.Variables, "rand_preset.x", GetVariable(CurrentWave.BaseVariables, "rand_preset.x"));
+                    SetVariable(CurrentWave.Variables, "rand_preset.y", GetVariable(CurrentWave.BaseVariables, "rand_preset.y"));
+                    SetVariable(CurrentWave.Variables, "rand_preset.z", GetVariable(CurrentWave.BaseVariables, "rand_preset.z"));
+                    SetVariable(CurrentWave.Variables, "rand_preset.w", GetVariable(CurrentWave.BaseVariables, "rand_preset.w"));
+
+                    List<string> nonUserWaveKeys = CurrentWave.Variables.Keys.ToList();
+                    nonUserWaveKeys.AddRange(regs);
+                    nonUserWaveKeys.AddRange(ts);
+
+                    foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
+                    {
+                        SetVariable(CurrentWave.Variables, v, CurrentPreset.AfterFrameVariables[v]);
+                    }
+
+                    foreach (var v in CurrentPreset.RegVariables.Keys)
+                    {
+                        SetVariable(CurrentWave.Variables, v, CurrentPreset.RegVariables[v]);
+                    }
+
+                    CurrentWave.InitEquationCompiled(CurrentWave.Variables);
+                    
+                    CurrentPreset.RegVariables = Pick(CurrentWave.Variables, regs);
+
+                    foreach (var v in CurrentWave.BaseVariables.Keys)
+                    {
+                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables[v]);
+                    }
+
+                    CurrentWave.Inits = Pick(CurrentWave.Variables, ts);
+                    CurrentWave.UserKeys = Omit(CurrentWave.Variables, nonUserWaveKeys.ToArray()).Keys.ToArray();
+                    CurrentWave.FrameMap = Pick(CurrentWave.Variables, CurrentWave.UserKeys);
+                }
+            }
+        }
+
+        if (CurrentPreset.Shapes.Count > 0)
+        {
+            foreach (var CurrentShape in CurrentPreset.Shapes)
+            {
+                CurrentShape.Positions = new Vector3[MaxShapeSides + 2];
+                CurrentShape.Colors = new Color[MaxShapeSides + 2];
+                CurrentShape.UVs = new Vector2[MaxShapeSides + 2];
+                CurrentShape.BorderPositions = new Vector3[MaxShapeSides + 1];
+
+                if (GetVariable(CurrentShape.BaseVariables, "enabled") != 0f)
+                {
+                    CurrentShape.Variables = new Dictionary<string, float>();
+
+                    foreach (var v in CurrentShape.BaseVariables.Keys)
+                    {
+                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables[v]);
+                    }
+
+                    SetVariable(CurrentShape.Variables, "frame", FrameNum);
+                    SetVariable(CurrentShape.Variables, "time", CurrentTime);
+                    SetVariable(CurrentShape.Variables, "fps", FPS);
+                    SetVariable(CurrentShape.Variables, "bass", Bass);
+                    SetVariable(CurrentShape.Variables, "bass_att", BassAtt);
+                    SetVariable(CurrentShape.Variables, "mid", Mid);
+                    SetVariable(CurrentShape.Variables, "mid_att", MidAtt);
+                    SetVariable(CurrentShape.Variables, "treb", Treb);
+                    SetVariable(CurrentShape.Variables, "treb_att", TrebAtt);
+                    SetVariable(CurrentShape.Variables, "meshx", MeshSize.x);
+                    SetVariable(CurrentShape.Variables, "meshy", MeshSize.y);
+                    SetVariable(CurrentShape.Variables, "aspectx", 1f);
+                    SetVariable(CurrentShape.Variables, "aspecty", 1f);
+                    SetVariable(CurrentShape.Variables, "pixelsx", Resolution.x);
+                    SetVariable(CurrentShape.Variables, "pixelsy", Resolution.y);
+                    SetVariable(CurrentShape.Variables, "rand_start.x", GetVariable(CurrentShape.BaseVariables, "rand_start.x"));
+                    SetVariable(CurrentShape.Variables, "rand_start.y", GetVariable(CurrentShape.BaseVariables, "rand_start.y"));
+                    SetVariable(CurrentShape.Variables, "rand_start.z", GetVariable(CurrentShape.BaseVariables, "rand_start.z"));
+                    SetVariable(CurrentShape.Variables, "rand_start.w", GetVariable(CurrentShape.BaseVariables, "rand_start.w"));
+                    SetVariable(CurrentShape.Variables, "rand_preset.x", GetVariable(CurrentShape.BaseVariables, "rand_preset.x"));
+                    SetVariable(CurrentShape.Variables, "rand_preset.y", GetVariable(CurrentShape.BaseVariables, "rand_preset.y"));
+                    SetVariable(CurrentShape.Variables, "rand_preset.z", GetVariable(CurrentShape.BaseVariables, "rand_preset.z"));
+                    SetVariable(CurrentShape.Variables, "rand_preset.w", GetVariable(CurrentShape.BaseVariables, "rand_preset.w"));
+
+                    List<string> nonUserShapeKeys = CurrentShape.Variables.Keys.ToList();
+                    nonUserShapeKeys.AddRange(regs);
+                    nonUserShapeKeys.AddRange(ts);
+
+                    foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
+                    {
+                        SetVariable(CurrentShape.Variables, v, CurrentPreset.AfterFrameVariables[v]);
+                    }
+
+                    foreach (var v in CurrentPreset.RegVariables.Keys)
+                    {
+                        SetVariable(CurrentShape.Variables, v, CurrentPreset.RegVariables[v]);
+                    }
+
+                    CurrentShape.InitEquationCompiled(CurrentShape.Variables);
+
+                    CurrentPreset.RegVariables = Pick(CurrentShape.Variables, regs);
+
+                    foreach (var v in CurrentShape.BaseVariables.Keys)
+                    {
+                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables[v]);
+                    }
+
+                    CurrentShape.Inits = Pick(CurrentShape.Variables, ts);
+                    CurrentShape.UserKeys = Omit(CurrentShape.Variables, nonUserShapeKeys.ToArray()).Keys.ToArray();
+                    CurrentShape.FrameMap = Pick(CurrentShape.Variables, CurrentShape.UserKeys);
+                }
+            }
+        }
 
         if (string.IsNullOrEmpty(CurrentPreset.Warp))
         {
