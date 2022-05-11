@@ -1,0 +1,18 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class Example : MonoBehaviour
+{
+    public Milkdrop milkdrop;
+    public RawImage TargetGraphic;
+    public AudioSource TargetAudio;
+
+    void Start()
+    {
+        milkdrop.TargetAudio = TargetAudio;
+        milkdrop.Initialize();
+        TargetGraphic.texture = milkdrop.FinalTexture;
+    }
+}
