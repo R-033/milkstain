@@ -5,7 +5,6 @@ Shader "Milkdrop/WaveformShader"
         _MainTex ("sampler_main", 2D) = "white" {}
         waveColor ("waveColor", Vector) = (1,1,1,1)
         additivewave ("additivewave", Float) = 0
-        wave_dots ("wave_dots", Float) = 0
         aspect_ratio ("aspect_ratio", Float) = 1
     }
     SubShader
@@ -40,33 +39,25 @@ Shader "Milkdrop/WaveformShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = float2(v.vertex.x / aspect_ratio, v.vertex.y) * float2(0.5, 0.5) + float2(0.5, 0.5);
-                o.uv_orig = v.uv;
+                o.uv_orig = float2(v.uv.x * 14, v.uv.y);
                 return o;
             }
 
             sampler2D _MainTex; // sampler_main
             float additivewave;
             float4 waveColor;
-            float wave_dots;
 
             float4 frag (v2f i) : SV_Target
             {
                 float2 uv = i.uv;
                 float2 uv_orig = i.uv_orig;
 
-                float4 colorW = waveColor.w;
-
-                if (wave_dots != 0)
-                {
-                    colorW *= round((uv_orig.x * 100) % 1);
-                }
-
                 if (additivewave != 0)
                 {
-                    return float4(tex2D(_MainTex, uv).xyz + waveColor.xyz * colorW, 1.0);
+                    return float4(tex2D(_MainTex, uv).xyz + waveColor.xyz * waveColor.w, 1.0);
                 }
                 
-                return float4(lerp(tex2D(_MainTex, uv).xyz, waveColor.xyz, colorW), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv).xyz, waveColor.xyz, waveColor.w), 1.0);
             }
             ENDCG
         }

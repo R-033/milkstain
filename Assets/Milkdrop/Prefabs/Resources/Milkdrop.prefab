@@ -116,7 +116,7 @@ Transform:
   - {fileID: 1654534779142031204}
   - {fileID: 1654534779088331542}
   m_Father: {fileID: 1654534779277176288}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1654534779142031207
 GameObject:
@@ -233,6 +233,7 @@ Transform:
   - {fileID: 1654534779939724699}
   - {fileID: 1654534780226051474}
   - {fileID: 1654534780497434665}
+  - {fileID: 7286231199207542358}
   - {fileID: 1654534779114536300}
   - {fileID: 1654534780806502030}
   m_Father: {fileID: 0}
@@ -927,6 +928,9 @@ MonoBehaviour:
   RandomOrder: 1
   FinalTexture: {fileID: 0}
   FPS: 0
+  PresetName: 
+  DotParent: {fileID: 7286231199207542358}
+  DotPrefab: {fileID: 966847834411240390, guid: e02abe68be02d459e8a98529b2568790, type: 3}
 --- !u!1 &1654534779293009036
 GameObject:
   m_ObjectHideFlags: 0
@@ -1299,10 +1303,10 @@ LineRenderer:
       m_Mode: 0
       m_NumColorKeys: 3
       m_NumAlphaKeys: 2
-    numCornerVertices: 3
+    numCornerVertices: 2
     numCapVertices: 3
     alignment: 0
-    textureMode: 0
+    textureMode: 1
     shadowBias: 0.5
     generateLightingData: 0
   m_UseWorldSpace: 0
@@ -1430,10 +1434,10 @@ LineRenderer:
       m_Mode: 0
       m_NumColorKeys: 3
       m_NumAlphaKeys: 2
-    numCornerVertices: 3
+    numCornerVertices: 2
     numCapVertices: 3
     alignment: 0
-    textureMode: 0
+    textureMode: 1
     shadowBias: 0.5
     generateLightingData: 0
   m_UseWorldSpace: 0
@@ -1468,7 +1472,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1654534779277176288}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &1654534780806502025
 Camera:
@@ -1513,3 +1517,34 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!1 &6037653285560393901
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7286231199207542358}
+  m_Layer: 31
+  m_Name: Dots
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &7286231199207542358
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6037653285560393901}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1654534779277176288}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
