@@ -228,6 +228,7 @@ public class Milkdrop : MonoBehaviour
     public GameObject DotPrefab;
 
     private Transform[] Dots;
+    private SpriteRenderer[] DotRenderers;
 
     private float[] Stack = new float[2048];
 
@@ -288,10 +289,12 @@ public class Milkdrop : MonoBehaviour
         MotionVectorsPositions = new Vector3[MotionVectorsSize.x * MotionVectorsSize.y * 2];
 
         Dots = new Transform[BasicWaveformNumAudioSamples * 4];
+        DotRenderers = new SpriteRenderer[BasicWaveformNumAudioSamples * 4];
 
         for (int i = 0; i < Dots.Length; i++)
         {
             Dots[i] = Instantiate(DotPrefab, DotParent).transform;
+            DotRenderers[i] = Dots[i].GetComponent<SpriteRenderer>();
         }
 
         timeArrayL = new float[BasicWaveformNumAudioSamples];
@@ -467,12 +470,6 @@ public class Milkdrop : MonoBehaviour
         if (presetChangeTimer >= ChangePresetIn)
         {
             presetChangeTimer -= ChangePresetIn;
-            PlayRandomPreset();
-        }
-
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            presetChangeTimer = 0f;
             PlayRandomPreset();
         }
         
@@ -1341,8 +1338,6 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
-        Debug.Log("motion vectors processing");
-
         float dx = mv_x - nX;
         float dy = mv_y - nY;
 
@@ -1424,8 +1419,6 @@ public class Milkdrop : MonoBehaviour
         {
             return;
         }
-
-        Debug.Log("motion vectors " + numVecVerts);
 
         Vector4 color = new Vector4
         (
@@ -1956,6 +1949,7 @@ public class Milkdrop : MonoBehaviour
                 if (i < smoothedNumVert)
                 {
                     Dots[i].localPosition = new Vector3(BasicWaveFormPositionsSmooth[i].x * aspect_ratio, BasicWaveFormPositionsSmooth[i].y, 0f);
+                    DotRenderers[i].color = color;
                 }
                 else
                 {
@@ -1973,6 +1967,7 @@ public class Milkdrop : MonoBehaviour
                 if (i < smoothedNumVert)
                 {
                     Dots[BasicWaveformNumAudioSamples + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
+                    DotRenderers[BasicWaveformNumAudioSamples + i].color = color;
                 }
                 else
                 {
@@ -3239,7 +3234,6 @@ public class Milkdrop : MonoBehaviour
                     {
                         Stack[funcIndex] = (int)prevValue(Variables) % (int)divider;
                     }
-
                 });
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
@@ -3451,8 +3445,6 @@ public class Milkdrop : MonoBehaviour
 
         if (CurrentPreset.Waves.Count > 0)
         {
-            Debug.Log("Using waves!");
-
             foreach (var CurrentWave in CurrentPreset.Waves)
             {
                 if (GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
@@ -3520,8 +3512,6 @@ public class Milkdrop : MonoBehaviour
 
         if (CurrentPreset.Shapes.Count > 0)
         {
-            Debug.Log("Using shapes!");
-
             foreach (var CurrentShape in CurrentPreset.Shapes)
             {
                 CurrentShape.Positions = new Vector3[MaxShapeSides + 2];
