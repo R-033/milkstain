@@ -84,5 +84,5 @@ Material:
     m_Colors:
     - _Color: {r: 0, g: 0, b: 0, a: 0.49601674}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - waveColor: {r: 0.65015185, g: 0.8170494, b: 1, a: 0.0003323435}
+    - waveColor: {r: 0.97640777, g: 0.584563, b: 0.010478377, a: 0.00077578495}
   m_BuildTextureStacks: []
