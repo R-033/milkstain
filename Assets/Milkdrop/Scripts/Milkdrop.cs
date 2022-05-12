@@ -3229,7 +3229,17 @@ public class Milkdrop : MonoBehaviour
 
                 innerActions.Add((Dictionary<string, float> Variables) =>
                 {
-                    Stack[funcIndex] = (int)prevValue(Variables) % (int)nextValue(Variables);
+                    float divider = nextValue(Variables);
+
+                    if (divider == 0f)
+                    {
+                        Stack[funcIndex] = 0f;
+                    }
+                    else
+                    {
+                        Stack[funcIndex] = (int)prevValue(Variables) % (int)divider;
+                    }
+
                 });
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
