@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1654534779088331542}
   - component: {fileID: 1654534779088331540}
   - component: {fileID: 1654534779088331543}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Bottom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -92,7 +92,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1654534779114536300}
-  m_Layer: 0
+  m_Layer: 31
   m_Name: Borders
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -129,7 +129,7 @@ GameObject:
   - component: {fileID: 1654534779142031204}
   - component: {fileID: 1654534779142031258}
   - component: {fileID: 1654534779142031205}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Top
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -211,7 +211,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1654534779277176288}
   - component: {fileID: 1654534779277176289}
-  m_Layer: 0
+  m_Layer: 31
   m_Name: Milkdrop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -924,6 +924,7 @@ MonoBehaviour:
   BorderSideTop: {fileID: 1654534779142031204}
   BorderSideBottom: {fileID: 1654534779088331542}
   BorderParent: {fileID: 1654534779114536300}
+  RandomOrder: 1
   FinalTexture: {fileID: 0}
   FPS: 0
 --- !u!1 &1654534779293009036
@@ -937,7 +938,7 @@ GameObject:
   - component: {fileID: 1654534779293009037}
   - component: {fileID: 1654534779293009027}
   - component: {fileID: 1654534779293009026}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1020,7 +1021,7 @@ GameObject:
   - component: {fileID: 1654534779783331365}
   - component: {fileID: 1654534779783331419}
   - component: {fileID: 1654534779783331418}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1103,7 +1104,7 @@ GameObject:
   - component: {fileID: 1654534779939724699}
   - component: {fileID: 1654534779939724698}
   - component: {fileID: 1654534779939724645}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1185,7 +1186,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1654534780226051474}
   - component: {fileID: 1654534780226051475}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Waveform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1316,7 +1317,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1654534780497434665}
   - component: {fileID: 1654534780497434664}
-  m_Layer: 6
+  m_Layer: 31
   m_Name: Waveform2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1447,7 +1448,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1654534780806502030}
   - component: {fileID: 1654534780806502025}
-  m_Layer: 0
+  m_Layer: 31
   m_Name: MilkdropCamera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1500,7 +1501,7 @@ Camera:
   m_Depth: -100
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 2147483648
   m_RenderingPath: 1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0

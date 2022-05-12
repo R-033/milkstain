@@ -12,6 +12,7 @@ public class Example : MonoBehaviour
     void Start()
     {
         milkdrop.TargetAudio = TargetAudio;
+        milkdrop.Resolution = new Vector2Int(Screen.width, Screen.height);
         milkdrop.Initialize();
         TargetGraphic.texture = milkdrop.FinalTexture;
     }

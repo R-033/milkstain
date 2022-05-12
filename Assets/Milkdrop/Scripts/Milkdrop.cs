@@ -125,6 +125,8 @@ public class Milkdrop : MonoBehaviour
     public Transform BorderSideBottom;
     public Transform BorderParent;
 
+    public bool RandomOrder = true;
+
     private ulong FrameNum = 0;
     private float CurrentTime = 0f;
 
@@ -412,17 +414,24 @@ public class Milkdrop : MonoBehaviour
         initialized = true;
     }
 
-    //int index = 0;
+    int index = 0;
 
     public void PlayRandomPreset()
     {
         var keys = LoadedPresets.Keys.ToArray();
-        int ind = UnityEngine.Random.Range(0, keys.Length);
-        /*int ind = index++;
-        if (index >= keys.Length)
+        int ind;
+        if (RandomOrder)
         {
-            index = 0;
-        }*/
+            ind = UnityEngine.Random.Range(0, keys.Length);
+        }
+        else
+        {
+            ind = index++;
+            if (index >= keys.Length)
+            {
+                index = 0;
+            }
+        }
         PlayPreset(keys[ind]);
     }
 
@@ -1397,7 +1406,7 @@ public class Milkdrop : MonoBehaviour
         
         WaveformRenderer.positionCount = numVecVerts;
         WaveformRenderer.SetPositions(MotionVectorsPositions);
-        WaveformRenderer.widthMultiplier = 1f;
+        WaveformRenderer.widthMultiplier = 0.5f;
 
         WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
         WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
@@ -1904,7 +1913,7 @@ public class Milkdrop : MonoBehaviour
         }
         else
         {
-            WaveformRenderer.widthMultiplier = 1f;
+            WaveformRenderer.widthMultiplier = 0.5f;
         }
 
         if (newWaveMode == 7 || oldWaveMode == 7)
@@ -1920,7 +1929,7 @@ public class Milkdrop : MonoBehaviour
             }
             else
             {
-                WaveformRenderer2.widthMultiplier = 1f;
+                WaveformRenderer2.widthMultiplier = 0.5f;
             }
         }
 
@@ -2273,7 +2282,7 @@ public class Milkdrop : MonoBehaviour
     {
         float result = Mathf.Pow(x, y);
 
-        if (float.IsFinite(result) && !float.IsNaN(result))
+        if (!float.IsInfinity(result) && !float.IsNaN(result))
         {
             return result;
         }
@@ -2715,21 +2724,21 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        preset.InitEquationCompiled = CompileEquation(preset.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
-        preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
-        preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        preset.InitEquationCompiled = CompileEquation(preset.InitEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        preset.FrameEquationCompiled = CompileEquation(preset.FrameEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+        preset.PixelEquationCompiled = CompileEquation(preset.PixelEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
 
         foreach (var wave in preset.Waves)
         {
-            wave.InitEquationCompiled = CompileEquation(wave.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
-            wave.FrameEquationCompiled = CompileEquation(wave.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
-            wave.PointEquationCompiled = CompileEquation(wave.PointEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            wave.InitEquationCompiled = CompileEquation(wave.InitEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            wave.FrameEquationCompiled = CompileEquation(wave.FrameEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            wave.PointEquationCompiled = CompileEquation(wave.PointEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
         }
 
         foreach (var shape in preset.Shapes)
         {
-            shape.InitEquationCompiled = CompileEquation(shape.InitEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
-            shape.FrameEquationCompiled = CompileEquation(shape.FrameEquation.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            shape.InitEquationCompiled = CompileEquation(shape.InitEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
+            shape.FrameEquationCompiled = CompileEquation(shape.FrameEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
         }
 
         LoadedPresets.Add(fileName, preset);
@@ -3188,7 +3197,7 @@ public class Milkdrop : MonoBehaviour
 
     public void PlayPreset(string preset)
     {
-        Debug.Log("Playing " + preset);
+        //Debug.Log("Playing " + preset);
 
         CurrentPreset = LoadedPresets[preset];
 
