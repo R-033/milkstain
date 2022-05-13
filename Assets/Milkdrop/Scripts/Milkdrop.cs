@@ -220,8 +220,14 @@ public class Milkdrop : MonoBehaviour
     public Transform DotParent;
     public GameObject DotPrefab;
 
+    public Transform MotionVectorParent;
+    public GameObject MotionVectorPrefab;
+
     private Transform[] Dots;
     private SpriteRenderer[] DotRenderers;
+
+    private Transform[] MotionVectors;
+    private SpriteRenderer[] MotionVectorRenderers;
 
     private float[] Stack = new float[2048];
 
@@ -291,6 +297,15 @@ public class Milkdrop : MonoBehaviour
         {
             Dots[i] = Instantiate(DotPrefab, DotParent).transform;
             DotRenderers[i] = Dots[i].GetComponent<SpriteRenderer>();
+        }
+
+        MotionVectors = new Transform[MotionVectorsSize.x * MotionVectorsSize.y];
+        MotionVectorRenderers = new SpriteRenderer[MotionVectorsSize.x * MotionVectorsSize.y];
+
+        for (int i = 0; i < MotionVectors.Length; i++)
+        {
+            MotionVectors[i] = Instantiate(MotionVectorPrefab, MotionVectorParent).transform;
+            MotionVectorRenderers[i] = MotionVectors[i].GetComponent<SpriteRenderer>();
         }
 
         samplesL = new float[BasicWaveformNumAudioSamples];
@@ -435,6 +450,11 @@ public class Milkdrop : MonoBehaviour
 
         audioSampleStarts = new int[] { bassLow, bassHigh, midHigh };
         audioSampleStops = new int[] { bassHigh, midHigh, trebHigh };
+
+        if (!string.IsNullOrEmpty(PresetName))
+        {
+            index = Array.IndexOf(LoadedPresets.Keys.ToArray(), PresetName);
+        }
 
         PlayRandomPreset();
 
@@ -1361,7 +1381,7 @@ public class Milkdrop : MonoBehaviour
         fx2 += WarpUVs[y1 * gridX1 + x1].x * dx * dy;
         fy2 += WarpUVs[y1 * gridX1 + x1].y * dx * dy;
 
-        return new Vector2(fx2, fy2);
+        return new Vector2(fx2, 1f - fy2);
     }
 
     void DrawMotionVectors()
@@ -1462,7 +1482,7 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
-        Vector4 color = new Vector4
+        Color color = new Color
         (
             GetVariable(CurrentPreset.FrameVariables, "mv_r"),
             GetVariable(CurrentPreset.FrameVariables, "mv_g"), 
@@ -1470,16 +1490,31 @@ public class Milkdrop : MonoBehaviour
             mvA
         );
 
-        WaveformRenderer.enabled = true;
-        
-        WaveformRenderer.positionCount = numVecVerts;
-        WaveformRenderer.SetPositions(MotionVectorsPositions);
-        WaveformRenderer.widthMultiplier = 0.5f;
+        MotionVectorParent.gameObject.SetActive(true);
 
-        WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
-        WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
-        WaveformRenderer.sharedMaterial.SetFloat("additivewave", 0f);
-        WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
+        float aspect_ratio = Resolution.x / (float)Resolution.y;
+
+        Vector3 outOfBounds = new Vector3(0f, 0f, -10f);
+        int half = numVecVerts / 2;
+
+        for (int i = 0; i < MotionVectors.Length; i++)
+        {
+            if (i < half)
+            {
+                Vector3 pos1 = new Vector3(MotionVectorsPositions[i * 2].x * aspect_ratio, MotionVectorsPositions[i * 2].y, 0f);
+                Vector3 pos2 = new Vector3(MotionVectorsPositions[i * 2 + 1].x * aspect_ratio, MotionVectorsPositions[i * 2 + 1].y, 0f);
+                Vector3 dir = pos2 - pos1;
+                float distance = dir.magnitude;
+                MotionVectors[i].localPosition = Vector3.Lerp(pos1, pos2, 0.5f);
+                MotionVectors[i].localScale = new Vector3(distance, 0.0017f, 0.0017f);
+                MotionVectors[i].right = dir.normalized;
+                MotionVectorRenderers[i].color = color;
+            }
+            else
+            {
+                MotionVectors[i].localPosition = outOfBounds;
+            }
+        }
 
         TargetMeshFilter.sharedMesh = TargetMeshWarp;
         TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
@@ -1489,7 +1524,7 @@ public class Milkdrop : MonoBehaviour
         TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
 
-        WaveformRenderer.enabled = false;
+        MotionVectorParent.gameObject.SetActive(false);
     }
 
     void DrawBasicWaveform()
