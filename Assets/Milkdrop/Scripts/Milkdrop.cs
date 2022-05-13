@@ -94,12 +94,12 @@ public class Milkdrop : MonoBehaviour
 
     private float presetChangeTimer = 0f;
 
-    private float Bass;
-    private float BassAtt;
-    private float Mid;
-    private float MidAtt;
-    private float Treb;
-    private float TrebAtt;
+    public float Bass;
+    public float BassAtt;
+    public float Mid;
+    public float MidAtt;
+    public float Treb;
+    public float TrebAtt;
 
     public MeshFilter TargetMeshFilter;
     public MeshRenderer TargetMeshRenderer;
@@ -127,7 +127,7 @@ public class Milkdrop : MonoBehaviour
 
     public bool RandomOrder = true;
 
-    private ulong FrameNum = 0;
+    private ulong CurrentFrame = 0;
     private float CurrentTime = 0f;
 
     private Dictionary<string, string> VariableNameLookup = new Dictionary<string, string>
@@ -198,8 +198,8 @@ public class Milkdrop : MonoBehaviour
     private Mesh TargetMeshDarkenCenter;
     private Mesh TargetMeshComp;
 
-    private float[] timeArrayL;
-    private float[] timeArrayR;
+    private float[] samplesL;
+    private float[] samplesR;
     private float[] freqArrayL;
     private float[] freqArrayR;
 
@@ -209,13 +209,6 @@ public class Milkdrop : MonoBehaviour
     private Vector3[] BasicWaveFormPositionsSmooth2;
 
     private Vector3[] MotionVectorsPositions;
-
-    private float sampleRate;
-
-    private float bassLow;
-    private float bassHigh;
-    private float midHigh;
-    private float trebHigh;
 
     private float timeSinceLastFrame = 0f;
 
@@ -231,6 +224,9 @@ public class Milkdrop : MonoBehaviour
     private SpriteRenderer[] DotRenderers;
 
     private float[] Stack = new float[2048];
+
+    private int[] audioSampleStarts;
+    private int[] audioSampleStops;
 
     Dictionary<string, float> Pick(Dictionary<string, float> source, string[] keys)
     {
@@ -297,8 +293,8 @@ public class Milkdrop : MonoBehaviour
             DotRenderers[i] = Dots[i].GetComponent<SpriteRenderer>();
         }
 
-        timeArrayL = new float[BasicWaveformNumAudioSamples];
-        timeArrayR = new float[BasicWaveformNumAudioSamples];
+        samplesL = new float[BasicWaveformNumAudioSamples];
+        samplesR = new float[BasicWaveformNumAudioSamples];
 
         freqArrayL = new float[BasicWaveformNumAudioSamples];
         freqArrayR = new float[BasicWaveformNumAudioSamples];
@@ -409,27 +405,36 @@ public class Milkdrop : MonoBehaviour
         BorderSideTop.gameObject.SetActive(false);
         BorderSideBottom.gameObject.SetActive(false);
 
-        sampleRate = AudioSettings.outputSampleRate * 0.5f;
+        int sampleRate = AudioSettings.outputSampleRate;
+        float freqMultiplier = sampleRate * 0.5f;
+        float bucketHz = freqMultiplier / BasicWaveformNumAudioSamples;
 
-        bassLow = Mathf.Clamp(
-            0,
-            0,
-            BasicWaveformNumAudioSamples - 1
-        );
-
-        bassHigh = Mathf.Clamp(
-            BasicWaveformNumAudioSamples / 3f,
+        int bassLow = Mathf.Clamp(
+            Mathf.RoundToInt(20f / bucketHz),
             0,
             BasicWaveformNumAudioSamples - 1
         );
 
-        midHigh = Mathf.Clamp(
-            BasicWaveformNumAudioSamples / 3f * 2f,
+        int bassHigh = Mathf.Clamp(
+            Mathf.RoundToInt(320f / bucketHz),
             0,
             BasicWaveformNumAudioSamples - 1
         );
 
-        trebHigh = BasicWaveformNumAudioSamples - 1;
+        int midHigh = Mathf.Clamp(
+            Mathf.RoundToInt(2800f / bucketHz),
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        int trebHigh = Mathf.Clamp(
+            Mathf.RoundToInt(11025f / bucketHz),
+            0,
+            BasicWaveformNumAudioSamples - 1
+        );
+
+        audioSampleStarts = new int[] { bassLow, bassHigh, midHigh };
+        audioSampleStops = new int[] { bassHigh, midHigh, trebHigh };
 
         PlayRandomPreset();
 
@@ -457,7 +462,7 @@ public class Milkdrop : MonoBehaviour
         PlayPreset(keys[ind]);
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (!initialized)
             return;
@@ -486,52 +491,9 @@ public class Milkdrop : MonoBehaviour
     void Render()
     {
         CurrentTime += 1f / FPS;
-        FrameNum++;
+        CurrentFrame++;
 
-        TargetAudio.GetSpectrumData(timeArrayL, 0, FFTWindow.Rectangular);
-        TargetAudio.GetSpectrumData(timeArrayR, 1, FFTWindow.Rectangular);
-
-        Bass = 0f;
-        BassAtt = 0f;
-        Mid = 0f;
-        MidAtt = 0f;
-        Treb = 0f;
-        TrebAtt = 0f;
-
-        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
-        {
-            timeArrayL[i] *= 8000f;
-            timeArrayR[i] *= 8000f;
-        }
-
-        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
-        {
-            if (i >= bassLow && i < bassHigh)
-            {
-                Bass += timeArrayL[i] + timeArrayR[i];
-            }
-            else if (i >= bassHigh && i < midHigh)
-            {
-                Mid += timeArrayL[i] + timeArrayR[i];
-            }
-            else if (i >= midHigh && i < trebHigh)
-            {
-                Treb += timeArrayL[i] + timeArrayR[i];
-            }
-        }
-
-        Bass /= bassHigh - bassLow;
-        Mid /= midHigh - bassHigh;
-        Treb /= trebHigh - midHigh;
-
-        Bass *= 0.01f;
-        Mid *= 0.01f;
-        Treb *= 0.01f;
-
-        // todo average
-        BassAtt = Bass;
-        MidAtt = Mid;
-        TrebAtt = Treb;
+        UpdateAudioLevels();
 
         RunFrameEquations();
         RunPixelEquations();
@@ -539,6 +501,86 @@ public class Milkdrop : MonoBehaviour
         // todo blending
 
         RenderImage();
+    }
+
+    float[] imm = new float[3];
+    float[] avg = new float[3];
+    float[] longAvg = new float[3];
+    float[] val = new float[3];
+    float[] att = new float[3];
+
+    void UpdateAudioLevels()
+    {
+        TargetAudio.GetSpectrumData(samplesL, 0, FFTWindow.Rectangular);
+        TargetAudio.GetSpectrumData(samplesR, 1, FFTWindow.Rectangular);
+
+        float effectiveFPS = FPS;
+
+        if (effectiveFPS < 15f)
+        {
+            effectiveFPS = 15f;
+        }
+        else if (effectiveFPS > 144f)
+        {
+            effectiveFPS = 144f;
+        }
+
+        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
+        {
+            samplesL[i] *= 10000f;
+            samplesR[i] *= 10000f;
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = audioSampleStarts[i]; j < audioSampleStops[i]; j++)
+            {
+                imm[i] += (samplesL[j] + samplesR[j]) * 0.5f;
+            }
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            float rate;
+            if (imm[i] > avg[i])
+            {
+                rate = 0.2f;
+            }
+            else
+            {
+                rate = 0.5f;
+            }
+            rate = Mathf.Pow(rate, 30f / effectiveFPS);
+
+            avg[i] = avg[i] * rate + imm[i] * (1 - rate);
+
+            if (CurrentFrame < 50)
+            {
+                rate = 0.9f;
+            } else
+            {
+                rate = 0.992f;
+            }
+            rate = Mathf.Pow(rate, 30f / effectiveFPS);
+            longAvg[i] = longAvg[i] * rate + imm[i] * (1 - rate);
+
+            if (this.longAvg[i] < 0.001f)
+            {
+                val[i] = 1.0f;
+                att[i] = 1.0f;
+            } else
+            {
+                val[i] = imm[i] / longAvg[i];
+                att[i] = avg[i] / longAvg[i];
+            }
+        }
+
+        Bass = val[0];
+        BassAtt = att[0];
+        Mid = val[1];
+        MidAtt = att[1];
+        Treb = val[2];
+        TrebAtt = att[2];
     }
 
     void RunFrameEquations()
@@ -555,7 +597,7 @@ public class Milkdrop : MonoBehaviour
             SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.FrameMap[v]);
         }
 
-        SetVariable(CurrentPreset.FrameVariables, "frame", FrameNum);
+        SetVariable(CurrentPreset.FrameVariables, "frame", CurrentFrame);
         SetVariable(CurrentPreset.FrameVariables, "time", CurrentTime);
         SetVariable(CurrentPreset.FrameVariables, "fps", FPS);
         SetVariable(CurrentPreset.FrameVariables, "bass", Bass);
@@ -858,7 +900,7 @@ public class Milkdrop : MonoBehaviour
                 }
             }
 
-            SetVariable(CurrentShape.FrameVariables, "frame", FrameNum);
+            SetVariable(CurrentShape.FrameVariables, "frame", CurrentFrame);
             SetVariable(CurrentShape.FrameVariables, "time", CurrentTime);
             SetVariable(CurrentShape.FrameVariables, "fps", FPS);
             SetVariable(CurrentShape.FrameVariables, "bass", Bass);
@@ -979,7 +1021,7 @@ public class Milkdrop : MonoBehaviour
                 SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits[v]);
             }
 
-            SetVariable(CurrentWave.FrameVariables, "frame", FrameNum);
+            SetVariable(CurrentWave.FrameVariables, "frame", CurrentFrame);
             SetVariable(CurrentWave.FrameVariables, "time", CurrentTime);
             SetVariable(CurrentWave.FrameVariables, "fps", FPS);
             SetVariable(CurrentWave.FrameVariables, "bass", Bass);
@@ -1456,7 +1498,7 @@ public class Milkdrop : MonoBehaviour
 
         float vol = (Bass + Mid + Treb) / 3f;
 
-        if (vol <= -0.01f || alpha <= 0.001f || timeArrayL.Length == 0f)
+        if (vol <= -0.01f || alpha <= 0.001f || samplesL.Length == 0f)
         {
             return;
         }
@@ -1467,20 +1509,20 @@ public class Milkdrop : MonoBehaviour
 
         List<float> waveL = new List<float>();
 
-        waveL.Add(timeArrayL[0] * scale);
+        waveL.Add(samplesL[0] * scale);
 
-        for (int i = 1; i < timeArrayL.Length; i++)
+        for (int i = 1; i < samplesL.Length; i++)
         {
-            waveL.Add(timeArrayL[i] * smooth2 + waveL[i - 1] * smooth);
+            waveL.Add(samplesL[i] * smooth2 + waveL[i - 1] * smooth);
         }
 
         List<float> waveR = new List<float>();
 
-        waveR.Add(timeArrayR[0] * scale);
+        waveR.Add(samplesR[0] * scale);
 
-        for (int i = 1; i < timeArrayR.Length; i++)
+        for (int i = 1; i < samplesR.Length; i++)
         {
-            waveR.Add(timeArrayR[i] * smooth2 + waveR[i - 1] * smooth);
+            waveR.Add(samplesR[i] * smooth2 + waveR[i - 1] * smooth);
         }
 
         float newWaveMode = GetVariable(CurrentPreset.FrameVariables, "wave_mode") % 8;
@@ -1966,12 +2008,12 @@ public class Milkdrop : MonoBehaviour
             {
                 if (i < smoothedNumVert)
                 {
-                    Dots[BasicWaveformNumAudioSamples + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
-                    DotRenderers[BasicWaveformNumAudioSamples + i].color = color;
+                    Dots[BasicWaveformNumAudioSamples * 2 + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
+                    DotRenderers[BasicWaveformNumAudioSamples * 2 + i].color = color;
                 }
                 else
                 {
-                    Dots[BasicWaveformNumAudioSamples + i].localPosition = outOfBounds;
+                    Dots[BasicWaveformNumAudioSamples * 2 + i].localPosition = outOfBounds;
                 }
             }
 
@@ -2055,7 +2097,7 @@ public class Milkdrop : MonoBehaviour
             iAbove = iAbove2;
             iAbove2 = Mathf.Min(nVertsIn - 1, i + 2);
 
-            positionsSmoothed[j] = positions[i];
+            positionsSmoothed[j] = new Vector3(positions[i].x, -positions[i].y, 0f);
 
             if (zCoord)
             {
@@ -2066,11 +2108,11 @@ public class Milkdrop : MonoBehaviour
                     c3 * positions[iAbove].x +
                     c4 * positions[iAbove2].x) *
                     invSum,
-                    (c1 * positions[iBelow].y +
+                    -((c1 * positions[iBelow].y +
                     c2 * positions[i].y +
                     c3 * positions[iAbove].y +
                     c4 * positions[iAbove2].y) *
-                    invSum,
+                    invSum),
                     (c1 * positions[iBelow].z +
                     c2 * positions[i].z +
                     c3 * positions[iAbove].z +
@@ -2087,11 +2129,11 @@ public class Milkdrop : MonoBehaviour
                     c3 * positions[iAbove].x +
                     c4 * positions[iAbove2].x) *
                     invSum,
-                    (c1 * positions[iBelow].y +
+                    -((c1 * positions[iBelow].y +
                     c2 * positions[i].y +
                     c3 * positions[iAbove].y +
                     c4 * positions[iAbove2].y) *
-                    invSum,
+                    invSum),
                     0f
                 );
             }
@@ -2100,7 +2142,7 @@ public class Milkdrop : MonoBehaviour
             j += 2;
         }
 
-        positionsSmoothed[j] = positions[nVertsIn - 1];
+        positionsSmoothed[j] = new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f);
     }
 
     void DrawComp()
@@ -3389,7 +3431,7 @@ public class Milkdrop : MonoBehaviour
             SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables[v]);
         }
 
-        SetVariable(CurrentPreset.Variables, "frame", FrameNum);
+        SetVariable(CurrentPreset.Variables, "frame", CurrentFrame);
         SetVariable(CurrentPreset.Variables, "time", CurrentTime);
         SetVariable(CurrentPreset.Variables, "fps", FPS);
         SetVariable(CurrentPreset.Variables, "bass", Bass);
@@ -3456,7 +3498,7 @@ public class Milkdrop : MonoBehaviour
                         SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables[v]);
                     }
 
-                    SetVariable(CurrentWave.Variables, "frame", FrameNum);
+                    SetVariable(CurrentWave.Variables, "frame", CurrentFrame);
                     SetVariable(CurrentWave.Variables, "time", CurrentTime);
                     SetVariable(CurrentWave.Variables, "fps", FPS);
                     SetVariable(CurrentWave.Variables, "bass", Bass);
@@ -3528,7 +3570,7 @@ public class Milkdrop : MonoBehaviour
                         SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables[v]);
                     }
 
-                    SetVariable(CurrentShape.Variables, "frame", FrameNum);
+                    SetVariable(CurrentShape.Variables, "frame", CurrentFrame);
                     SetVariable(CurrentShape.Variables, "time", CurrentTime);
                     SetVariable(CurrentShape.Variables, "fps", FPS);
                     SetVariable(CurrentShape.Variables, "bass", Bass);

@@ -16,4 +16,12 @@ public class Example : MonoBehaviour
         milkdrop.Initialize();
         TargetGraphic.texture = milkdrop.FinalTexture;
     }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            milkdrop.PlayRandomPreset();
+        }
+    }
 }

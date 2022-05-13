@@ -97,7 +97,8 @@ Shader "Milkdrop/DefaultCompShader"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+                o.uv.x = v.vertex.x * 0.5 + 0.5;
+                o.uv.y = -v.vertex.y * 0.5 + 0.5;
                 o.color = v.color * 2.0 - 1.0;
                 return o;
             }
