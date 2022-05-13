@@ -92,7 +92,8 @@ public class Milkdrop : MonoBehaviour
 
     public float ChangePresetIn = 5f;
 
-    private float presetChangeTimer = 0f;
+    [HideInInspector]
+    public float presetChangeTimer = 0f;
 
     public float Bass;
     public float BassAtt;
