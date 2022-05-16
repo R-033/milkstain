@@ -471,7 +471,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: c95c2573765254c09b883008e05a1df0, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 9149fdcc8ea674950a1c9a51837aaca9, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -625,7 +625,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: PresetName
-      value: idiot - Some big word I learned
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: RandomOrder

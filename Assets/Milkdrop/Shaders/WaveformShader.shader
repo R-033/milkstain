@@ -23,6 +23,7 @@ Shader "Milkdrop/WaveformShader"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                float4 color : COLOR;
             };
 
             struct v2f
@@ -30,6 +31,7 @@ Shader "Milkdrop/WaveformShader"
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float2 uv_orig : TEXCOORD1;
+                float4 color : TEXCOORD2;
             };
 
             float aspect_ratio;
@@ -40,6 +42,7 @@ Shader "Milkdrop/WaveformShader"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = float2(v.vertex.x / aspect_ratio, v.vertex.y) * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.uv_orig = float2(v.uv.x * 14, v.uv.y);
+                o.color = v.color * 2.0 - 1.0;
                 return o;
             }
 
@@ -52,12 +55,14 @@ Shader "Milkdrop/WaveformShader"
                 float2 uv = i.uv;
                 float2 uv_orig = i.uv_orig;
 
+                float4 color = i.color * waveColor;
+
                 if (additivewave != 0)
                 {
-                    return float4(tex2D(_MainTex, uv).xyz + waveColor.xyz * waveColor.w, 1.0);
+                    return float4(tex2D(_MainTex, uv).xyz + color.xyz * color.w, 1.0);
                 }
                 
-                return float4(lerp(tex2D(_MainTex, uv).xyz, waveColor.xyz, waveColor.w), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv).xyz, color.xyz, color.w), 1.0);
             }
             ENDCG
         }

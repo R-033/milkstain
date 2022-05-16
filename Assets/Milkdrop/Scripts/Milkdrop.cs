@@ -23,6 +23,13 @@ public class Milkdrop : MonoBehaviour
         public string[] UserKeys = new string[0];
         public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
         public Dictionary<string, float> Inits = new Dictionary<string, float>();
+
+        public float[] PointsDataL;
+        public float[] PointsDataR;
+        public Vector3[] Positions;
+        public Color[] Colors;
+        public Vector3[] SmoothedPositions;
+        public Color[] SmoothedColors;
     }
 
     public class Shape
@@ -43,6 +50,8 @@ public class Milkdrop : MonoBehaviour
         public Color[] Colors;
         public Vector2[] UVs;
         public Vector3[] BorderPositions;
+
+        public Mesh ShapeMesh;
     }
 
     public class Preset
@@ -87,7 +96,7 @@ public class Milkdrop : MonoBehaviour
     public Vector2Int MotionVectorsSize = new Vector2Int(64, 48);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
     public int MaxShapeSides = 101;
-    public int BasicWaveformNumAudioSamples = 512;
+    public int MaxSamples = 512;
     public float MaxFPS = 30f;
 
     public float ChangePresetIn = 5f;
@@ -105,6 +114,9 @@ public class Milkdrop : MonoBehaviour
     public MeshFilter TargetMeshFilter;
     public MeshRenderer TargetMeshRenderer;
 
+    public MeshFilter TargetMeshFilter2;
+    public MeshRenderer TargetMeshRenderer2;
+
     public LineRenderer WaveformRenderer;
     public LineRenderer WaveformRenderer2;
 
@@ -120,6 +132,8 @@ public class Milkdrop : MonoBehaviour
 
     public Material BorderMaterial;
 
+    public Material ShapeMaterial;
+
     public Transform BorderSideLeft;
     public Transform BorderSideRight;
     public Transform BorderSideTop;
@@ -130,6 +144,8 @@ public class Milkdrop : MonoBehaviour
 
     private ulong CurrentFrame = 0;
     private float CurrentTime = 0f;
+
+    private Vector3 baseDotScale;
 
     private Dictionary<string, string> VariableNameLookup = new Dictionary<string, string>
     {
@@ -199,8 +215,9 @@ public class Milkdrop : MonoBehaviour
     private Mesh TargetMeshDarkenCenter;
     private Mesh TargetMeshComp;
 
-    private float[] samplesL;
-    private float[] samplesR;
+    private float[] timeArray;
+    private float[] timeArrayL;
+    private float[] timeArrayR;
     private float[] freqArrayL;
     private float[] freqArrayR;
 
@@ -284,15 +301,17 @@ public class Milkdrop : MonoBehaviour
         WarpColor = new Color[(MeshSize.x + 1) * (MeshSize.y + 1)];
         CompColor = new Color[(MeshSizeComp.x + 1) * (MeshSizeComp.y + 1)];
 
-        BasicWaveFormPositions = new Vector3[BasicWaveformNumAudioSamples];
-        BasicWaveFormPositions2 = new Vector3[BasicWaveformNumAudioSamples];
-        BasicWaveFormPositionsSmooth = new Vector3[BasicWaveformNumAudioSamples * 2];
-        BasicWaveFormPositionsSmooth2 = new Vector3[BasicWaveformNumAudioSamples * 2];
+        BasicWaveFormPositions = new Vector3[MaxSamples];
+        BasicWaveFormPositions2 = new Vector3[MaxSamples];
+        BasicWaveFormPositionsSmooth = new Vector3[MaxSamples * 2];
+        BasicWaveFormPositionsSmooth2 = new Vector3[MaxSamples * 2];
 
         MotionVectorsPositions = new Vector3[MotionVectorsSize.x * MotionVectorsSize.y * 2];
 
-        Dots = new Transform[BasicWaveformNumAudioSamples * 4];
-        DotRenderers = new SpriteRenderer[BasicWaveformNumAudioSamples * 4];
+        baseDotScale = DotPrefab.transform.localScale;
+
+        Dots = new Transform[MaxSamples * 4];
+        DotRenderers = new SpriteRenderer[MaxSamples * 4];
 
         for (int i = 0; i < Dots.Length; i++)
         {
@@ -309,11 +328,12 @@ public class Milkdrop : MonoBehaviour
             MotionVectorRenderers[i] = MotionVectors[i].GetComponent<SpriteRenderer>();
         }
 
-        samplesL = new float[BasicWaveformNumAudioSamples];
-        samplesR = new float[BasicWaveformNumAudioSamples];
+        timeArray = new float[MaxSamples * 2];
+        timeArrayL = new float[MaxSamples];
+        timeArrayR = new float[MaxSamples];
 
-        freqArrayL = new float[BasicWaveformNumAudioSamples];
-        freqArrayR = new float[BasicWaveformNumAudioSamples];
+        freqArrayL = new float[MaxSamples];
+        freqArrayR = new float[MaxSamples];
 
         TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
         FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
@@ -412,6 +432,7 @@ public class Milkdrop : MonoBehaviour
         WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         BorderParent.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        TargetMeshFilter2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
 
         WaveformRenderer.enabled = false;
         WaveformRenderer2.enabled = false;
@@ -423,30 +444,30 @@ public class Milkdrop : MonoBehaviour
 
         int sampleRate = AudioSettings.outputSampleRate;
         float freqMultiplier = sampleRate * 0.5f;
-        float bucketHz = freqMultiplier / BasicWaveformNumAudioSamples;
+        float bucketHz = freqMultiplier / MaxSamples;
 
         int bassLow = Mathf.Clamp(
             Mathf.RoundToInt(20f / bucketHz),
             0,
-            BasicWaveformNumAudioSamples - 1
+            MaxSamples - 1
         );
 
         int bassHigh = Mathf.Clamp(
             Mathf.RoundToInt(320f / bucketHz),
             0,
-            BasicWaveformNumAudioSamples - 1
+            MaxSamples - 1
         );
 
         int midHigh = Mathf.Clamp(
             Mathf.RoundToInt(2800f / bucketHz),
             0,
-            BasicWaveformNumAudioSamples - 1
+            MaxSamples - 1
         );
 
         int trebHigh = Mathf.Clamp(
             Mathf.RoundToInt(11025f / bucketHz),
             0,
-            BasicWaveformNumAudioSamples - 1
+            MaxSamples - 1
         );
 
         audioSampleStarts = new int[] { bassLow, bassHigh, midHigh };
@@ -532,8 +553,35 @@ public class Milkdrop : MonoBehaviour
 
     void UpdateAudioLevels()
     {
-        TargetAudio.GetSpectrumData(samplesL, 0, FFTWindow.Rectangular);
-        TargetAudio.GetSpectrumData(samplesR, 1, FFTWindow.Rectangular);
+        if (TargetAudio.clip)
+        {
+            TargetAudio.clip.GetData(timeArray, TargetAudio.timeSamples);
+            
+            for (int i = 0; i < MaxSamples; i++)
+            {
+                timeArrayL[i] = timeArray[i * 2];
+            }
+
+            for (int i = 0; i < MaxSamples; i++)
+            {
+                timeArrayR[i] = timeArray[i * 2 + 1];
+            }
+        }
+
+        TargetAudio.GetSpectrumData(freqArrayL, 0, FFTWindow.Rectangular);
+        TargetAudio.GetSpectrumData(freqArrayR, 1, FFTWindow.Rectangular);
+
+        for (int i = 0; i < MaxSamples; i++)
+        {
+            timeArrayL[i] *= 128f;
+            timeArrayR[i] *= 128f;
+        }
+
+        for (int i = 0; i < MaxSamples; i++)
+        {
+            freqArrayL[i] *= 10000f;
+            freqArrayR[i] *= 10000f;
+        }
 
         float effectiveFPS = FPS;
 
@@ -546,17 +594,11 @@ public class Milkdrop : MonoBehaviour
             effectiveFPS = 144f;
         }
 
-        for (int i = 0; i < BasicWaveformNumAudioSamples; i++)
-        {
-            samplesL[i] *= 10000f;
-            samplesR[i] *= 10000f;
-        }
-
         for (int i = 0; i < 3; i++)
         {
             for (int j = audioSampleStarts[i]; j < audioSampleStops[i]; j++)
             {
-                imm[i] += (samplesL[j] + samplesR[j]) * 0.5f;
+                imm[i] += (freqArrayL[j] + freqArrayR[j]) * 0.5f;
             }
         }
 
@@ -863,9 +905,9 @@ public class Milkdrop : MonoBehaviour
 
         DrawMotionVectors();
 
-        //DrawShapes();
+        DrawShapes();
 
-        //DrawWaves();
+        DrawWaves();
 
         // todo shapes & waves blending
 
@@ -986,7 +1028,7 @@ public class Milkdrop : MonoBehaviour
                 SetVariable(CurrentShape.FrameVariables, "tex_ang", baseTexAng);
                 SetVariable(CurrentShape.FrameVariables, "additive", baseAdditive);
 
-                if (string.IsNullOrEmpty(CurrentShape.FrameEquation))
+                if (!string.IsNullOrEmpty(CurrentShape.FrameEquation))
                 {
                     foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
                     {
@@ -1001,7 +1043,169 @@ public class Milkdrop : MonoBehaviour
                     CurrentShape.FrameEquationCompiled(CurrentShape.FrameVariables);
                 }
 
-                //
+                int sides = Mathf.Clamp(Mathf.FloorToInt(GetVariable(CurrentShape.FrameVariables, "sides")), 3, 100);
+
+                float rad = GetVariable(CurrentShape.FrameVariables, "rad");
+                float ang = GetVariable(CurrentShape.FrameVariables, "ang");
+
+                float x = GetVariable(CurrentShape.FrameVariables, "x") * 2f - 1f;
+                float y = GetVariable(CurrentShape.FrameVariables, "y") * 2f - 1f;
+
+                float r = GetVariable(CurrentShape.FrameVariables, "r");
+                float g = GetVariable(CurrentShape.FrameVariables, "g");
+                float b = GetVariable(CurrentShape.FrameVariables, "b");
+                float a = GetVariable(CurrentShape.FrameVariables, "a");
+                float r2 = GetVariable(CurrentShape.FrameVariables, "r2");
+                float g2 = GetVariable(CurrentShape.FrameVariables, "g2");
+                float b2 = GetVariable(CurrentShape.FrameVariables, "b2");
+                float a2 = GetVariable(CurrentShape.FrameVariables, "a2");
+
+                float borderR = GetVariable(CurrentShape.FrameVariables, "border_r");
+                float borderG = GetVariable(CurrentShape.FrameVariables, "border_g");
+                float borderB = GetVariable(CurrentShape.FrameVariables, "border_b");
+                float borderA = GetVariable(CurrentShape.FrameVariables, "border_a");
+
+                //float blendProgress = 0f;
+
+                Vector4 borderColor = new Vector4
+                (
+                    borderR,
+                    borderG,
+                    borderB,
+                    borderA// * blendProgress
+                );
+
+                float thickoutline = GetVariable(CurrentShape.FrameVariables, "thickouline");
+                
+                float textured = GetVariable(CurrentShape.FrameVariables, "textured");
+                float texZoom = GetVariable(CurrentShape.FrameVariables, "tex_zoom");
+                float texAng = GetVariable(CurrentShape.FrameVariables, "tex_ang");
+
+                float additive = GetVariable(CurrentShape.FrameVariables, "additive");
+
+                bool hasBorder = borderColor.w > 0f;
+                bool isTextured = Mathf.Abs(textured) >= 1f;
+                bool isBorderThick = Mathf.Abs(thickoutline) >= 1f;
+                bool isAdditive = Mathf.Abs(additive) >= 1f;
+
+                CurrentShape.Positions[0] = new Vector3(x, y, 0f);
+
+                CurrentShape.Colors[0] = new Color(r, g, b, a /** blendProgress*/);
+
+                if (isTextured)
+                {
+                    CurrentShape.UVs[0] = new Vector2(0.5f, 0.5f);
+                }
+
+                float quarterPi = Mathf.PI * 0.25f;
+
+                for (int k = 1; k < sides + 1; k++)
+                {
+                    float p = (k - 1f) / sides;
+                    float pTwoPi = p * 2f * Mathf.PI;
+
+                    float angSum = pTwoPi + ang + quarterPi;
+                    
+                    CurrentShape.Positions[k] = new Vector3
+                    (
+                        x + rad * Mathf.Cos(angSum),
+                        y + rad * Mathf.Sin(angSum),
+                        0f
+                    );
+
+                    CurrentShape.Colors[k] = new Color(r2, g2, b2, a2 /** blendProgress*/);
+
+                    if (isTextured)
+                    {
+                        float texAngSum = pTwoPi + texAng + quarterPi;
+
+                        CurrentShape.UVs[k] = new Vector2
+                        (
+                            0.5f + ((0.5f * Mathf.Cos(texAngSum)) / texZoom),
+                            0.5f + (0.5f * Mathf.Sin(texAngSum)) / texZoom
+                        );
+                    }
+
+                    if (hasBorder)
+                    {
+                        CurrentShape.BorderPositions[k - 1] = CurrentShape.Positions[k];
+                    }
+                }
+
+                TargetMeshFilter2.gameObject.SetActive(true);
+
+                CurrentShape.ShapeMesh.vertices = CurrentShape.Positions.Take(sides + 1).ToArray();
+                CurrentShape.ShapeMesh.colors = CurrentShape.Colors.Take(sides + 1).ToArray();
+                CurrentShape.ShapeMesh.uv = CurrentShape.UVs.Take(sides + 1).ToArray();
+
+                int[] triangles = new int[sides * 3];
+
+                for (int k = 0; k < sides; k++)
+                {
+                    triangles[k * 3 + 0] = 0;
+                    triangles[k * 3 + 1] = k + 1;
+                    triangles[k * 3 + 2] = (k + 2) >= (sides + 1) ? 1 : k + 2;
+                }
+
+                CurrentShape.ShapeMesh.triangles = triangles;
+
+                TargetMeshFilter2.sharedMesh = CurrentShape.ShapeMesh;
+                TargetMeshRenderer2.sharedMaterial = ShapeMaterial;
+
+                ShapeMaterial.mainTexture = TempTexture;
+                ShapeMaterial.SetFloat("uTextured", textured);
+                ShapeMaterial.SetFloat("additive", additive);
+
+                TargetMeshFilter.sharedMesh = TargetMeshWarp;
+                TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+                DoNothingMaterial.mainTexture = TempTexture;
+
+                TargetCamera.targetTexture = TempTexture;
+                TargetCamera.Render();
+
+                 TargetMeshFilter2.gameObject.SetActive(false);
+
+                if (hasBorder)
+                {
+                    WaveformRenderer.enabled = true;
+            
+                    WaveformRenderer.loop = true;
+                    WaveformRenderer.positionCount = sides;
+                    WaveformRenderer.SetPositions(CurrentShape.BorderPositions);
+
+                    if (isBorderThick)
+                    {
+                        WaveformRenderer.widthMultiplier = 2f;
+                    }
+                    else
+                    {
+                        WaveformRenderer.widthMultiplier = 0.5f;
+                    }
+
+                    WaveformRenderer.colorGradient = new Gradient()
+                    {
+                        colorKeys = new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                        alphaKeys = new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) }
+                    };
+
+                    WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
+                    WaveformRenderer.sharedMaterial.SetVector("waveColor", borderColor);
+                    WaveformRenderer.sharedMaterial.SetFloat("additivewave", additive);
+                    WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
+
+                    TargetMeshFilter.sharedMesh = TargetMeshWarp;
+                    TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+                    DoNothingMaterial.mainTexture = TempTexture;
+
+                    TargetCamera.targetTexture = TempTexture;
+                    TargetCamera.Render();
+
+                    WaveformRenderer.loop = false;
+
+                    WaveformRenderer.enabled = false;
+                }
             }
         }
     }
@@ -1060,7 +1264,196 @@ public class Milkdrop : MonoBehaviour
 
             CurrentWave.FrameEquationCompiled(CurrentWave.FrameVariables);
 
-            // todo
+            int maxSamples = 512;
+            int samples = Mathf.FloorToInt(Mathf.Min(GetVariable(CurrentWave.FrameVariables, "samples", maxSamples), maxSamples));
+
+            int sep = Mathf.FloorToInt(GetVariable(CurrentWave.FrameVariables, "sep"));
+            float scaling = GetVariable(CurrentWave.FrameVariables, "scaling");
+            float spectrum = GetVariable(CurrentWave.FrameVariables, "spectrum");
+            float smoothing = GetVariable(CurrentWave.FrameVariables, "smoothing");
+            float usedots = GetVariable(CurrentWave.BaseVariables, "usedots");
+
+            float frameR = GetVariable(CurrentWave.FrameVariables, "r");
+            float frameG = GetVariable(CurrentWave.FrameVariables, "g");
+            float frameB = GetVariable(CurrentWave.FrameVariables, "b");
+            float frameA = GetVariable(CurrentWave.FrameVariables, "a");
+
+            float waveScale = GetVariable(CurrentWave.FrameVariables, "wave_scale");
+
+            samples -= sep;
+
+            if (!(samples >= 2 || usedots != 0f && samples >= 1))
+            {
+                continue;
+            }
+
+            bool useSpectrum = spectrum != 0f;
+            float scale = (useSpectrum ? 0.15f : 0.004f) * scaling * waveScale;
+
+            float[] pointsLeft = useSpectrum ? freqArrayL : timeArrayL;
+            float[] pointsRight = useSpectrum ? freqArrayR : timeArrayR;
+
+            int j0 = useSpectrum ? 0 : Mathf.FloorToInt((maxSamples - samples) / 2f - sep / 2f);
+            int j1 = useSpectrum ? 0 : Mathf.FloorToInt((maxSamples - samples) / 2f + sep / 2f);
+            float t = useSpectrum ? (maxSamples - sep) / (float)samples : 1f;
+
+            float mix1 = Mathf.Pow(smoothing * 0.98f, 0.5f);
+            float mix2 = 1f - mix1;
+
+            CurrentWave.PointsDataL[0] = pointsLeft[j0];
+            CurrentWave.PointsDataR[0] = pointsRight[j1];
+
+            for (int j = 1; j < samples; j++)
+            {
+                float left = pointsLeft[Mathf.FloorToInt(j * t + j0)];
+                float right = pointsRight[Mathf.FloorToInt(j * t + j1)];
+
+                CurrentWave.PointsDataL[j] = left * mix2 + CurrentWave.PointsDataL[j - 1] * mix1;
+                CurrentWave.PointsDataR[j] = right * mix2 + CurrentWave.PointsDataR[j - 1] * mix1;
+            }
+
+            for (int j = samples - 2; j >= 0; j--)
+            {
+                CurrentWave.PointsDataL[j] = CurrentWave.PointsDataL[j] * mix2 + CurrentWave.PointsDataL[j + 1] * mix1;
+                CurrentWave.PointsDataR[j] = CurrentWave.PointsDataR[j] * mix2 + CurrentWave.PointsDataR[j + 1] * mix1;
+            }
+
+            for (int j = 0; j < samples; j++)
+            {
+                CurrentWave.PointsDataL[j] *= scale;
+                CurrentWave.PointsDataR[j] *= scale;
+            }
+
+            for (int j = 0; j < samples; j++)
+            {
+                float value1 = CurrentWave.PointsDataL[j];
+                float value2 = CurrentWave.PointsDataR[j];
+
+                SetVariable(CurrentWave.FrameVariables, "sample", j / (samples - 1f));
+                SetVariable(CurrentWave.FrameVariables, "value1", value1);
+                SetVariable(CurrentWave.FrameVariables, "value2", value2);
+                SetVariable(CurrentWave.FrameVariables, "x", 0.5f + value1);
+                SetVariable(CurrentWave.FrameVariables, "y", 0.5f + value2);
+                SetVariable(CurrentWave.FrameVariables, "r", frameR);
+                SetVariable(CurrentWave.FrameVariables, "g", frameG);
+                SetVariable(CurrentWave.FrameVariables, "b", frameB);
+                SetVariable(CurrentWave.FrameVariables, "a", frameA);
+
+                if (!string.IsNullOrEmpty(CurrentWave.PointEquation))
+                {
+                    CurrentWave.PointEquationCompiled(CurrentWave.FrameVariables);
+                }
+
+                float x = GetVariable(CurrentWave.FrameVariables, "x") * 2f - 1f;
+                float y = GetVariable(CurrentWave.FrameVariables, "y") * 2f - 1f;
+
+                float r = GetVariable(CurrentWave.FrameVariables, "r");
+                float g = GetVariable(CurrentWave.FrameVariables, "g");
+                float b = GetVariable(CurrentWave.FrameVariables, "b");
+                float a = GetVariable(CurrentWave.FrameVariables, "a");
+
+                CurrentWave.Positions[j] = new Vector3(x, y, 0f);
+                CurrentWave.Colors[j] = new Color(r, g, b, a /** alphaMult*/);
+            }
+
+            bool thick = GetVariable(CurrentWave.FrameVariables, "thick") != 0f;
+
+            if (usedots != 0f)
+            {
+                DotParent.gameObject.SetActive(true);
+
+                Vector3 outOfBounds = new Vector3(0f, 0f, -10f);
+
+                float aspect_ratio = Resolution.x / (float)Resolution.y;
+
+                for (int i = 0; i < MaxSamples * 4; i++)
+                {
+                    if (i < samples)
+                    {
+                        Dots[i].localPosition = new Vector3(CurrentWave.Positions[i].x * aspect_ratio, -CurrentWave.Positions[i].y, 0f);
+                        DotRenderers[i].color = CurrentWave.Colors[i];
+                        Dots[i].localScale = thick ? baseDotScale : baseDotScale * 0.5f;
+                    }
+                    else
+                    {
+                        Dots[i].localPosition = outOfBounds;
+                    }
+                }
+
+                TargetMeshFilter.sharedMesh = TargetMeshWarp;
+                TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+                DoNothingMaterial.mainTexture = TempTexture;
+
+                TargetCamera.targetTexture = TempTexture;
+                TargetCamera.Render();
+
+                DotParent.gameObject.SetActive(false);
+            }
+            else
+            {
+                SmoothWaveAndColor(CurrentWave.Positions, CurrentWave.Colors, CurrentWave.SmoothedPositions, CurrentWave.SmoothedColors, samples);
+
+                WaveformRenderer.enabled = true;
+
+                if (thick)
+                {
+                    WaveformRenderer.widthMultiplier = 2f;
+                }
+                else
+                {
+                    WaveformRenderer.widthMultiplier = 0.5f;
+                }
+
+                WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
+                WaveformRenderer.sharedMaterial.SetVector("waveColor", Vector4.one);
+                WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentWave.FrameVariables, "additive"));
+                WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
+
+                TargetMeshFilter.sharedMesh = TargetMeshWarp;
+                TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+                DoNothingMaterial.mainTexture = TempTexture;
+
+                TargetCamera.targetTexture = TempTexture;
+
+                samples = samples * 2 - 1;
+
+                int iterations = Mathf.CeilToInt(samples / 8f);
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    int start = i * 8;
+                    int end = Mathf.Min(samples, start + 8);
+
+                    WaveformRenderer.positionCount = end - start;
+
+                    for (int j = start; j < end; j++)
+                    {
+                        WaveformRenderer.SetPosition(j - start, CurrentWave.SmoothedPositions[j]);
+                    }
+
+                    var grad = new Gradient();
+
+                    var colorKeys = new GradientColorKey[end - start];
+                    var alphaKeys = new GradientAlphaKey[end - start];
+
+                    for (int j = start; j < end; j++)
+                    {
+                        colorKeys[j - start] = new GradientColorKey(CurrentWave.SmoothedColors[j], j / (float)(end - start - 1));
+                        alphaKeys[j - start] = new GradientAlphaKey(CurrentWave.SmoothedColors[j].a, j / (float)(end - start - 1));
+                    }
+
+                    grad.colorKeys = colorKeys;
+                    grad.alphaKeys = alphaKeys;
+
+                    WaveformRenderer.colorGradient = grad;
+
+                    TargetCamera.Render();
+                }
+
+                WaveformRenderer.enabled = false;
+            }
         }
     }
 
@@ -1534,7 +1927,7 @@ public class Milkdrop : MonoBehaviour
 
         float vol = (Bass + Mid + Treb) / 3f;
 
-        if (vol <= -0.01f || alpha <= 0.001f || samplesL.Length == 0f)
+        if (vol <= -0.01f || alpha <= 0.001f || timeArrayL.Length == 0f)
         {
             return;
         }
@@ -1545,20 +1938,20 @@ public class Milkdrop : MonoBehaviour
 
         List<float> waveL = new List<float>();
 
-        waveL.Add(samplesL[0] * scale);
+        waveL.Add(timeArrayL[0] * scale);
 
-        for (int i = 1; i < samplesL.Length; i++)
+        for (int i = 1; i < timeArrayL.Length; i++)
         {
-            waveL.Add(samplesL[i] * smooth2 + waveL[i - 1] * smooth);
+            waveL.Add(timeArrayL[i] * smooth2 + waveL[i - 1] * smooth);
         }
 
         List<float> waveR = new List<float>();
 
-        waveR.Add(samplesR[0] * scale);
+        waveR.Add(timeArrayR[0] * scale);
 
-        for (int i = 1; i < samplesR.Length; i++)
+        for (int i = 1; i < timeArrayR.Length; i++)
         {
-            waveR.Add(samplesR[i] * smooth2 + waveR[i - 1] * smooth);
+            waveR.Add(timeArrayR[i] * smooth2 + waveR[i - 1] * smooth);
         }
 
         float newWaveMode = GetVariable(CurrentPreset.FrameVariables, "wave_mode") % 8;
@@ -2022,12 +2415,13 @@ public class Milkdrop : MonoBehaviour
 
             float aspect_ratio = Resolution.x / (float)Resolution.y;
 
-            for (int i = 0; i < BasicWaveformNumAudioSamples * 2; i++)
+            for (int i = 0; i < MaxSamples * 2; i++)
             {
                 if (i < smoothedNumVert)
                 {
                     Dots[i].localPosition = new Vector3(BasicWaveFormPositionsSmooth[i].x * aspect_ratio, BasicWaveFormPositionsSmooth[i].y, 0f);
                     DotRenderers[i].color = color;
+                    Dots[i].localScale = baseDotScale;
                 }
                 else
                 {
@@ -2040,16 +2434,17 @@ public class Milkdrop : MonoBehaviour
                 smoothedNumVert = 0;
             }
 
-            for (int i = 0; i < BasicWaveformNumAudioSamples * 2; i++)
+            for (int i = 0; i < MaxSamples * 2; i++)
             {
                 if (i < smoothedNumVert)
                 {
-                    Dots[BasicWaveformNumAudioSamples * 2 + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
-                    DotRenderers[BasicWaveformNumAudioSamples * 2 + i].color = color;
+                    Dots[MaxSamples * 2 + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
+                    DotRenderers[MaxSamples * 2 + i].color = color;
+                    Dots[MaxSamples * 2 + i].localScale = baseDotScale;
                 }
                 else
                 {
-                    Dots[BasicWaveformNumAudioSamples * 2 + i].localPosition = outOfBounds;
+                    Dots[MaxSamples * 2 + i].localPosition = outOfBounds;
                 }
             }
 
@@ -2096,6 +2491,12 @@ public class Milkdrop : MonoBehaviour
                 }
             }
 
+            WaveformRenderer.colorGradient = new Gradient()
+            {
+                colorKeys = new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                alphaKeys = new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) }
+            };
+
             WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
             WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
             WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentPreset.FrameVariables, "additivewave"));
@@ -2112,6 +2513,77 @@ public class Milkdrop : MonoBehaviour
             WaveformRenderer.enabled = false;
             WaveformRenderer2.enabled = false;
         }
+    }
+
+    void SmoothWaveAndColor(Vector3[] positions, Color[] colors, Vector3[] positionsSmoothed, Color[] colorsSmoothed, int nVertsIn, bool zCoord = false)
+    {
+        float c1 = -0.15f;
+        float c2 = 1.15f;
+        float c3 = 1.15f;
+        float c4 = -0.15f;
+        float invSum = 1.0f / (c1 + c2 + c3 + c4);
+
+        int j = 0;
+
+        int iBelow = 0;
+        int iAbove;
+        int iAbove2 = 1;
+
+        for (int i = 0; i < nVertsIn - 1; i++)
+        {
+            iAbove = iAbove2;
+            iAbove2 = Mathf.Min(nVertsIn - 1, i + 2);
+
+            positionsSmoothed[j] = new Vector3(positions[i].x, -positions[i].y, 0f);
+
+            if (zCoord)
+            {
+                positionsSmoothed[j + 1] = new Vector3
+                (
+                    (c1 * positions[iBelow].x +
+                    c2 * positions[i].x +
+                    c3 * positions[iAbove].x +
+                    c4 * positions[iAbove2].x) *
+                    invSum,
+                    -((c1 * positions[iBelow].y +
+                    c2 * positions[i].y +
+                    c3 * positions[iAbove].y +
+                    c4 * positions[iAbove2].y) *
+                    invSum),
+                    (c1 * positions[iBelow].z +
+                    c2 * positions[i].z +
+                    c3 * positions[iAbove].z +
+                    c4 * positions[iAbove2].z) *
+                    invSum
+                );
+            }
+            else
+            {
+                positionsSmoothed[j + 1] = new Vector3
+                (
+                    (c1 * positions[iBelow].x +
+                    c2 * positions[i].x +
+                    c3 * positions[iAbove].x +
+                    c4 * positions[iAbove2].x) *
+                    invSum,
+                    -((c1 * positions[iBelow].y +
+                    c2 * positions[i].y +
+                    c3 * positions[iAbove].y +
+                    c4 * positions[iAbove2].y) *
+                    invSum),
+                    0f
+                );
+            }
+
+            colorsSmoothed[j] = colors[i];
+            colorsSmoothed[j + 1] = colors[i];
+
+            iBelow = i;
+            j += 2;
+        }
+
+        positionsSmoothed[j] = new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f);
+        colorsSmoothed[j] = colors[nVertsIn - 1];
     }
 
     void SmoothWave(Vector3[] positions, Vector3[] positionsSmoothed, int nVertsIn, bool zCoord = false)
@@ -2760,6 +3232,16 @@ public class Milkdrop : MonoBehaviour
             Destroy(preset.WarpMaterial);
             Destroy(preset.CompMaterial);
             Destroy(preset.DarkenCenterMaterial);
+
+            foreach (var wave in preset.Waves)
+            {
+                // todo
+            }
+
+            foreach (var shape in preset.Shapes)
+            {
+                Destroy(shape.ShapeMesh);
+            }
         }
 
         LoadedPresets.Clear();
@@ -3525,6 +4007,14 @@ public class Milkdrop : MonoBehaviour
         {
             foreach (var CurrentWave in CurrentPreset.Waves)
             {
+                CurrentWave.PointsDataL = new float[MaxSamples];
+                CurrentWave.PointsDataR = new float[MaxSamples];
+
+                CurrentWave.Positions = new Vector3[MaxSamples];
+                CurrentWave.Colors = new Color[MaxSamples];
+                CurrentWave.SmoothedPositions = new Vector3[MaxSamples * 2 - 1];
+                CurrentWave.SmoothedColors = new Color[MaxSamples * 2 - 1];
+
                 if (GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
                 {
                     CurrentWave.Variables = new Dictionary<string, float>();
@@ -3592,6 +4082,8 @@ public class Milkdrop : MonoBehaviour
         {
             foreach (var CurrentShape in CurrentPreset.Shapes)
             {
+                CurrentShape.ShapeMesh = new Mesh();
+
                 CurrentShape.Positions = new Vector3[MaxShapeSides + 2];
                 CurrentShape.Colors = new Color[MaxShapeSides + 2];
                 CurrentShape.UVs = new Vector2[MaxShapeSides + 2];
