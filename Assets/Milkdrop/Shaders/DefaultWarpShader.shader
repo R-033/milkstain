@@ -92,7 +92,7 @@ Shader "Milkdrop/DefaultWarpShader"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 o.uv_orig = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-                o.color = v.color * 2.0 - 1.0;
+                o.color = v.color;
                 return o;
             }
 

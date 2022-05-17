@@ -42,7 +42,7 @@ Shader "Milkdrop/WaveformShader"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = float2(v.vertex.x / aspect_ratio, v.vertex.y) * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.uv_orig = float2(v.uv.x * 14, v.uv.y);
-                o.color = v.color * 2.0 - 1.0;
+                o.color = v.color;
                 return o;
             }
 

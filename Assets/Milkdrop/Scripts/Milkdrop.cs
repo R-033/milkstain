@@ -1122,7 +1122,7 @@ public class Milkdrop : MonoBehaviour
 
                 //float blendProgress = 0f;
 
-                Vector4 borderColor = new Vector4
+                Color borderColor = new Color
                 (
                     borderR,
                     borderG,
@@ -1138,7 +1138,7 @@ public class Milkdrop : MonoBehaviour
 
                 float additive = GetVariable(CurrentShape.FrameVariables, "additive");
 
-                bool hasBorder = borderColor.w > 0f;
+                bool hasBorder = borderColor.a > 0f;
                 bool isTextured = Mathf.Abs(textured) >= 1f;
                 bool isBorderThick = Mathf.Abs(thickoutline) >= 1f;
                 bool isAdditive = Mathf.Abs(additive) >= 1f;
@@ -1245,7 +1245,7 @@ public class Milkdrop : MonoBehaviour
                     };
 
                     WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
-                    WaveformRenderer.sharedMaterial.SetVector("waveColor", borderColor);
+                    WaveformRenderer.sharedMaterial.SetColor("waveColor", borderColor);
                     WaveformRenderer.sharedMaterial.SetFloat("additivewave", additive);
                     WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
@@ -1461,7 +1461,7 @@ public class Milkdrop : MonoBehaviour
                 }
 
                 WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
-                WaveformRenderer.sharedMaterial.SetVector("waveColor", Vector4.one);
+                WaveformRenderer.sharedMaterial.SetColor("waveColor", Color.white);
                 WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentWave.FrameVariables, "additive"));
                 WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
@@ -1739,7 +1739,7 @@ public class Milkdrop : MonoBehaviour
 
     void DrawOuterBorder()
     {
-        Vector4 outerColor = new Vector4
+        Color outerColor = new Color
         (
             GetVariable(CurrentPreset.FrameVariables, "ob_r"),
             GetVariable(CurrentPreset.FrameVariables, "ob_g"),
@@ -1754,7 +1754,7 @@ public class Milkdrop : MonoBehaviour
 
     void DrawInnerBorder()
     {
-        Vector4 innerColor = new Vector4
+        Color innerColor = new Color
         (
             GetVariable(CurrentPreset.FrameVariables, "ib_r"),
             GetVariable(CurrentPreset.FrameVariables, "ib_g"),
@@ -1768,9 +1768,9 @@ public class Milkdrop : MonoBehaviour
         DrawBorder(innerColor, borderSize, prevBorderSize);
     }
 
-    void DrawBorder(Vector4 borderColor, float borderSize, float prevBorderSize)
+    void DrawBorder(Color borderColor, float borderSize, float prevBorderSize)
     {
-        if (borderSize == 0f || borderColor.w == 0f)
+        if (borderSize == 0f || borderColor.a == 0f)
         {
             return;
         }
@@ -1790,7 +1790,7 @@ public class Milkdrop : MonoBehaviour
         BorderSideTop.localScale = new Vector3(2f - prevBorderSize * 2f, 1f, borderSize) * 0.1f;
         BorderSideBottom.localScale = new Vector3(2f - prevBorderSize * 2f, 1f, borderSize) * 0.1f;
 
-        BorderMaterial.SetVector("borderColor", borderColor);
+        BorderMaterial.SetColor("borderColor", borderColor);
 
         TargetMeshFilter.sharedMesh = TargetMeshWarp;
         TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
@@ -2449,7 +2449,7 @@ public class Milkdrop : MonoBehaviour
             }
         }
 
-        Vector4 color = new Vector4(r, g, b, alpha);
+        Color color = new Color(r, g, b, alpha);
 
         // if oldNumVert stuff
 
@@ -2553,7 +2553,7 @@ public class Milkdrop : MonoBehaviour
             };
 
             WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
-            WaveformRenderer.sharedMaterial.SetVector("waveColor", color);
+            WaveformRenderer.sharedMaterial.SetColor("waveColor", color);
             WaveformRenderer.sharedMaterial.SetFloat("additivewave", GetVariable(CurrentPreset.FrameVariables, "additivewave"));
             WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
@@ -2754,7 +2754,6 @@ public class Milkdrop : MonoBehaviour
             for (int k = 0; k < 3; k++)
             {
                 hueBase[i * 3 + k] = hueBase[i * 3 + k] / maxShade;
-                hueBase[i * 3 + k] = 0.5f + 0.5f * hueBase[i * 3 + k];
             }
         }
 
@@ -2776,10 +2775,10 @@ public class Milkdrop : MonoBehaviour
 
                 CompColor[offsetColor] = new Color
                 (
-                    0.5f + (hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y))* 0.5f,
-                    0.5f + (hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y)) * 0.5f,
-                    0.5f + (hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y)) * 0.5f,
-                    0.5f + alpha * 0.5f
+                    hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y),
+                    hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y),
+                    hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y),
+                    alpha
                 );
 
                 offsetColor++;
