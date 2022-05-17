@@ -79,10 +79,10 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     - additivewave: 0
-    - aspect_ratio: 1.2851003
+    - aspect_ratio: 1.495
     - wave_dots: 1
     m_Colors:
     - _Color: {r: 0, g: 0, b: 0, a: 0.49601674}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - waveColor: {r: 1, g: 1, b: 1, a: 1}
+    - waveColor: {r: 1, g: 0.8883047, b: 0.18350106, a: 1}
   m_BuildTextureStacks: []

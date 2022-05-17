@@ -39,7 +39,7 @@ Shader "Milkdrop/ShapeShader"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = float2(v.vertex.x / aspect_ratio, v.vertex.y) * float2(0.5, 0.5) + float2(0.5, 0.5);
+                o.uv = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.uv_orig = v.uv;
                 o.color = v.color;
                 return o;
@@ -58,17 +58,15 @@ Shader "Milkdrop/ShapeShader"
 
                 if (uTextured != 0)
                 {
-                    waveColor *= tex2D(_MainTex, uv_orig);
+                    waveColor.xyz *= tex2D(_MainTex, uv_orig).xyz;
                 }
-
-                float4 colorW = waveColor.w;
 
                 if (additive != 0)
                 {
-                    return float4(tex2D(_MainTex, uv).xyz + waveColor.xyz * colorW, 1.0);
+                    return float4(tex2D(_MainTex, uv).xyz + waveColor.xyz * waveColor.w, 1.0);
                 }
                 
-                return float4(lerp(tex2D(_MainTex, uv).xyz, waveColor.xyz, colorW), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv).xyz, waveColor.xyz, waveColor.w), 1.0);
             }
             ENDCG
         }

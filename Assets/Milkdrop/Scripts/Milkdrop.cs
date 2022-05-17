@@ -9,20 +9,20 @@ public class Milkdrop : MonoBehaviour
 {
     public class Wave
     {
-        public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
+        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
         public string InitEquation = "";
-        public Action<Dictionary<string, float>> InitEquationCompiled;
+        public Action<Dictionary<int, float>> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<string, float>> FrameEquationCompiled;
+        public Action<Dictionary<int, float>> FrameEquationCompiled;
         public string PointEquation = "";
-        public Action<Dictionary<string, float>> PointEquationCompiled;
-        public Dictionary<string, float> Variables = new Dictionary<string, float>();
-        public Dictionary<string, float> InitVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> FrameVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> PointVariables = new Dictionary<string, float>();
-        public string[] UserKeys = new string[0];
-        public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
-        public Dictionary<string, float> Inits = new Dictionary<string, float>();
+        public Action<Dictionary<int, float>> PointEquationCompiled;
+        public Dictionary<int, float> Variables = new Dictionary<int, float>();
+        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> PointVariables = new Dictionary<int, float>();
+        public int[] UserKeys = new int[0];
+        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
+        public Dictionary<int, float> Inits = new Dictionary<int, float>();
 
         public float[] PointsDataL;
         public float[] PointsDataR;
@@ -34,17 +34,17 @@ public class Milkdrop : MonoBehaviour
 
     public class Shape
     {
-        public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
+        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
         public string InitEquation = "";
-        public Action<Dictionary<string, float>> InitEquationCompiled;
+        public Action<Dictionary<int, float>> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<string, float>> FrameEquationCompiled;
-        public Dictionary<string, float> Variables = new Dictionary<string, float>();
-        public Dictionary<string, float> InitVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> FrameVariables = new Dictionary<string, float>();
-        public string[] UserKeys = new string[0];
-        public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
-        public Dictionary<string, float> Inits = new Dictionary<string, float>();
+        public Action<Dictionary<int, float>> FrameEquationCompiled;
+        public Dictionary<int, float> Variables = new Dictionary<int, float>();
+        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
+        public int[] UserKeys = new int[0];
+        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
+        public Dictionary<int, float> Inits = new Dictionary<int, float>();
 
         public Vector3[] Positions;
         public Color[] Colors;
@@ -56,13 +56,13 @@ public class Milkdrop : MonoBehaviour
 
     public class Preset
     {
-        public Dictionary<string, float> BaseVariables = new Dictionary<string, float>();
+        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
         public string InitEquation = "";
-        public Action<Dictionary<string, float>> InitEquationCompiled;
+        public Action<Dictionary<int, float>> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<string, float>> FrameEquationCompiled;
+        public Action<Dictionary<int, float>> FrameEquationCompiled;
         public string PixelEquation = "";
-        public Action<Dictionary<string, float>> PixelEquationCompiled;
+        public Action<Dictionary<int, float>> PixelEquationCompiled;
         public List<Wave> Waves = new List<Wave>();
         public List<Shape> Shapes = new List<Shape>();
         public string WarpEquation = "";
@@ -70,15 +70,15 @@ public class Milkdrop : MonoBehaviour
         public string Warp;
         public string Comp;
 
-        public Dictionary<string, float> Variables = new Dictionary<string, float>();
-        public Dictionary<string, float> InitVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> RegVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> FrameVariables = new Dictionary<string, float>();
-        public Dictionary<string, float> PixelVariables = new Dictionary<string, float>();
+        public Dictionary<int, float> Variables = new Dictionary<int, float>();
+        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> RegVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
+        public Dictionary<int, float> PixelVariables = new Dictionary<int, float>();
 
-        public string[] UserKeys = new string[0];
-        public Dictionary<string, float> FrameMap = new Dictionary<string, float>();
-        public Dictionary<string, float> AfterFrameVariables = new Dictionary<string, float>();
+        public int[] UserKeys = new int[0];
+        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
+        public Dictionary<int, float> AfterFrameVariables = new Dictionary<int, float>();
 
         public Material WarpMaterial;
         public Material DarkenCenterMaterial;
@@ -188,20 +188,11 @@ public class Milkdrop : MonoBehaviour
         {"bdrawthick", "thick"}
     };
 
-    private string[] qs = new string[]
-    {
-        "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8",
-        "q9", "q10", "q11","q12", "q13", "q14", "q15", "q16",
-        "q17", "q18", "q19", "q20", "q21", "q22", "q23", "q24",
-        "q25", "q26", "q27", "q28", "q29", "q30", "q31", "q32",
-    };
+    private int[] qs;
 
-    private string[] ts = new string[]
-    {
-        "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"
-    };
+    private int[] ts;
 
-    private string[] regs = new string[99];
+    private int[] regs;
 
     private Vector2[] WarpUVs;
     private Color[] WarpColor;
@@ -252,11 +243,14 @@ public class Milkdrop : MonoBehaviour
     private int[] audioSampleStarts;
     private int[] audioSampleStops;
 
-    Dictionary<string, float> Pick(Dictionary<string, float> source, string[] keys)
-    {
-        Dictionary<string, float> result = new Dictionary<string, float>();
+    private Dictionary<string, int> VariableNameTable = new Dictionary<string, int>();
+    private int LatestVariableIndex = 0;
 
-        foreach (string key in source.Keys.Where(x => keys.Contains(x)))
+    Dictionary<int, float> Pick(Dictionary<int, float> source, int[] keys)
+    {
+        Dictionary<int, float> result = new Dictionary<int, float>();
+
+        foreach (int key in source.Keys.Where(x => keys.Contains(x)))
         {
             result.Add(key, source[key]);
         }
@@ -264,16 +258,26 @@ public class Milkdrop : MonoBehaviour
         return result;
     }
 
-    Dictionary<string, float> Omit(Dictionary<string, float> source, string[] keys)
+    Dictionary<int, float> Omit(Dictionary<int, float> source, int[] keys)
     {
-        Dictionary<string, float> result = new Dictionary<string, float>();
+        Dictionary<int, float> result = new Dictionary<int, float>();
 
-        foreach (string key in source.Keys.Where(x => !keys.Contains(x)))
+        foreach (int key in source.Keys.Where(x => !keys.Contains(x)))
         {
             result.Add(key, source[key]);
         }
 
         return result;
+    }
+
+    void RegisterVariable(string name)
+    {
+        if (VariableNameTable.ContainsKey(name))
+        {
+            return;
+        }
+
+        VariableNameTable.Add(name, LatestVariableIndex++);
     }
 
     void OnDestroy()
@@ -289,9 +293,60 @@ public class Milkdrop : MonoBehaviour
 
     public void Initialize()
     {
+        string[] _qs = new string[]
+        {
+            "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8",
+            "q9", "q10", "q11","q12", "q13", "q14", "q15", "q16",
+            "q17", "q18", "q19", "q20", "q21", "q22", "q23", "q24",
+            "q25", "q26", "q27", "q28", "q29", "q30", "q31", "q32",
+        };
+
+        string[] _ts = new string[]
+        {
+            "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"
+        };
+
+        string[] _regs = new string[99];
+
+        for (int i = 0; i < _regs.Length; i++)
+        {
+            _regs[i] = i < 10 ? "reg0" + i : "reg" + i;
+        }
+
+        foreach (var v in _qs)
+        {
+            RegisterVariable(v);
+        }
+
+        foreach (var v in _ts)
+        {
+            RegisterVariable(v);
+        }
+
+        foreach (var v in _regs)
+        {
+            RegisterVariable(v);
+        }
+
+        qs = new int[_qs.Length];
+
+        for (int i = 0; i < qs.Length; i++)
+        {
+            qs[i] = VariableNameTable[_qs[i]];
+        }
+
+        ts = new int[_ts.Length];
+
+        for (int i = 0; i < ts.Length; i++)
+        {
+            ts[i] = VariableNameTable[_ts[i]];
+        }
+
+        regs = new int[_regs.Length];
+
         for (int i = 0; i < regs.Length; i++)
         {
-            regs[i] = i < 10 ? "reg0" + i : "reg" + i;
+            regs[i] = VariableNameTable[_regs[i]];
         }
         
         UnloadPresets();
@@ -648,7 +703,7 @@ public class Milkdrop : MonoBehaviour
 
     void RunFrameEquations()
     {
-        CurrentPreset.FrameVariables = new Dictionary<string, float>(CurrentPreset.Variables);
+        CurrentPreset.FrameVariables = new Dictionary<int, float>(CurrentPreset.Variables);
 
         foreach (var v in CurrentPreset.InitVariables.Keys)
         {
@@ -854,7 +909,7 @@ public class Milkdrop : MonoBehaviour
         }
     }
 
-    (float[], float[]) GetBlurValues(Dictionary<string, float> variables)
+    (float[], float[]) GetBlurValues(Dictionary<int, float> variables)
     {
         float blurMin1 = GetVariable(variables, "b1n");
         float blurMin2 = GetVariable(variables, "b2n");
@@ -938,11 +993,11 @@ public class Milkdrop : MonoBehaviour
                 continue;
             }
 
-            CurrentShape.FrameVariables = new Dictionary<string, float>(CurrentShape.Variables);
+            CurrentShape.FrameVariables = new Dictionary<int, float>(CurrentShape.Variables);
 
             foreach (var v in CurrentShape.Variables.Keys)
             {
-                SetVariable(CurrentPreset.FrameVariables, v, CurrentShape.Variables[v]);
+                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Variables[v]);
             }
 
             foreach (var v in CurrentShape.FrameMap.Keys)
@@ -1224,7 +1279,7 @@ public class Milkdrop : MonoBehaviour
                 continue;
             }
 
-            CurrentWave.FrameVariables = new Dictionary<string, float>(CurrentWave.Variables);
+            CurrentWave.FrameVariables = new Dictionary<int, float>(CurrentWave.Variables);
 
             foreach (var v in CurrentWave.Variables.Keys)
             {
@@ -3204,24 +3259,57 @@ public class Milkdrop : MonoBehaviour
         return tokens;
     }
 
-    float GetVariable(Dictionary<string, float> Variables, string name, float defaultValue = 0f)
+    float GetVariable(Dictionary<int, float> Variables, string name, float defaultValue = 0f)
     {
-        if (Variables.TryGetValue(name, out float value))
+        int key;
+
+        if (!VariableNameTable.TryGetValue(name, out key))
+        {
+            return 0f;
+        }
+
+        if (Variables.TryGetValue(key, out float value))
+        {
+            return value;
+        }
+
+        return defaultValue;
+    }
+
+    void SetVariable(Dictionary<int, float> Variables, string name, float value)
+    {
+        RegisterVariable(name);
+
+        int key = VariableNameTable[name];
+
+        if (Variables.ContainsKey(key))
+        {
+            Variables[key] = value;
+        }
+        else
+        {
+            Variables.Add(key, value);
+        }
+    }
+
+    float GetVariable(Dictionary<int, float> Variables, int key, float defaultValue = 0f)
+    {
+        if (Variables.TryGetValue(key, out float value))
         {
             return value;
         }
         return defaultValue;
     }
 
-    void SetVariable(Dictionary<string, float> Variables, string name, float value)
+    void SetVariable(Dictionary<int, float> Variables, int key, float value)
     {
-        if (Variables.ContainsKey(name))
+        if (Variables.ContainsKey(key))
         {
-            Variables[name] = value;
+            Variables[key] = value;
         }
         else
         {
-            Variables.Add(name, value);
+            Variables.Add(key, value);
         }
     }
 
@@ -3456,9 +3544,9 @@ public class Milkdrop : MonoBehaviour
         LoadedPresets.Add(fileName, preset);
     }
 
-    Action<Dictionary<string, float>> CompileEquation(List<List<string>> Equation)
+    Action<Dictionary<int, float>> CompileEquation(List<List<string>> Equation)
     {
-        Action<Dictionary<string, float>> result = null;
+        Action<Dictionary<int, float>> result = null;
         
         foreach (var line in Equation)
         {
@@ -3467,45 +3555,51 @@ public class Milkdrop : MonoBehaviour
             
             string varName = line[0];
 
+            RegisterVariable(varName);
+            int varIndex = VariableNameTable[varName];
+
             int stackIndex = 0;
 
-            Func<Dictionary<string, float>, float> compiledLine = CompileExpression(line.Skip(1).ToList(), ref stackIndex);
+            Func<Dictionary<int, float>, float> compiledLine = CompileExpression(line.Skip(1).ToList(), ref stackIndex);
 
-            result += (Dictionary<string, float> Variables) =>
+            result += (Dictionary<int, float> Variables) =>
             {
-                SetVariable(Variables, varName, compiledLine(Variables));
+                SetVariable(Variables, varIndex, compiledLine(Variables));
             };
         }
 
         if (result == null)
         {
-            result = (Dictionary<string, float> Variables) => { };
+            result = (Dictionary<int, float> Variables) => { };
         }
 
         return result;
     }
 
-    Func<Dictionary<string, float>, float> CompileVariable(string token)
+    Func<Dictionary<int, float>, float> CompileVariable(string token)
     {
         if (token[0] == '#')
         {
-            int index = int.Parse(token.Substring(1));
+            int stackIndex = int.Parse(token.Substring(1));
 
-            return (Dictionary<string, float> Variables) => Stack[index];
+            return (Dictionary<int, float> Variables) => Stack[stackIndex];
         }
 
         if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
         {
             var result = float.Parse(token);
-            return (Dictionary<string, float> Variables) => result;
+            return (Dictionary<int, float> Variables) => result;
         }
 
-        return (Dictionary<string, float> Variables) => GetVariable(Variables, token);
+        RegisterVariable(token);
+        int varIndex = VariableNameTable[token];
+
+        return (Dictionary<int, float> Variables) => GetVariable(Variables, varIndex);
     }
 
-    Func<Dictionary<string, float>, float> CompileExpression(List<string> Tokens, ref int stackIndex)
+    Func<Dictionary<int, float>, float> CompileExpression(List<string> Tokens, ref int stackIndex)
     {
-        List<Action<Dictionary<string, float>>> innerActions = new List<Action<Dictionary<string, float>>>();
+        List<Action<Dictionary<int, float>>> innerActions = new List<Action<Dictionary<int, float>>>();
 
         string debugOut = "";
 
@@ -3586,7 +3680,7 @@ public class Milkdrop : MonoBehaviour
                                     arguments[arguments.Count - 1].Add(token3);
                                 }
 
-                                List<Func<Dictionary<string, float>, float>> argumentValues = new List<Func<Dictionary<string, float>, float>>();
+                                List<Func<Dictionary<int, float>, float>> argumentValues = new List<Func<Dictionary<int, float>, float>>();
 
                                 foreach (List<string> argument in arguments)
                                 {
@@ -3598,7 +3692,7 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Action<Dictionary<string, float>> compiledFunction = (Dictionary<string, float> Variables) =>
+                                Action<Dictionary<int, float>> compiledFunction = (Dictionary<int, float> Variables) =>
                                 {
                                     throw new Exception("Error compiling function " + functionName + ": " + debugOut);
                                 };
@@ -3606,19 +3700,19 @@ public class Milkdrop : MonoBehaviour
                                 switch (arguments.Count)
                                 {
                                     case 1:
-                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        compiledFunction = (Dictionary<int, float> Variables) =>
                                         {
                                             Stack[funcIndex] = Funcs1Arg[functionName](argumentValues[0](Variables));
                                         };
                                         break;
                                     case 2:
-                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        compiledFunction = (Dictionary<int, float> Variables) =>
                                         {
                                             Stack[funcIndex] = Funcs2Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables));
                                         };
                                         break;
                                     case 3:
-                                        compiledFunction = (Dictionary<string, float> Variables) =>
+                                        compiledFunction = (Dictionary<int, float> Variables) =>
                                         {
                                             Stack[funcIndex] = Funcs3Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables), argumentValues[2](Variables));
                                         };
@@ -3638,9 +3732,9 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Func<Dictionary<string, float>, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), ref stackIndex);
+                                Func<Dictionary<int, float>, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), ref stackIndex);
 
-                                innerActions.Add((Dictionary<string, float> Variables) =>
+                                innerActions.Add((Dictionary<int, float> Variables) =>
                                 {
                                     Stack[funcIndex] = exp(Variables);
                                 });
@@ -3685,9 +3779,9 @@ public class Milkdrop : MonoBehaviour
                     int funcIndex = stackIndex++;
                     string funcId = "#" + funcIndex;
 
-                    Func<Dictionary<string, float>, float> exp = CompileVariable(next);
+                    Func<Dictionary<int, float>, float> exp = CompileVariable(next);
 
-                    innerActions.Add((Dictionary<string, float> Variables) =>
+                    innerActions.Add((Dictionary<int, float> Variables) =>
                     {
                         Stack[funcIndex] = +exp(Variables);
                     });
@@ -3707,9 +3801,9 @@ public class Milkdrop : MonoBehaviour
                     int funcIndex = stackIndex++;
                     string funcId = "#" + funcIndex;
 
-                    Func<Dictionary<string, float>, float> exp = CompileVariable(next);
+                    Func<Dictionary<int, float>, float> exp = CompileVariable(next);
 
-                    innerActions.Add((Dictionary<string, float> Variables) =>
+                    innerActions.Add((Dictionary<int, float> Variables) =>
                     {
                         Stack[funcIndex] = -exp(Variables);
                     });
@@ -3733,10 +3827,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = prevValue(Variables) * nextValue(Variables);
                 });
@@ -3756,10 +3850,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = prevValue(Variables) / nextValue(Variables);
                 });
@@ -3779,10 +3873,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     float divider = nextValue(Variables);
 
@@ -3816,10 +3910,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = prevValue(Variables) + nextValue(Variables);
                 });
@@ -3839,10 +3933,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = prevValue(Variables) - nextValue(Variables);
                 });
@@ -3867,10 +3961,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = (int)prevValue(Variables) & (int)nextValue(Variables);
                 });
@@ -3895,10 +3989,10 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<string, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<string, float>, float> nextValue = CompileVariable(next);
+                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
+                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
 
-                innerActions.Add((Dictionary<string, float> Variables) =>
+                innerActions.Add((Dictionary<int, float> Variables) =>
                 {
                     Stack[funcIndex] = (int)prevValue(Variables) | (int)nextValue(Variables);
                 });
@@ -3921,9 +4015,9 @@ public class Milkdrop : MonoBehaviour
             throw new System.Exception("evaluation failed: " + debugOut + " => " + a);
         }
 
-        Func<Dictionary<string, float>, float> finalValue = CompileVariable(Tokens[0]);
+        Func<Dictionary<int, float>, float> finalValue = CompileVariable(Tokens[0]);
 
-        Func<Dictionary<string, float>, float> result = (Dictionary<string, float> Variables) =>
+        Func<Dictionary<int, float>, float> result = (Dictionary<int, float> Variables) =>
         {
             for (int i = 0; i < innerActions.Count; i++)
             {
@@ -3942,7 +4036,7 @@ public class Milkdrop : MonoBehaviour
 
         CurrentPreset = LoadedPresets[preset];
 
-        CurrentPreset.Variables = new Dictionary<string, float>();
+        CurrentPreset.Variables = new Dictionary<int, float>();
 
         foreach (var v in CurrentPreset.BaseVariables.Keys)
         {
@@ -3951,7 +4045,7 @@ public class Milkdrop : MonoBehaviour
 
         SetVariable(CurrentPreset.Variables, "frame", CurrentFrame);
         SetVariable(CurrentPreset.Variables, "time", CurrentTime);
-        SetVariable(CurrentPreset.Variables, "fps", FPS);
+        SetVariable(CurrentPreset.Variables, "fps", FPS == 0f ? 30f : FPS);
         SetVariable(CurrentPreset.Variables, "bass", Bass);
         SetVariable(CurrentPreset.Variables, "bass_att", BassAtt);
         SetVariable(CurrentPreset.Variables, "mid", Mid);
@@ -3973,10 +4067,10 @@ public class Milkdrop : MonoBehaviour
         SetVariable(CurrentPreset.Variables, "rand_preset.z", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_preset.w", UnityEngine.Random.Range(0f, 1f));
 
-        List<string> nonUserKeys = CurrentPreset.Variables.Keys.ToList();
+        List<int> nonUserKeys = CurrentPreset.Variables.Keys.ToList();
         nonUserKeys.AddRange(regs);
 
-        var afterInit = new Dictionary<string, float>(CurrentPreset.Variables);
+        var afterInit = new Dictionary<int, float>(CurrentPreset.Variables);
 
         CurrentPreset.InitEquationCompiled(afterInit);
 
@@ -3984,7 +4078,7 @@ public class Milkdrop : MonoBehaviour
         CurrentPreset.RegVariables = Pick(afterInit, regs);
         var initUserVars = Pick(afterInit, nonUserKeys.ToArray());
 
-        CurrentPreset.FrameVariables = new Dictionary<string, float>(CurrentPreset.Variables);
+        CurrentPreset.FrameVariables = new Dictionary<int, float>(CurrentPreset.Variables);
 
         foreach (var v in CurrentPreset.InitVariables.Keys)
         {
@@ -4017,7 +4111,7 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
                 {
-                    CurrentWave.Variables = new Dictionary<string, float>();
+                    CurrentWave.Variables = new Dictionary<int, float>();
 
                     foreach (var v in CurrentWave.BaseVariables.Keys)
                     {
@@ -4048,7 +4142,7 @@ public class Milkdrop : MonoBehaviour
                     SetVariable(CurrentWave.Variables, "rand_preset.z", GetVariable(CurrentWave.BaseVariables, "rand_preset.z"));
                     SetVariable(CurrentWave.Variables, "rand_preset.w", GetVariable(CurrentWave.BaseVariables, "rand_preset.w"));
 
-                    List<string> nonUserWaveKeys = CurrentWave.Variables.Keys.ToList();
+                    List<int> nonUserWaveKeys = CurrentWave.Variables.Keys.ToList();
                     nonUserWaveKeys.AddRange(regs);
                     nonUserWaveKeys.AddRange(ts);
 
@@ -4091,7 +4185,7 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentShape.BaseVariables, "enabled") != 0f)
                 {
-                    CurrentShape.Variables = new Dictionary<string, float>();
+                    CurrentShape.Variables = new Dictionary<int, float>();
 
                     foreach (var v in CurrentShape.BaseVariables.Keys)
                     {
@@ -4122,7 +4216,7 @@ public class Milkdrop : MonoBehaviour
                     SetVariable(CurrentShape.Variables, "rand_preset.z", GetVariable(CurrentShape.BaseVariables, "rand_preset.z"));
                     SetVariable(CurrentShape.Variables, "rand_preset.w", GetVariable(CurrentShape.BaseVariables, "rand_preset.w"));
 
-                    List<string> nonUserShapeKeys = CurrentShape.Variables.Keys.ToList();
+                    List<int> nonUserShapeKeys = CurrentShape.Variables.Keys.ToList();
                     nonUserShapeKeys.AddRange(regs);
                     nonUserShapeKeys.AddRange(ts);
 
