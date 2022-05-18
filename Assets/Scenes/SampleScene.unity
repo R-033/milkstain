@@ -625,11 +625,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: PresetName
-      value: Rovastar - Bellanova (New Wave Mix)
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: RandomOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: TargetAudio
@@ -637,7 +637,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: ChangePresetIn
-      value: 1000000
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176291, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: m_Name
