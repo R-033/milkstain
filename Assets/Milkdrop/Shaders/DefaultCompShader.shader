@@ -256,7 +256,7 @@ Shader "Milkdrop/DefaultCompShader"
                 if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
                 if(invert != 0) ret = 1.0 - ret;
 
-                return float4(lerp(tex2D(_MainTex, uv).xyz, ret, i.color.w), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv).xyz, ret, 1.0), 1.0);
                 //return float4(ret * i.color.w, 1.0);
             }
             ENDCG

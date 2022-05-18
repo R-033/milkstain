@@ -604,13 +604,18 @@ public class Milkdrop : MonoBehaviour
             index = Array.IndexOf(LoadedPresets.Keys.ToArray(), PresetName);
         }
 
-        PlayRandomPreset();
+        PlayRandomPreset(0f);
 
         initialized = true;
     }
 
-    public void PlayRandomPreset()
+    public void PlayRandomPreset(float transitionDuration)
     {
+        if (blending)
+        {
+            return;
+        }
+
         var keys = LoadedPresets.Keys.ToArray();
         int ind;
         if (RandomOrder)
@@ -625,7 +630,7 @@ public class Milkdrop : MonoBehaviour
                 index = 0;
             }
         }
-        PlayPreset(keys[ind]);
+        PlayPreset(keys[ind], transitionDuration);
     }
 
     void LateUpdate()
@@ -644,7 +649,7 @@ public class Milkdrop : MonoBehaviour
         if (presetChangeTimer >= ChangePresetIn)
         {
             presetChangeTimer -= ChangePresetIn;
-            PlayRandomPreset();
+            PlayRandomPreset(TransitionTime);
         }
         
         timeSinceLastFrame += Time.deltaTime;
@@ -1064,15 +1069,15 @@ public class Milkdrop : MonoBehaviour
 
         TempTexture.wrapMode = GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
 
-        if (!blending)
-        {
+        //if (!blending)
+        //{
             DrawWarp(CurrentPreset, false);
-        }
-        else
-        {
-            DrawWarp(PrevPreset, false);
-            DrawWarp(CurrentPreset, true);
-        }
+        //}
+        //else
+        //{
+        //    DrawWarp(PrevPreset, false);
+        //    DrawWarp(CurrentPreset, true);
+        //}
 
         // blur
 
@@ -1099,15 +1104,15 @@ public class Milkdrop : MonoBehaviour
 
         // text
 
-        if (!blending)
-        {
+        //if (!blending)
+        //{
             DrawComp(CurrentPreset, false);
-        }
-        else
-        {
-            DrawComp(PrevPreset, false);
-            DrawComp(CurrentPreset, true);
-        }
+        //}
+        //else
+        //{
+        //    DrawComp(PrevPreset, false);
+        //    DrawComp(CurrentPreset, true);
+        //}
     }
 
     void DrawShapes(Preset preset, float blendProgress)
@@ -2139,7 +2144,7 @@ public class Milkdrop : MonoBehaviour
         }
 
         int newWaveMode = Mathf.FloorToInt(GetVariable(CurrentPreset.FrameVariables, "wave_mode")) % 8;
-        int oldWaveMode = Mathf.FloorToInt(GetVariable(CurrentPreset.FrameVariables, "old_wave_mode")) % 8;
+        int oldWaveMode = PrevPreset == null ? 0 : Mathf.FloorToInt(GetVariable(PrevPreset.FrameVariables, "wave_mode")) % 8;
 
         float wavePosX = GetVariable(CurrentPreset.FrameVariables, "wave_x") * 2f - 1f;
         float wavePosY = GetVariable(CurrentPreset.FrameVariables, "wave_y") * 2f - 1f;
@@ -4441,18 +4446,16 @@ public class Milkdrop : MonoBehaviour
         }
     }
 
-    public void PlayPreset(string preset)
+    public void PlayPreset(string preset, float transitionDuration)
     {
-        if (CurrentPreset != null)
+        if (CurrentPreset != null && transitionDuration > 0f)
         {
             CreateBlendPattern();
 
             blending = true;
             blendStartTime = CurrentTime;
-            blendDuration = TransitionTime;
+            blendDuration = transitionDuration;
             blendProgress = 0f;
-
-            SetVariable(LoadedPresets[preset].BaseVariables, "old_wave_mode", GetVariable(CurrentPreset.BaseVariables, "wave_mode"));
         }
 
         PresetName = preset;

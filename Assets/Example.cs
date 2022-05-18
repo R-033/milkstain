@@ -22,7 +22,7 @@ public class Example : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.C))
         {
             milkdrop.presetChangeTimer = 0f;
-            milkdrop.PlayRandomPreset();
+            milkdrop.PlayRandomPreset(2.7f);
         }
     }
 }

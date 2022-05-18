@@ -210,7 +210,7 @@ Shader "Milkdrop/DefaultWarpShader"
                 // part that changes
                 ret = tex2D(_MainTex, uv).xyz * decay;
 
-                return float4(lerp(tex2D(_MainTex, uv_orig).xyz, ret * i.color.xyz, i.color.w), 1.0);
+                return float4(lerp(tex2D(_MainTex, uv_orig).xyz, ret * i.color.xyz, 1.0), 1.0);
                 //return float4(ret * i.color.xyz * i.color.w, 1.0);
             }
             ENDCG
