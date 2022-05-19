@@ -762,6 +762,11 @@ public class Milkdrop : MonoBehaviour
 
         for (int i = 0; i < 3; i++)
         {
+            imm[i] = 0f;
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
             for (int j = audioSampleStarts[i]; j < audioSampleStops[i]; j++)
             {
                 imm[i] += (freqArrayL[j] + freqArrayR[j]) * 0.5f;
