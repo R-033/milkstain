@@ -4,25 +4,62 @@ using UnityEngine;
 using System.Linq;
 using UnityEngine.UI;
 using System;
+using System.Runtime.CompilerServices;
 
 public class Milkdrop : MonoBehaviour
 {
+    static readonly int HeapSize = 512;
+
+    public class State
+    {
+        public State()
+        {
+            Keys = new List<int>();
+            Heap = new float[HeapSize];
+        }
+
+        public State(State other)
+        {
+            Keys = new List<int>(other.Keys);
+
+            Heap = new float[HeapSize];
+
+            for (int i = 0; i < Keys.Count; i++)
+            {
+                Heap[Keys[i]] = other.Heap[Keys[i]];
+            }
+        }
+        
+        public List<int> Keys;
+        public float[] Heap;
+
+        public void Set(int index, float value)
+        {
+            if (!Keys.Contains(index))
+            {
+                Keys.Add(index);
+            }
+
+            Heap[index] = value;
+        }
+    }
+
     public class Wave
     {
-        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
+        public State BaseVariables = new State();
         public string InitEquation = "";
-        public Action<Dictionary<int, float>> InitEquationCompiled;
+        public Action<State> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<int, float>> FrameEquationCompiled;
+        public Action<State> FrameEquationCompiled;
         public string PointEquation = "";
-        public Action<Dictionary<int, float>> PointEquationCompiled;
-        public Dictionary<int, float> Variables = new Dictionary<int, float>();
-        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> PointVariables = new Dictionary<int, float>();
+        public Action<State> PointEquationCompiled;
+        public State Variables = new State();
+        public State InitVariables = new State();
+        public State FrameVariables = new State();
+        public State PointVariables = new State();
         public int[] UserKeys = new int[0];
-        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
-        public Dictionary<int, float> Inits = new Dictionary<int, float>();
+        public State FrameMap = new State();
+        public State Inits = new State();
 
         public float[] PointsDataL;
         public float[] PointsDataR;
@@ -34,17 +71,17 @@ public class Milkdrop : MonoBehaviour
 
     public class Shape
     {
-        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
+        public State BaseVariables = new State();
         public string InitEquation = "";
-        public Action<Dictionary<int, float>> InitEquationCompiled;
+        public Action<State> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<int, float>> FrameEquationCompiled;
-        public Dictionary<int, float> Variables = new Dictionary<int, float>();
-        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
+        public Action<State> FrameEquationCompiled;
+        public State Variables = new State();
+        public State InitVariables = new State();
+        public State FrameVariables = new State();
         public int[] UserKeys = new int[0];
-        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
-        public Dictionary<int, float> Inits = new Dictionary<int, float>();
+        public State FrameMap = new State();
+        public State Inits = new State();
 
         public Vector3[] Positions;
         public Color[] Colors;
@@ -56,13 +93,13 @@ public class Milkdrop : MonoBehaviour
 
     public class Preset
     {
-        public Dictionary<int, float> BaseVariables = new Dictionary<int, float>();
+        public State BaseVariables = new State();
         public string InitEquation = "";
-        public Action<Dictionary<int, float>> InitEquationCompiled;
+        public Action<State> InitEquationCompiled;
         public string FrameEquation = "";
-        public Action<Dictionary<int, float>> FrameEquationCompiled;
+        public Action<State> FrameEquationCompiled;
         public string PixelEquation = "";
-        public Action<Dictionary<int, float>> PixelEquationCompiled;
+        public Action<State> PixelEquationCompiled;
         public List<Wave> Waves = new List<Wave>();
         public List<Shape> Shapes = new List<Shape>();
         public string WarpEquation = "";
@@ -70,26 +107,25 @@ public class Milkdrop : MonoBehaviour
         public string Warp;
         public string Comp;
 
-        public Dictionary<int, float> Variables = new Dictionary<int, float>();
-        public Dictionary<int, float> InitVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> RegVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> FrameVariables = new Dictionary<int, float>();
-        public Dictionary<int, float> PixelVariables = new Dictionary<int, float>();
+        public State Variables = new State();
+        public State InitVariables = new State();
+        public State RegVariables = new State();
+        public State FrameVariables = new State();
+        public State PixelVariables = new State();
 
         public int[] UserKeys = new int[0];
-        public Dictionary<int, float> FrameMap = new Dictionary<int, float>();
-        public Dictionary<int, float> AfterFrameVariables = new Dictionary<int, float>();
+        public State FrameMap = new State();
+        public State AfterFrameVariables = new State();
 
         public Material WarpMaterial;
         public Material DarkenCenterMaterial;
         public Material CompMaterial;
     }
 
-    public Dictionary<string, Preset> LoadedPresets = new Dictionary<string, Preset>();
+    public Preset CurrentPreset;
 
     public TextAsset[] PresetFiles;
 
-    private Preset CurrentPreset;
     private Preset PrevPreset;
 
     public Vector2Int MeshSize = new Vector2Int(48, 36);
@@ -122,6 +158,12 @@ public class Milkdrop : MonoBehaviour
 
     public LineRenderer WaveformRenderer;
     public LineRenderer WaveformRenderer2;
+    public LineRenderer WaveformRenderer3;
+    public LineRenderer WaveformRenderer4;
+    public LineRenderer WaveformRenderer5;
+    public LineRenderer WaveformRenderer6;
+    public LineRenderer WaveformRenderer7;
+    public LineRenderer WaveformRenderer8;
 
     public Camera TargetCamera;
 
@@ -270,38 +312,50 @@ public class Milkdrop : MonoBehaviour
 
     int index = 0;
 
-    Dictionary<int, float> Pick(Dictionary<int, float> source, int[] keys)
-    {
-        Dictionary<int, float> result = new Dictionary<int, float>();
+    int varInd_x;
+    int varInd_y;
+    int varInd_rad;
+    int varInd_ang;
+    int varInd_zoom;
+    int varInd_zoomexp;
+    int varInd_rot;
+    int varInd_warp;
+    int varInd_cx;
+    int varInd_cy;
+    int varInd_dx;
+    int varInd_dy;
+    int varInd_sx;
+    int varInd_sy;
 
-        foreach (int key in source.Keys.Where(x => keys.Contains(x)))
-        {
-            result.Add(key, source[key]);
-        }
+    State Pick(State source, int[] keys)
+    {
+        State result = new State(source);
+        result.Keys = source.Keys.Where(x => keys.Contains(x)).ToList();
 
         return result;
     }
 
-    Dictionary<int, float> Omit(Dictionary<int, float> source, int[] keys)
+    State Omit(State source, int[] keys)
     {
-        Dictionary<int, float> result = new Dictionary<int, float>();
-
-        foreach (int key in source.Keys.Where(x => !keys.Contains(x)))
-        {
-            result.Add(key, source[key]);
-        }
+        State result = new State(source);
+        result.Keys = source.Keys.Where(x => !keys.Contains(x)).ToList();
 
         return result;
     }
 
-    void RegisterVariable(string name)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    int RegisterVariable(string name)
     {
-        if (VariableNameTable.ContainsKey(name))
+        if (VariableNameTable.TryGetValue(name, out int result))
         {
-            return;
+            return result;
         }
 
-        VariableNameTable.Add(name, LatestVariableIndex++);
+        int ind = LatestVariableIndex++;
+
+        VariableNameTable.Add(name, ind);
+
+        return ind;
     }
 
     void OnDestroy()
@@ -372,9 +426,23 @@ public class Milkdrop : MonoBehaviour
         {
             regs[i] = VariableNameTable[_regs[i]];
         }
+
+        varInd_x = RegisterVariable("x");
+        varInd_y = RegisterVariable("y");
+        varInd_rad = RegisterVariable("rad");
+        varInd_ang = RegisterVariable("ang");
+        varInd_zoom = RegisterVariable("zoom");
+        varInd_zoomexp = RegisterVariable("zoomexp");
+        varInd_rot = RegisterVariable("rot");
+        varInd_warp = RegisterVariable("warp");
+        varInd_cx = RegisterVariable("cx");
+        varInd_cy = RegisterVariable("cy");
+        varInd_dx = RegisterVariable("dx");
+        varInd_dy = RegisterVariable("dy");
+        varInd_sx = RegisterVariable("sx");
+        varInd_sy = RegisterVariable("sy");
         
         UnloadPresets();
-        LoadPresets();
 
         blendingVertInfoA = new float[(MeshSize.x + 1) * (MeshSize.y + 1)];
         blendingVertInfoC = new float[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -557,11 +625,23 @@ public class Milkdrop : MonoBehaviour
         TargetMeshFilter.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer3.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer4.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer5.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer6.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer7.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        WaveformRenderer8.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         BorderParent.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         TargetMeshFilter2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
 
         WaveformRenderer.enabled = false;
         WaveformRenderer2.enabled = false;
+        WaveformRenderer3.enabled = false;
+        WaveformRenderer4.enabled = false;
+        WaveformRenderer5.enabled = false;
+        WaveformRenderer6.enabled = false;
+        WaveformRenderer7.enabled = false;
+        WaveformRenderer8.enabled = false;
 
         BorderSideLeft.gameObject.SetActive(false);
         BorderSideRight.gameObject.SetActive(false);
@@ -601,7 +681,14 @@ public class Milkdrop : MonoBehaviour
 
         if (!string.IsNullOrEmpty(PresetName))
         {
-            index = Array.IndexOf(LoadedPresets.Keys.ToArray(), PresetName);
+            for (int i = 0; i < PresetFiles.Length; i++)
+            {
+                if (PresetFiles[i].name == PresetName)
+                {
+                    index = i;
+                    break;
+                }
+            }
         }
 
         PlayRandomPreset(0f);
@@ -616,21 +703,20 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
-        var keys = LoadedPresets.Keys.ToArray();
         int ind;
         if (RandomOrder)
         {
-            ind = UnityEngine.Random.Range(0, keys.Length);
+            ind = UnityEngine.Random.Range(0, PresetFiles.Length);
         }
         else
         {
             ind = index++;
-            if (index >= keys.Length)
+            if (index >= PresetFiles.Length)
             {
                 index = 0;
             }
         }
-        PlayPreset(keys[ind], transitionDuration);
+        PlayPreset(ind, transitionDuration);
     }
 
     void LateUpdate()
@@ -656,8 +742,8 @@ public class Milkdrop : MonoBehaviour
 
         if (timeSinceLastFrame >= 1f / MaxFPS)
         {
-            timeSinceLastFrame -= 1f / MaxFPS;
             FPS = Mathf.Min(1f / Time.deltaTime, MaxFPS);
+            timeSinceLastFrame -= 1f / FPS;
             Render();
         }
     }
@@ -682,9 +768,11 @@ public class Milkdrop : MonoBehaviour
         RunFrameEquations(CurrentPreset);
         RunPixelEquations(CurrentPreset, false);
 
-        foreach (var v in Pick(CurrentPreset.PixelVariables, regs))
+        var pick = Pick(CurrentPreset.PixelVariables, regs);
+
+        foreach (var v in pick.Keys)
         {
-            SetVariable(CurrentPreset.RegVariables, v.Key, v.Value);
+            SetVariable(CurrentPreset.RegVariables, v, pick.Heap[v]);
         }
 
         // assing regs to global
@@ -706,14 +794,16 @@ public class Milkdrop : MonoBehaviour
         float mix2 = 1f - mix;
         float snapPoint = 0.5f;
         
-        foreach (var v in mixedVariables)
+        for (int i = 0; i < mixedVariables.Length; i++)
         {
-            SetVariable(CurrentPreset.FrameVariables, v, mix * GetVariable(CurrentPreset.FrameVariables, v) + mix2 * GetVariable(PrevPreset.FrameVariables, v));
+            var v = mixedVariables[i];
+            SetVariable(CurrentPreset.FrameVariables, v, mix * CurrentPreset.FrameVariables.Heap[v] + mix2 * PrevPreset.FrameVariables.Heap[v]);
         }
 
-        foreach (var v in snappedVariables)
+        for (int i = 0; i < mixedVariables.Length; i++)
         {
-            SetVariable(CurrentPreset.FrameVariables, v, mix < snapPoint ? GetVariable(PrevPreset.FrameVariables, v) : GetVariable(CurrentPreset.FrameVariables, v));
+            var v = mixedVariables[i];
+            SetVariable(CurrentPreset.FrameVariables, v, mix < snapPoint ? PrevPreset.FrameVariables.Heap[v] : CurrentPreset.FrameVariables.Heap[v]);
         }
     }
 
@@ -819,16 +909,21 @@ public class Milkdrop : MonoBehaviour
 
     void RunFrameEquations(Preset preset)
     {
-        preset.FrameVariables = new Dictionary<int, float>(preset.Variables);
+        UnityEngine.Profiling.Profiler.BeginSample("RunFrameEquations");
+
+        foreach (var v in preset.Variables.Keys)
+        {
+            SetVariable(preset.FrameVariables, v, preset.Variables.Heap[v]);
+        }
 
         foreach (var v in preset.InitVariables.Keys)
         {
-            SetVariable(preset.FrameVariables, v, preset.InitVariables[v]);
+            SetVariable(preset.FrameVariables, v, preset.InitVariables.Heap[v]);
         }
 
         foreach (var v in preset.FrameMap.Keys)
         {
-            SetVariable(preset.FrameVariables, v, preset.FrameMap[v]);
+            SetVariable(preset.FrameVariables, v, preset.FrameMap.Heap[v]);
         }
 
         SetVariable(preset.FrameVariables, "frame", CurrentFrame);
@@ -848,10 +943,14 @@ public class Milkdrop : MonoBehaviour
         SetVariable(preset.FrameVariables, "pixelsy", Resolution.y);
 
         preset.FrameEquationCompiled(preset.FrameVariables);
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void RunPixelEquations(Preset preset, bool blending)
     {
+        UnityEngine.Profiling.Profiler.BeginSample("RunPixelEquations");
+
         int gridX = MeshSize.x;
         int gridZ = MeshSize.y;
 
@@ -875,21 +974,23 @@ public class Milkdrop : MonoBehaviour
         int offset = 0;
         int offsetColor = 0;
 
-        foreach (var v in preset.FrameVariables.Keys)
+        var pixelVariables = preset.PixelVariables;
+
+        foreach (var vv in preset.FrameVariables.Keys)
         {
-            SetVariable(preset.PixelVariables, v, preset.FrameVariables[v]);
+            SetVariable(pixelVariables, vv, preset.FrameVariables.Heap[vv]);
         }
 
-        float warp = GetVariable(preset.PixelVariables, "warp");
-        float zoom = GetVariable(preset.PixelVariables, "zoom");
-        float zoomExp = GetVariable(preset.PixelVariables, "zoomexp");
-        float cx = GetVariable(preset.PixelVariables, "cx");
-        float cy = GetVariable(preset.PixelVariables, "cy");
-        float sx = GetVariable(preset.PixelVariables, "sx");
-        float sy = GetVariable(preset.PixelVariables, "sy");
-        float dx = GetVariable(preset.PixelVariables, "dx");
-        float dy = GetVariable(preset.PixelVariables, "dy");
-        float rot = GetVariable(preset.PixelVariables, "rot");
+        float warp = GetVariable(pixelVariables, varInd_warp);
+        float zoom = GetVariable(pixelVariables, varInd_zoom);
+        float zoomExp = GetVariable(pixelVariables, varInd_zoomexp);
+        float cx = GetVariable(pixelVariables, varInd_cx);
+        float cy = GetVariable(pixelVariables, varInd_cy);
+        float sx = GetVariable(pixelVariables, varInd_sx);
+        float sy = GetVariable(pixelVariables, varInd_sy);
+        float dx = GetVariable(pixelVariables, varInd_dx);
+        float dy = GetVariable(pixelVariables, varInd_dy);
+        float rot = GetVariable(pixelVariables, varInd_rot);
 
         float frameZoom = zoom;
         float frameZoomExp = zoomExp;
@@ -902,15 +1003,23 @@ public class Milkdrop : MonoBehaviour
         float framedx = dx;
         float framedy = dy;
 
+        float x;
+        float y;
+        float rad;
+        float ang;
+        float zoom2V;
+        float zoom2Inv;
+        float u;
+        float v;
+
         for (int iz = 0; iz < gridZ1; iz++)
         {
             for (int ix = 0; ix < gridX1; ix++)
             {
-                float x = (ix / (float)gridX) * 2f - 1f;
-                float y = (iz / (float)gridZ) * 2f - 1f;
-                float rad = Mathf.Sqrt(x * x * aspectx * aspectx + y * y * aspecty * aspecty);
+                x = (ix / (float)gridX) * 2f - 1f;
+                y = (iz / (float)gridZ) * 2f - 1f;
+                rad = Mathf.Sqrt(x * x * aspectx * aspectx + y * y * aspecty * aspecty);
 
-                float ang;
                 if (iz == gridZ / 2f && ix == gridX / 2f)
                 {
                     ang = 0f;
@@ -924,40 +1033,40 @@ public class Milkdrop : MonoBehaviour
                     }
                 }
 
-                SetVariable(preset.PixelVariables, "x", x * 0.5f * aspectx + 0.5f);
-                SetVariable(preset.PixelVariables, "y", y * -0.5f * aspecty + 0.5f);
-                SetVariable(preset.PixelVariables, "rad", rad);
-                SetVariable(preset.PixelVariables, "ang", ang);
+                SetVariable(pixelVariables, varInd_x, x * 0.5f * aspectx + 0.5f);
+                SetVariable(pixelVariables, varInd_y, y * -0.5f * aspecty + 0.5f);
+                SetVariable(pixelVariables, varInd_rad, rad);
+                SetVariable(pixelVariables, varInd_ang, ang);
 
-                SetVariable(preset.PixelVariables, "zoom", frameZoom);
-                SetVariable(preset.PixelVariables, "zoomexp", frameZoomExp);
-                SetVariable(preset.PixelVariables, "rot", frameRot);
-                SetVariable(preset.PixelVariables, "warp", frameWarp);
-                SetVariable(preset.PixelVariables, "cx", framecx);
-                SetVariable(preset.PixelVariables, "cy", framecy);
-                SetVariable(preset.PixelVariables, "dx", framedx);
-                SetVariable(preset.PixelVariables, "dy", framedy);
-                SetVariable(preset.PixelVariables, "sx", framesx);
-                SetVariable(preset.PixelVariables, "sy", framesy);
+                SetVariable(pixelVariables, varInd_zoom, frameZoom);
+                SetVariable(pixelVariables, varInd_zoomexp, frameZoomExp);
+                SetVariable(pixelVariables, varInd_rot, frameRot);
+                SetVariable(pixelVariables, varInd_warp, frameWarp);
+                SetVariable(pixelVariables, varInd_cx, framecx);
+                SetVariable(pixelVariables, varInd_cy, framecy);
+                SetVariable(pixelVariables, varInd_dx, framedx);
+                SetVariable(pixelVariables, varInd_dy, framedy);
+                SetVariable(pixelVariables, varInd_sx, framesx);
+                SetVariable(pixelVariables, varInd_sy, framesy);
 
-                preset.PixelEquationCompiled(preset.PixelVariables);
+                preset.PixelEquationCompiled(pixelVariables);
 
-                warp = GetVariable(preset.PixelVariables, "warp");
-                zoom = GetVariable(preset.PixelVariables, "zoom");
-                zoomExp = GetVariable(preset.PixelVariables, "zoomexp");
-                cx = GetVariable(preset.PixelVariables, "cx");
-                cy = GetVariable(preset.PixelVariables, "cy");
-                sx = GetVariable(preset.PixelVariables, "sx");
-                sy = GetVariable(preset.PixelVariables, "sy");
-                dx = GetVariable(preset.PixelVariables, "dx");
-                dy = GetVariable(preset.PixelVariables, "dy");
-                rot = GetVariable(preset.PixelVariables, "rot");
+                warp = GetVariable(pixelVariables, varInd_warp);
+                zoom = GetVariable(pixelVariables, varInd_zoom);
+                zoomExp = GetVariable(pixelVariables, varInd_zoomexp);
+                cx = GetVariable(pixelVariables, varInd_cx);
+                cy = GetVariable(pixelVariables, varInd_cy);
+                sx = GetVariable(pixelVariables, varInd_sx);
+                sy = GetVariable(pixelVariables, varInd_sy);
+                dx = GetVariable(pixelVariables, varInd_dx);
+                dy = GetVariable(pixelVariables, varInd_dy);
+                rot = GetVariable(pixelVariables, varInd_rot);
 
-                float zoom2V = Mathf.Pow(zoom, Mathf.Pow(zoomExp, (rad * 2f - 1f)));
-                float zoom2Inv = 1f / zoom2V;
+                zoom2V = Mathf.Pow(zoom, Mathf.Pow(zoomExp, (rad * 2f - 1f)));
+                zoom2Inv = 1f / zoom2V;
 
-                float u = x * 0.5f * aspectx * zoom2Inv + 0.5f;
-                float v = -y * 0.5f * aspecty * zoom2Inv + 0.5f;
+                u = x * 0.5f * aspectx * zoom2Inv + 0.5f;
+                v = -y * 0.5f * aspecty * zoom2Inv + 0.5f;
 
                 u = (u - cx) / sx + cx;
                 v = (v - cy) / sy + cy;
@@ -1025,9 +1134,11 @@ public class Milkdrop : MonoBehaviour
                 offsetColor++;
             }
         }
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
-    (float[], float[]) GetBlurValues(Dictionary<int, float> variables)
+    (float[], float[]) GetBlurValues(State variables)
     {
         float blurMin1 = GetVariable(variables, "b1n");
         float blurMin2 = GetVariable(variables, "b2n");
@@ -1127,6 +1238,8 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
+        UnityEngine.Profiling.Profiler.BeginSample("DrawShapes");
+
         foreach (var CurrentShape in preset.Shapes)
         {
             if (GetVariable(CurrentShape.BaseVariables, "enabled") == 0f)
@@ -1134,28 +1247,26 @@ public class Milkdrop : MonoBehaviour
                 continue;
             }
 
-            CurrentShape.FrameVariables = new Dictionary<int, float>(CurrentShape.Variables);
-
             foreach (var v in CurrentShape.Variables.Keys)
             {
-                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Variables[v]);
+                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Variables.Heap[v]);
             }
 
             foreach (var v in CurrentShape.FrameMap.Keys)
             {
-                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.FrameMap[v]);
+                SetVariable(CurrentShape.FrameVariables, v, CurrentShape.FrameMap.Heap[v]);
             }
 
             if (string.IsNullOrEmpty(CurrentShape.FrameEquation))
             {
                 foreach (var v in preset.AfterFrameVariables.Keys)
                 {
-                    SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables[v]);
+                    SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
                 }
 
                 foreach (var v in CurrentShape.Inits.Keys)
                 {
-                    SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits[v]);
+                    SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[v]);
                 }
             }
 
@@ -1228,12 +1339,12 @@ public class Milkdrop : MonoBehaviour
                 {
                     foreach (var v in preset.AfterFrameVariables.Keys)
                     {
-                        SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables[v]);
+                        SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
                     }
 
                     foreach (var v in CurrentShape.Inits.Keys)
                     {
-                        SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits[v]);
+                        SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[v]);
                     }
 
                     CurrentShape.FrameEquationCompiled(CurrentShape.FrameVariables);
@@ -1402,6 +1513,8 @@ public class Milkdrop : MonoBehaviour
                 }
             }
         }
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawWaves(Preset preset, float blendProgress)
@@ -1411,6 +1524,8 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
+        UnityEngine.Profiling.Profiler.BeginSample("DrawWaves");
+
         foreach (var CurrentWave in preset.Waves)
         {
             if (GetVariable(CurrentWave.BaseVariables, "enabled") == 0f)
@@ -1418,26 +1533,24 @@ public class Milkdrop : MonoBehaviour
                 continue;
             }
 
-            CurrentWave.FrameVariables = new Dictionary<int, float>(CurrentWave.Variables);
-
             foreach (var v in CurrentWave.Variables.Keys)
             {
-                SetVariable(preset.FrameVariables, v, CurrentWave.Variables[v]);
+                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Variables.Heap[v]);
             }
 
             foreach (var v in CurrentWave.FrameMap.Keys)
             {
-                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.FrameMap[v]);
+                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.FrameMap.Heap[v]);
             }
 
             foreach (var v in preset.AfterFrameVariables.Keys)
             {
-                SetVariable(CurrentWave.FrameVariables, v, preset.AfterFrameVariables[v]);
+                SetVariable(CurrentWave.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
             }
 
             foreach (var v in CurrentWave.Inits.Keys)
             {
-                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits[v]);
+                SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits.Heap[v]);
             }
 
             SetVariable(CurrentWave.FrameVariables, "frame", CurrentFrame);
@@ -1588,15 +1701,27 @@ public class Milkdrop : MonoBehaviour
             {
                 SmoothWaveAndColor(CurrentWave.Positions, CurrentWave.Colors, CurrentWave.SmoothedPositions, CurrentWave.SmoothedColors, samples);
 
-                WaveformRenderer.enabled = true;
-
                 if (thick)
                 {
                     WaveformRenderer.widthMultiplier = 2f;
+                    WaveformRenderer2.widthMultiplier = 2f;
+                    WaveformRenderer3.widthMultiplier = 2f;
+                    WaveformRenderer4.widthMultiplier = 2f;
+                    WaveformRenderer5.widthMultiplier = 2f;
+                    WaveformRenderer6.widthMultiplier = 2f;
+                    WaveformRenderer7.widthMultiplier = 2f;
+                    WaveformRenderer8.widthMultiplier = 2f;
                 }
                 else
                 {
                     WaveformRenderer.widthMultiplier = 0.5f;
+                    WaveformRenderer2.widthMultiplier = 0.5f;
+                    WaveformRenderer3.widthMultiplier = 0.5f;
+                    WaveformRenderer4.widthMultiplier = 0.5f;
+                    WaveformRenderer5.widthMultiplier = 0.5f;
+                    WaveformRenderer6.widthMultiplier = 0.5f;
+                    WaveformRenderer7.widthMultiplier = 0.5f;
+                    WaveformRenderer8.widthMultiplier = 0.5f;
                 }
 
                 WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
@@ -1613,42 +1738,89 @@ public class Milkdrop : MonoBehaviour
 
                 samples = samples * 2 - 1;
 
-                int iterations = Mathf.CeilToInt(samples / 8f);
+                int iterations = Mathf.CeilToInt(samples / (7f * 8f));
 
                 for (int i = 0; i < iterations; i++)
                 {
-                    int start = i * 8;
+                    int start = i * 7 * 8;
                     int end = Mathf.Min(samples, start + 8);
+                    int start2 = Mathf.Min(samples, start + 7);
+                    int end2 = Mathf.Min(samples, start2 + 8);
+                    int start3 = Mathf.Min(samples, start2 + 7);
+                    int end3 = Mathf.Min(samples, start3 + 8);
+                    int start4 = Mathf.Min(samples, start3 + 7);
+                    int end4 = Mathf.Min(samples, start4 + 8);
+                    int start5 = Mathf.Min(samples, start4 + 7);
+                    int end5 = Mathf.Min(samples, start5 + 8);
+                    int start6 = Mathf.Min(samples, start5 + 7);
+                    int end6 = Mathf.Min(samples, start6 + 8);
+                    int start7 = Mathf.Min(samples, start6 + 7);
+                    int end7 = Mathf.Min(samples, start7 + 8);
+                    int start8 = Mathf.Min(samples, start7 + 7);
+                    int end8 = Mathf.Min(samples, start8 + 8);
 
-                    WaveformRenderer.positionCount = end - start;
+                    WaveformRenderer.enabled = start != end;
+                    WaveformRenderer2.enabled = start2 != end2;
+                    WaveformRenderer3.enabled = start3 != end3;
+                    WaveformRenderer4.enabled = start4 != end4;
+                    WaveformRenderer5.enabled = start5 != end5;
+                    WaveformRenderer6.enabled = start6 != end6;
+                    WaveformRenderer7.enabled = start7 != end7;
+                    WaveformRenderer8.enabled = start8 != end8;
 
-                    for (int j = start; j < end; j++)
+                    void SetupWave(LineRenderer renderer, int _start, int _end)
                     {
-                        WaveformRenderer.SetPosition(j - start, CurrentWave.SmoothedPositions[j]);
+                        if (_start != _end)
+                        {
+                            renderer.positionCount = _end - _start;
+
+                            for (int j = _start; j < _end; j++)
+                            {
+                                renderer.SetPosition(j - _start, CurrentWave.SmoothedPositions[j]);
+                            }
+
+                            var grad = new Gradient();
+
+                            var colorKeys = new GradientColorKey[_end - _start];
+                            var alphaKeys = new GradientAlphaKey[_end - _start];
+
+                            for (int j = _start; j < _end; j++)
+                            {
+                                colorKeys[j - _start] = new GradientColorKey(CurrentWave.SmoothedColors[j], j / (float)(_end - _start - 1));
+                                alphaKeys[j - _start] = new GradientAlphaKey(CurrentWave.SmoothedColors[j].a, j / (float)(_end - _start - 1));
+                            }
+
+                            grad.colorKeys = colorKeys;
+                            grad.alphaKeys = alphaKeys;
+
+                            renderer.colorGradient = grad;
+                        }
                     }
 
-                    var grad = new Gradient();
-
-                    var colorKeys = new GradientColorKey[end - start];
-                    var alphaKeys = new GradientAlphaKey[end - start];
-
-                    for (int j = start; j < end; j++)
-                    {
-                        colorKeys[j - start] = new GradientColorKey(CurrentWave.SmoothedColors[j], j / (float)(end - start - 1));
-                        alphaKeys[j - start] = new GradientAlphaKey(CurrentWave.SmoothedColors[j].a, j / (float)(end - start - 1));
-                    }
-
-                    grad.colorKeys = colorKeys;
-                    grad.alphaKeys = alphaKeys;
-
-                    WaveformRenderer.colorGradient = grad;
+                    SetupWave(WaveformRenderer, start, end);
+                    SetupWave(WaveformRenderer2, start2, end2);
+                    SetupWave(WaveformRenderer3, start3, end3);
+                    SetupWave(WaveformRenderer4, start4, end4);
+                    SetupWave(WaveformRenderer5, start5, end5);
+                    SetupWave(WaveformRenderer6, start6, end6);
+                    SetupWave(WaveformRenderer7, start7, end7);
+                    SetupWave(WaveformRenderer8, start8, end8);
 
                     TargetCamera.Render();
                 }
 
                 WaveformRenderer.enabled = false;
+                WaveformRenderer2.enabled = false;
+                WaveformRenderer3.enabled = false;
+                WaveformRenderer4.enabled = false;
+                WaveformRenderer5.enabled = false;
+                WaveformRenderer6.enabled = false;
+                WaveformRenderer7.enabled = false;
+                WaveformRenderer8.enabled = false;
             }
         }
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawWarp(Preset preset, bool blending)
@@ -1658,200 +1830,22 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
+        UnityEngine.Profiling.Profiler.BeginSample("DrawWarp");
+
         TargetMeshFilter.sharedMesh = TargetMeshWarp;
         TargetMeshWarp.SetUVs(0, WarpUVs);
         TargetMeshWarp.SetColors(WarpColor);
-
-        //(float[], float[]) blurValues = GetBlurValues(preset.FrameVariables);
 
         TargetMeshRenderer.sharedMaterial = preset.WarpMaterial;
 
         preset.WarpMaterial.mainTexture = blending ? TempTexture : PrevTempTexture;
 
-        /*preset.WarpMaterial.SetTexture("_MainTex2", FinalTexture);
-        preset.WarpMaterial.SetTexture("_MainTex3", FinalTexture);
-        preset.WarpMaterial.SetTexture("_MainTex4", FinalTexture);
-        preset.WarpMaterial.SetTexture("_MainTex5", FinalTexture);*/
-
-        // sampler_blur1
-        // sampler_blur2
-        // sampler_blur3
-
-        // sampler_noise_lq
-        // sampler_noise_mq
-        // sampler_noise_hq
-        // sampler_noise_lq_lite
-        // sampler_pw_noise_lq
-        // sampler_noisevol_lq
-        // sampler_noisevol_hq
-
-        // user textures
-
         preset.WarpMaterial.SetFloat("decay", GetVariable(preset.FrameVariables, "decay"));
-        /*preset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-        preset.WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
-        preset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-        preset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        preset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-        preset.WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        preset.WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.WarpMaterial.SetFloat("bass", Bass);
-        preset.WarpMaterial.SetFloat("mid", Mid);
-        preset.WarpMaterial.SetFloat("treb", Treb);
-        preset.WarpMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-        preset.WarpMaterial.SetFloat("bass_att", BassAtt);
-        preset.WarpMaterial.SetFloat("mid_att", MidAtt);
-        preset.WarpMaterial.SetFloat("treb_att", TrebAtt);
-        preset.WarpMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-        preset.WarpMaterial.SetFloat("time", CurrentTime);
-        preset.WarpMaterial.SetFloat("frame", FrameNum);
-        preset.WarpMaterial.SetFloat("fps", FPS);
-        preset.WarpMaterial.SetVector("rand_preset", 
-            new Vector4(
-                GetVariable(preset.FrameVariables, "rand_preset.x"),
-                GetVariable(preset.FrameVariables, "rand_preset.y"),
-                GetVariable(preset.FrameVariables, "rand_preset.z"),
-                GetVariable(preset.FrameVariables, "rand_preset.w")
-            )
-        );
-        preset.WarpMaterial.SetVector("rand_frame", 
-            new Vector4(
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f)
-            )
-        );
-        preset.WarpMaterial.SetVector("_qa", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q1"),
-                GetVariable(preset.AfterFrameVariables, "q2"),
-                GetVariable(preset.AfterFrameVariables, "q3"),
-                GetVariable(preset.AfterFrameVariables, "q4")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qb", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q5"),
-                GetVariable(preset.AfterFrameVariables, "q6"),
-                GetVariable(preset.AfterFrameVariables, "q7"),
-                GetVariable(preset.AfterFrameVariables, "q8")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qc", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q9"),
-                GetVariable(preset.AfterFrameVariables, "q10"),
-                GetVariable(preset.AfterFrameVariables, "q11"),
-                GetVariable(preset.AfterFrameVariables, "q12")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qd", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q13"),
-                GetVariable(preset.AfterFrameVariables, "q14"),
-                GetVariable(preset.AfterFrameVariables, "q15"),
-                GetVariable(preset.AfterFrameVariables, "q16")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qe", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q17"),
-                GetVariable(preset.AfterFrameVariables, "q18"),
-                GetVariable(preset.AfterFrameVariables, "q19"),
-                GetVariable(preset.AfterFrameVariables, "q20")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qf", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q21"),
-                GetVariable(preset.AfterFrameVariables, "q22"),
-                GetVariable(preset.AfterFrameVariables, "q23"),
-                GetVariable(preset.AfterFrameVariables, "q24")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qg", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q25"),
-                GetVariable(preset.AfterFrameVariables, "q26"),
-                GetVariable(preset.AfterFrameVariables, "q27"),
-                GetVariable(preset.AfterFrameVariables, "q28")
-            )
-        );
-        preset.WarpMaterial.SetVector("_qh", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q29"),
-                GetVariable(preset.AfterFrameVariables, "q30"),
-                GetVariable(preset.AfterFrameVariables, "q31"),
-                GetVariable(preset.AfterFrameVariables, "q32")
-            )
-        );
-        preset.WarpMaterial.SetVector("slow_roam_cos", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.013f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
-            )
-        );
-        preset.WarpMaterial.SetVector("roam_cos", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 5.0f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
-            )
-        );
-        preset.WarpMaterial.SetVector("slow_roam_sin", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.013f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
-            )
-        );
-        preset.WarpMaterial.SetVector("roam_sin", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 5.0f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 20.0f)
-            )
-        );
-
-        float blurMin1 = blurValues.Item1[0];
-        float blurMin2 = blurValues.Item1[1];
-        float blurMin3 = blurValues.Item1[2];
-        float blurMax1 = blurValues.Item2[0];
-        float blurMax2 = blurValues.Item2[1];
-        float blurMax3 = blurValues.Item2[2];
-
-        float scale1 = blurMax1 - blurMin1;
-        float bias1 = blurMin1;
-
-        float scale2 = blurMax2 - blurMin2;
-        float bias2 = blurMin2;
-
-        float scale3 = blurMax3 - blurMin3;
-        float bias3 = blurMin3;
-
-        preset.WarpMaterial.SetFloat("blur1_min", blurMin1);
-        preset.WarpMaterial.SetFloat("blur1_max", blurMax1);
-        preset.WarpMaterial.SetFloat("blur2_min", blurMin2);
-        preset.WarpMaterial.SetFloat("blur2_max", blurMax2);
-        preset.WarpMaterial.SetFloat("blur3_min", blurMin3);
-        preset.WarpMaterial.SetFloat("blur3_max", blurMax3);
-        preset.WarpMaterial.SetFloat("scale1", scale1);
-        preset.WarpMaterial.SetFloat("scale2", scale2);
-        preset.WarpMaterial.SetFloat("scale3", scale3);
-        preset.WarpMaterial.SetFloat("bias1", bias1);
-        preset.WarpMaterial.SetFloat("bias2", bias2);
-        preset.WarpMaterial.SetFloat("bias3", bias3);*/
 
         TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawDarkenCenter()
@@ -1866,6 +1860,8 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
+        UnityEngine.Profiling.Profiler.BeginSample("DrawDarkenCenter");
+
         TargetMeshFilter.sharedMesh = TargetMeshDarkenCenter;
 
         TargetMeshRenderer.sharedMaterial = CurrentPreset.DarkenCenterMaterial;
@@ -1874,10 +1870,14 @@ public class Milkdrop : MonoBehaviour
 
         TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawOuterBorder()
     {
+        UnityEngine.Profiling.Profiler.BeginSample("DrawOuterBorder");
+
         Color outerColor = new Color
         (
             GetVariable(CurrentPreset.FrameVariables, "ob_r"),
@@ -1889,10 +1889,14 @@ public class Milkdrop : MonoBehaviour
         float borderSize = GetVariable(CurrentPreset.FrameVariables, "ob_size");
 
         DrawBorder(outerColor, borderSize, 0f);
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawInnerBorder()
     {
+        UnityEngine.Profiling.Profiler.BeginSample("DrawInnerBorder");
+
         Color innerColor = new Color
         (
             GetVariable(CurrentPreset.FrameVariables, "ib_r"),
@@ -1905,6 +1909,8 @@ public class Milkdrop : MonoBehaviour
         float prevBorderSize = GetVariable(CurrentPreset.FrameVariables, "ob_size");
 
         DrawBorder(innerColor, borderSize, prevBorderSize);
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawBorder(Color borderColor, float borderSize, float prevBorderSize)
@@ -1988,6 +1994,8 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
+        UnityEngine.Profiling.Profiler.BeginSample("DrawMotionVectors");
+
         float dx = mv_x - nX;
         float dy = mv_y - nY;
 
@@ -2067,6 +2075,7 @@ public class Milkdrop : MonoBehaviour
 
         if (numVecVerts == 0)
         {
+            UnityEngine.Profiling.Profiler.EndSample();
             return;
         }
 
@@ -2113,6 +2122,8 @@ public class Milkdrop : MonoBehaviour
         TargetCamera.Render();
 
         MotionVectorParent.gameObject.SetActive(false);
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void DrawBasicWaveform()
@@ -2125,6 +2136,8 @@ public class Milkdrop : MonoBehaviour
         {
             return;
         }
+
+        UnityEngine.Profiling.Profiler.BeginSample("DrawBasicWaveform");
 
         float scale = GetVariable(CurrentPreset.FrameVariables, "wave_scale") / 128f;
         float smooth = GetVariable(CurrentPreset.FrameVariables, "wave_smoothing");
@@ -2548,6 +2561,8 @@ public class Milkdrop : MonoBehaviour
             }
             else
             {
+                UnityEngine.Profiling.Profiler.EndSample();
+
                 return;
             }
 
@@ -2569,6 +2584,8 @@ public class Milkdrop : MonoBehaviour
 
         if (numVert == 0)
         {
+            UnityEngine.Profiling.Profiler.EndSample();
+
             throw new Exception("No waveform positions set");
         }
 
@@ -2815,6 +2832,8 @@ public class Milkdrop : MonoBehaviour
             WaveformRenderer.enabled = false;
             WaveformRenderer2.enabled = false;
         }
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void SmoothWaveAndColor(Vector3[] positions, Color[] colors, Vector3[] positionsSmoothed, Color[] colorsSmoothed, int nVertsIn, bool zCoord = false)
@@ -2962,7 +2981,7 @@ public class Milkdrop : MonoBehaviour
             return;
         }
 
-        //(float[], float[]) blurValues = GetBlurValues(preset.FrameVariables);
+        UnityEngine.Profiling.Profiler.BeginSample("DrawComp");
 
         TargetMeshRenderer.sharedMaterial = preset.CompMaterial;
 
@@ -3056,26 +3075,6 @@ public class Milkdrop : MonoBehaviour
 
         preset.CompMaterial.mainTexture = TempTexture;
 
-        /*preset.CompMaterial.SetTexture("_MainTex2", FinalTexture);
-        preset.CompMaterial.SetTexture("_MainTex3", FinalTexture);
-        preset.CompMaterial.SetTexture("_MainTex4", FinalTexture);
-        preset.CompMaterial.SetTexture("_MainTex5", FinalTexture);*/
-
-        // sampler_blur1
-        // sampler_blur2
-        // sampler_blur3
-
-        // sampler_noise_lq
-        // sampler_noise_mq
-        // sampler_noise_hq
-        // sampler_noise_lq_lite
-        // sampler_pw_noise_lq
-        // sampler_noisevol_lq
-        // sampler_noisevol_hq
-
-        // user textures
-
-        //preset.CompMaterial.SetFloat("time", CurrentTime);
         preset.CompMaterial.SetFloat("gammaAdj", GetVariable(preset.FrameVariables, "gammaadj"));
         preset.CompMaterial.SetFloat("echo_zoom", GetVariable(preset.FrameVariables, "echo_zoom"));
         preset.CompMaterial.SetFloat("echo_alpha", GetVariable(preset.FrameVariables, "echo_alpha"));
@@ -3084,180 +3083,57 @@ public class Milkdrop : MonoBehaviour
         preset.CompMaterial.SetFloat("brighten", GetVariable(preset.FrameVariables, "brighten"));
         preset.CompMaterial.SetFloat("_darken", GetVariable(preset.FrameVariables, "darken"));
         preset.CompMaterial.SetFloat("solarize", GetVariable(preset.FrameVariables, "solarize"));
-        /*preset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-        preset.CompMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
-        preset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-        preset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        preset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-        preset.CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-        preset.CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-        preset.CompMaterial.SetFloat("bass", Bass);
-        preset.CompMaterial.SetFloat("mid", Mid);
-        preset.CompMaterial.SetFloat("treb", Treb);
-        preset.CompMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-        preset.CompMaterial.SetFloat("bass_att", BassAtt);
-        preset.CompMaterial.SetFloat("mid_att", MidAtt);
-        preset.CompMaterial.SetFloat("treb_att", TrebAtt);
-        preset.CompMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-        preset.CompMaterial.SetFloat("frame", FrameNum);
-        preset.CompMaterial.SetFloat("fps", FPS);
-        preset.CompMaterial.SetVector("rand_preset", 
-            new Vector4(
-                GetVariable(preset.FrameVariables, "rand_preset.x"),
-                GetVariable(preset.FrameVariables, "rand_preset.y"),
-                GetVariable(preset.FrameVariables, "rand_preset.z"),
-                GetVariable(preset.FrameVariables, "rand_preset.w")
-            )
-        );
-        preset.CompMaterial.SetVector("rand_frame", 
-            new Vector4(
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f),
-                Random.Range(0f, 1f)
-            )
-        );*/
         preset.CompMaterial.SetFloat("fShader", GetVariable(preset.FrameVariables, "fshader"));
-        /*preset.CompMaterial.SetVector("_qa", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q1"),
-                GetVariable(preset.AfterFrameVariables, "q2"),
-                GetVariable(preset.AfterFrameVariables, "q3"),
-                GetVariable(preset.AfterFrameVariables, "q4")
-            )
-        );
-        preset.CompMaterial.SetVector("_qb", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q5"),
-                GetVariable(preset.AfterFrameVariables, "q6"),
-                GetVariable(preset.AfterFrameVariables, "q7"),
-                GetVariable(preset.AfterFrameVariables, "q8")
-            )
-        );
-        preset.CompMaterial.SetVector("_qc", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q9"),
-                GetVariable(preset.AfterFrameVariables, "q10"),
-                GetVariable(preset.AfterFrameVariables, "q11"),
-                GetVariable(preset.AfterFrameVariables, "q12")
-            )
-        );
-        preset.CompMaterial.SetVector("_qd", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q13"),
-                GetVariable(preset.AfterFrameVariables, "q14"),
-                GetVariable(preset.AfterFrameVariables, "q15"),
-                GetVariable(preset.AfterFrameVariables, "q16")
-            )
-        );
-        preset.CompMaterial.SetVector("_qe", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q17"),
-                GetVariable(preset.AfterFrameVariables, "q18"),
-                GetVariable(preset.AfterFrameVariables, "q19"),
-                GetVariable(preset.AfterFrameVariables, "q20")
-            )
-        );
-        preset.CompMaterial.SetVector("_qf", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q21"),
-                GetVariable(preset.AfterFrameVariables, "q22"),
-                GetVariable(preset.AfterFrameVariables, "q23"),
-                GetVariable(preset.AfterFrameVariables, "q24")
-            )
-        );
-        preset.CompMaterial.SetVector("_qg", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q25"),
-                GetVariable(preset.AfterFrameVariables, "q26"),
-                GetVariable(preset.AfterFrameVariables, "q27"),
-                GetVariable(preset.AfterFrameVariables, "q28")
-            )
-        );
-        preset.CompMaterial.SetVector("_qh", 
-            new Vector4(
-                GetVariable(preset.AfterFrameVariables, "q29"),
-                GetVariable(preset.AfterFrameVariables, "q30"),
-                GetVariable(preset.AfterFrameVariables, "q31"),
-                GetVariable(preset.AfterFrameVariables, "q32")
-            )
-        );
-        preset.CompMaterial.SetVector("slow_roam_cos", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.013f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
-            )
-        );
-        preset.CompMaterial.SetVector("roam_cos", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 5.0f),
-                0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
-            )
-        );
-        preset.CompMaterial.SetVector("slow_roam_sin", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.013f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
-            )
-        );
-        preset.CompMaterial.SetVector("roam_sin", 
-            new Vector4(
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 5.0f),
-                0.5f + 0.5f * Mathf.Sin(CurrentTime * 20.0f)
-            )
-        );
-
-        float blurMin1 = blurValues.Item1[0];
-        float blurMin2 = blurValues.Item1[1];
-        float blurMin3 = blurValues.Item1[2];
-        float blurMax1 = blurValues.Item2[0];
-        float blurMax2 = blurValues.Item2[1];
-        float blurMax3 = blurValues.Item2[2];
-
-        float scale1 = blurMax1 - blurMin1;
-        float bias1 = blurMin1;
-
-        float scale2 = blurMax2 - blurMin2;
-        float bias2 = blurMin2;
-
-        float scale3 = blurMax3 - blurMin3;
-        float bias3 = blurMin3;
-
-        preset.CompMaterial.SetFloat("blur1_min", blurMin1);
-        preset.CompMaterial.SetFloat("blur1_max", blurMax1);
-        preset.CompMaterial.SetFloat("blur2_min", blurMin2);
-        preset.CompMaterial.SetFloat("blur2_max", blurMax2);
-        preset.CompMaterial.SetFloat("blur3_min", blurMin3);
-        preset.CompMaterial.SetFloat("blur3_max", blurMax3);
-        preset.CompMaterial.SetFloat("scale1", scale1);
-        preset.CompMaterial.SetFloat("scale2", scale2);
-        preset.CompMaterial.SetFloat("scale3", scale3);
-        preset.CompMaterial.SetFloat("bias1", bias1);
-        preset.CompMaterial.SetFloat("bias2", bias2);
-        preset.CompMaterial.SetFloat("bias3", bias3);*/
 
         TargetCamera.targetTexture = FinalTexture;
         TargetCamera.Render();
+
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     static float Func_Int(float x)
     {
-        return Mathf.Floor(x);
+		return (int)x;
     }
 
     static float Func_Abs(float x)
     {
-        return Mathf.Abs(x);
+        if (x < 0)
+		{
+			return -x;
+		}
+
+		return x;
+    }
+
+    static float Func_Sin(float x)
+    {
+        return Mathf.Sin(x);
+    }
+
+    static float Func_Cos(float x)
+    {
+        return Mathf.Cos(x);
+    }
+
+    static float Func_Tan(float x)
+    {
+        return Mathf.Tan(x);
+    }
+
+    static float Func_Asin(float x)
+    {
+        return Mathf.Asin(x);
+    }
+
+    static float Func_Acos(float x)
+    {
+        return Mathf.Acos(x);
+    }
+
+    static float Func_Atan(float x)
+    {
+        return Mathf.Atan(x);
     }
 
     static float Func_Sqr(float x)
@@ -3267,37 +3143,7 @@ public class Milkdrop : MonoBehaviour
 
     static float Func_Sqrt(float x)
     {
-        return Mathf.Sqrt(Mathf.Abs(x));
-    }
-
-    static float Func_Log(float x)
-    {
-        return Mathf.Log(x);
-    }
-
-    static float Func_Log10(float x)
-    {
-        return Mathf.Log10(x);
-    }
-
-    static float Func_Sign(float x)
-    {
-        return Mathf.Sign(x);
-    }
-
-    static float Func_Rand(float x)
-    {
-        return UnityEngine.Random.Range(0f, x);
-    }
-
-    static float Func_RandInt(float x)
-    {
-        return Mathf.Floor(UnityEngine.Random.Range(0, x));
-    }
-
-    static float Func_Bnot(float x)
-    {
-        return Mathf.Abs(x) < Mathf.Epsilon ? 1f : 0f;
+        return Mathf.Sqrt(Func_Abs(x));
     }
 
     static float Func_Pow(float x, float y)
@@ -3312,34 +3158,29 @@ public class Milkdrop : MonoBehaviour
         return 0f;
     }
 
-    static float Func_Div(float x, float y)
+    static float Func_Log(float x)
     {
-        if (y == 0f)
-        {
-            return 0f;
-        }
-
-        return x / y;
+        return Mathf.Log(x);
     }
 
-    static float Func_Mod(float x, float y)
+    static float Func_Log10(float x)
     {
-        if (y == 0f)
-        {
-            return 0f;
-        }
-
-        return Mathf.FloorToInt(x) % Mathf.FloorToInt(y);
+        return Mathf.Log10(x);
     }
 
-    static float Func_Bitor(float x, float y)
+    static float Func_Sign(float x)
     {
-        return Mathf.FloorToInt(x) | Mathf.FloorToInt(y);
+        return x < 0f ? -1f : 1f;
     }
 
-    static float Func_Bitand(float x, float y)
+    static float Func_Min(float x, float y)
     {
-        return Mathf.FloorToInt(x) & Mathf.FloorToInt(y);
+        return x < y ? x : y;
+    }
+
+    static float Func_Max(float x, float y)
+    {
+        return x > y ? x : y;
     }
 
     static float Func_Sigmoid(float x, float y)
@@ -3348,14 +3189,29 @@ public class Milkdrop : MonoBehaviour
         return Mathf.Abs(t) > Mathf.Epsilon ? 1f / t : 0f;
     }
 
+    static float Func_Rand(float x)
+    {
+        return UnityEngine.Random.Range(0, (int)x);
+    }
+
     static float Func_Bor(float x, float y)
     {
         return Mathf.Abs(x) > Mathf.Epsilon || Mathf.Abs(y) > Mathf.Epsilon ? 1f : 0f;
     }
 
+    static float Func_Bnot(float x)
+    {
+        return Mathf.Abs(x) < Mathf.Epsilon ? 1f : 0f;
+    }
+
     static float Func_Band(float x, float y)
     {
         return Mathf.Abs(x) > Mathf.Epsilon && Mathf.Abs(y) > Mathf.Epsilon ? 1f : 0f;
+    }
+
+    static float Func_Ifcond(float x, float y, float z)
+    {
+        return Mathf.Abs(x) > Mathf.Epsilon ? y : z;
     }
 
     static float Func_Equal(float x, float y)
@@ -3371,51 +3227,6 @@ public class Milkdrop : MonoBehaviour
     static float Func_Below(float x, float y)
     {
         return x < y ? 1f : 0f;
-    }
-
-    static float Func_Min(float x, float y)
-    {
-        return Mathf.Min(x, y);
-    }
-
-    static float Func_Max(float x, float y)
-    {
-        return Mathf.Max(x, y);
-    }
-
-    static float Func_Ifcond(float x, float y, float z)
-    {
-        return Mathf.Abs(x) > Mathf.Epsilon ? y : z;
-    }
-
-    static float Func_Sin(float x)
-    {
-        return Mathf.Sin(x);
-    }
-
-    static float Func_Cos(float x)
-    {
-        return Mathf.Cos(x);
-    }
-
-    static float Func_Asin(float x)
-    {
-        return Mathf.Asin(x);
-    }
-
-    static float Func_Acos(float x)
-    {
-        return Mathf.Acos(x);
-    }
-
-    static float Func_Tan(float x)
-    {
-        return Mathf.Tan(x);
-    }
-
-    static float Func_Atan(float x)
-    {
-        return Mathf.Atan(x);
     }
 
     static float Func_Atan2(float x, float y)
@@ -3440,7 +3251,6 @@ public class Milkdrop : MonoBehaviour
         {"log10", Func_Log10},
         {"sign", Func_Sign},
         {"rand", Func_Rand},
-        {"randint", Func_RandInt},
         {"bnot", Func_Bnot},
         {"sin", Func_Sin},
         {"cos", Func_Cos},
@@ -3450,16 +3260,12 @@ public class Milkdrop : MonoBehaviour
         {"asin", Func_Asin},
         {"acos", Func_Acos},
         {"atan", Func_Atan},
-        {"exp", Func_Exp},
+        {"exp", Func_Exp}
     };
 
     Dictionary<string, Func2> Funcs2Arg = new Dictionary<string, Func2>
     {
         {"pow", Func_Pow},
-        {"div", Func_Div},
-        {"mod", Func_Mod},
-        {"bitor", Func_Bitor},
-        {"bitand", Func_Bitand},
         {"sigmoid", Func_Sigmoid},
         {"bor", Func_Bor},
         {"band", Func_Band},
@@ -3524,7 +3330,26 @@ public class Milkdrop : MonoBehaviour
         return tokens;
     }
 
-    float GetVariable(Dictionary<int, float> Variables, string name, float defaultValue = 0f)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    float GetVariable(State Variables, string name, float defaultValue)
+    {
+        int key;
+
+        if (!VariableNameTable.TryGetValue(name, out key))
+        {
+            return defaultValue;
+        }
+
+        if (Variables.Keys.Contains(key))
+        {
+            return Variables.Heap[key];
+        }
+
+        return defaultValue;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    float GetVariable(State Variables, string name)
     {
         int key;
 
@@ -3533,77 +3358,59 @@ public class Milkdrop : MonoBehaviour
             return 0f;
         }
 
-        if (Variables.TryGetValue(key, out float value))
-        {
-            return value;
-        }
-
-        return defaultValue;
+        return Variables.Heap[key];
     }
 
-    void SetVariable(Dictionary<int, float> Variables, string name, float value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void SetVariable(State Variables, string name, float value)
     {
         RegisterVariable(name);
 
         int key = VariableNameTable[name];
 
-        if (Variables.ContainsKey(key))
-        {
-            Variables[key] = value;
-        }
-        else
-        {
-            Variables.Add(key, value);
-        }
+        Variables.Set(key, value);
     }
 
-    float GetVariable(Dictionary<int, float> Variables, int key, float defaultValue = 0f)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    float GetVariable(State Variables, int key)
     {
-        if (Variables.TryGetValue(key, out float value))
-        {
-            return value;
-        }
-        return defaultValue;
+        return Variables.Heap[key];
     }
 
-    void SetVariable(Dictionary<int, float> Variables, int key, float value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void SetVariable(State Variables, int key, float value)
     {
-        if (Variables.ContainsKey(key))
-        {
-            Variables[key] = value;
-        }
-        else
-        {
-            Variables.Add(key, value);
-        }
+        Variables.Set(key, value);
     }
 
     public void UnloadPresets()
     {
-        foreach (var preset in LoadedPresets.Values)
+        if (CurrentPreset != null)
         {
-            Destroy(preset.WarpMaterial);
-            Destroy(preset.CompMaterial);
-            Destroy(preset.DarkenCenterMaterial);
+            Destroy(CurrentPreset.WarpMaterial);
+            Destroy(CurrentPreset.CompMaterial);
+            Destroy(CurrentPreset.DarkenCenterMaterial);
 
-            foreach (var shape in preset.Shapes)
+            foreach (var shape in CurrentPreset.Shapes)
             {
                 Destroy(shape.ShapeMesh);
             }
         }
 
-        LoadedPresets.Clear();
-    }
-
-    public void LoadPresets()
-    {
-        foreach (TextAsset file in PresetFiles)
+        if (PrevPreset != null)
         {
-            LoadPreset(file.name, file.text);
+            Destroy(PrevPreset.WarpMaterial);
+            Destroy(PrevPreset.CompMaterial);
+            Destroy(PrevPreset.DarkenCenterMaterial);
+
+            foreach (var shape in PrevPreset.Shapes)
+            {
+                Destroy(shape.ShapeMesh);
+            }
         }
     }
 
-    public void LoadPreset(string fileName, string file)
+    private Preset LoadPreset(string file)
     {
         var preset = new Preset();
 
@@ -3801,12 +3608,12 @@ public class Milkdrop : MonoBehaviour
             shape.FrameEquationCompiled = CompileEquation(shape.FrameEquation.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries).Select(x => TokenizeExpression(x)).ToList());
         }
 
-        LoadedPresets.Add(fileName, preset);
+        return preset;
     }
 
-    Action<Dictionary<int, float>> CompileEquation(List<List<string>> Equation)
+    Action<State> CompileEquation(List<List<string>> Equation)
     {
-        Action<Dictionary<int, float>> result = null;
+        List<Action<State>> innerActions = new List<Action<State>>();
         
         foreach (var line in Equation)
         {
@@ -3820,46 +3627,55 @@ public class Milkdrop : MonoBehaviour
 
             int stackIndex = 0;
 
-            Func<Dictionary<int, float>, float> compiledLine = CompileExpression(line.Skip(1).ToList(), ref stackIndex);
+            Func<State, float> compiledLine = CompileExpression(line.Skip(1).ToList(), ref stackIndex);
 
-            result += (Dictionary<int, float> Variables) =>
+            innerActions.Add((State Variables) =>
             {
-                SetVariable(Variables, varIndex, compiledLine(Variables));
-            };
+                Variables.Set(varIndex, compiledLine(Variables));
+            });
         }
 
-        if (result == null)
+        var innerActionsArr = innerActions.ToArray();
+
+        return (State Variables) =>
         {
-            result = (Dictionary<int, float> Variables) => { };
-        }
-
-        return result;
+            for (int i = 0; i < innerActionsArr.Length; i++)
+            {
+                innerActionsArr[i](Variables);
+            }
+        };
     }
 
-    Func<Dictionary<int, float>, float> CompileVariable(string token)
+    int ParseVariable(string token, out int index, out float value)
     {
         if (token[0] == '#')
         {
-            int stackIndex = int.Parse(token.Substring(1));
+            index = int.Parse(token.Substring(1));
+            value = 0f;
 
-            return (Dictionary<int, float> Variables) => Stack[stackIndex];
+            return 0;
         }
 
         if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
         {
-            var result = float.Parse(token);
-            return (Dictionary<int, float> Variables) => result;
+            index = 0;
+            value = float.Parse(token);
+
+            return 1;
         }
 
         RegisterVariable(token);
-        int varIndex = VariableNameTable[token];
+        index = VariableNameTable[token];
+        value = 0f;
 
-        return (Dictionary<int, float> Variables) => GetVariable(Variables, varIndex);
+        return 2;
     }
 
-    Func<Dictionary<int, float>, float> CompileExpression(List<string> Tokens, ref int stackIndex)
+    Func<State, float> CompileExpression(List<string> Tokens, ref int stackIndex)
     {
-        List<Action<Dictionary<int, float>>> innerActions = new List<Action<Dictionary<int, float>>>();
+        var stack = Stack;
+
+        List<Action<State>> innerActions = new List<Action<State>>();
 
         string debugOut = "";
 
@@ -3940,7 +3756,7 @@ public class Milkdrop : MonoBehaviour
                                     arguments[arguments.Count - 1].Add(token3);
                                 }
 
-                                List<Func<Dictionary<int, float>, float>> argumentValues = new List<Func<Dictionary<int, float>, float>>();
+                                List<Func<State, float>> argumentValues = new List<Func<State, float>>();
 
                                 foreach (List<string> argument in arguments)
                                 {
@@ -3952,29 +3768,38 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Action<Dictionary<int, float>> compiledFunction = (Dictionary<int, float> Variables) =>
+                                Action<State> compiledFunction = (State Variables) =>
                                 {
                                     throw new Exception("Error compiling function " + functionName + ": " + debugOut);
                                 };
-                                
+
                                 switch (arguments.Count)
                                 {
                                     case 1:
-                                        compiledFunction = (Dictionary<int, float> Variables) =>
+                                        var func1 = Funcs1Arg[functionName];
+                                        var arg1_0 = argumentValues[0];
+                                        compiledFunction = (State Variables) =>
                                         {
-                                            Stack[funcIndex] = Funcs1Arg[functionName](argumentValues[0](Variables));
+                                            stack[funcIndex] = func1(arg1_0(Variables));
                                         };
                                         break;
                                     case 2:
-                                        compiledFunction = (Dictionary<int, float> Variables) =>
+                                        var func2 = Funcs2Arg[functionName];
+                                        var arg2_0 = argumentValues[0];
+                                        var arg2_1 = argumentValues[1];
+                                        compiledFunction = (State Variables) =>
                                         {
-                                            Stack[funcIndex] = Funcs2Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables));
+                                            stack[funcIndex] = func2(arg2_0(Variables), arg2_1(Variables));
                                         };
                                         break;
                                     case 3:
-                                        compiledFunction = (Dictionary<int, float> Variables) =>
+                                        var func3 = Funcs3Arg[functionName];
+                                        var arg3_0 = argumentValues[0];
+                                        var arg3_1 = argumentValues[1];
+                                        var arg3_2 = argumentValues[2];
+                                        compiledFunction = (State Variables) =>
                                         {
-                                            Stack[funcIndex] = Funcs3Arg[functionName](argumentValues[0](Variables), argumentValues[1](Variables), argumentValues[2](Variables));
+                                            stack[funcIndex] = func3(arg3_0(Variables), arg3_1(Variables), arg3_2(Variables));
                                         };
                                         break;
                                 }
@@ -3992,11 +3817,11 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Func<Dictionary<int, float>, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), ref stackIndex);
+                                Func<State, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), ref stackIndex);
 
-                                innerActions.Add((Dictionary<int, float> Variables) =>
+                                innerActions.Add((State Variables) =>
                                 {
-                                    Stack[funcIndex] = exp(Variables);
+                                    stack[funcIndex] = exp(Variables);
                                 });
 
                                 Tokens.RemoveRange(tokenNum, tokenNum2 - tokenNum);
@@ -4039,12 +3864,30 @@ public class Milkdrop : MonoBehaviour
                     int funcIndex = stackIndex++;
                     string funcId = "#" + funcIndex;
 
-                    Func<Dictionary<int, float>, float> exp = CompileVariable(next);
+                    int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                    innerActions.Add((Dictionary<int, float> Variables) =>
+                    switch (nextType)
                     {
-                        Stack[funcIndex] = +exp(Variables);
-                    });
+                        case 0:
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = +stack[nextTypeIndex];
+                            });
+                            break;
+                        case 1:
+                            float stackResult = +nextTypeValue;
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = stackResult;
+                            });
+                            break;
+                        case 2:
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = +Variables.Heap[nextTypeIndex];
+                            });
+                            break;
+                    }
 
                     Tokens.RemoveRange(tokenNum, 1);
 
@@ -4061,12 +3904,30 @@ public class Milkdrop : MonoBehaviour
                     int funcIndex = stackIndex++;
                     string funcId = "#" + funcIndex;
 
-                    Func<Dictionary<int, float>, float> exp = CompileVariable(next);
+                    int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                    innerActions.Add((Dictionary<int, float> Variables) =>
+                    switch (nextType)
                     {
-                        Stack[funcIndex] = -exp(Variables);
-                    });
+                        case 0:
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = -stack[nextTypeIndex];
+                            });
+                            break;
+                        case 1:
+                            float stackResult = -nextTypeValue;
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = stackResult;
+                            });
+                            break;
+                        case 2:
+                            innerActions.Add((State Variables) =>
+                            {
+                                stack[funcIndex] = -Variables.Heap[nextTypeIndex];
+                            });
+                            break;
+                    }
 
                     Tokens.RemoveRange(tokenNum, 1);
 
@@ -4087,13 +3948,82 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = prevValue(Variables) * nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] * stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] * nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] * Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue * stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                float stackResult = prevTypeValue * nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue * Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] * stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] * nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] * Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4110,13 +4040,82 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = prevValue(Variables) / nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] / stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] / nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] / Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue / stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                float stackResult = prevTypeValue / nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue / Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4133,22 +4132,128 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    float divider = nextValue(Variables);
-
-                    if (divider == 0f)
-                    {
-                        Stack[funcIndex] = 0f;
-                    }
-                    else
-                    {
-                        Stack[funcIndex] = (int)prevValue(Variables) % (int)divider;
-                    }
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)stack[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] % div;
+                                });
+                                break;
+                            case 1:
+                                int div = (int)nextTypeValue;
+                                if (div == 0)
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = 0f;
+                                    });
+                                }
+                                else
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = (int)stack[prevTypeIndex] % div;
+                                    });
+                                }
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)Variables.Heap[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] % div;
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        int prevTypeValueInt = (int)prevTypeValue;
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)stack[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = prevTypeValueInt % div;
+                                });
+                                break;
+                            case 1:
+                                int div = (int)nextTypeValue;
+                                if (div == 0)
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = 0f;
+                                    });
+                                }
+                                else
+                                {
+                                    float stackResult = prevTypeValueInt % div;
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = stackResult;
+                                    });
+                                }
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)Variables.Heap[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = prevTypeValueInt % div;
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)stack[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
+                                });
+                                break;
+                            case 1:
+                                int div = (int)nextTypeValue;
+                                if (div == 0)
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = 0f;
+                                    });
+                                }
+                                else
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
+                                    });
+                                }
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    int div = (int)Variables.Heap[nextTypeIndex];
+                                    if (div == 0) stack[funcIndex] = 0f;
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4170,13 +4275,82 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = prevValue(Variables) + nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] + stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] + nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] + Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue + stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                float stackResult = prevTypeValue + nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue + Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] + stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] + nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] + Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4193,13 +4367,82 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = prevValue(Variables) - nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] - stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] - nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stack[prevTypeIndex] - Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue - stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                float stackResult = prevTypeValue - nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValue - Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] - stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] - nextTypeValue;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] - Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4221,13 +4464,85 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = (int)prevValue(Variables) & (int)nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] & (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int nextTypeValueInt = (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] & nextTypeValueInt;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] & (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        int prevTypeValueInt = (int)prevTypeValue;
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValueInt & (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int stackResult = prevTypeValueInt & (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValueInt & (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int nextTypeValueInt = (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & nextTypeValueInt;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4249,13 +4564,85 @@ public class Milkdrop : MonoBehaviour
                 int funcIndex = stackIndex++;
                 string funcId = "#" + funcIndex;
 
-                Func<Dictionary<int, float>, float> prevValue = CompileVariable(prev);
-                Func<Dictionary<int, float>, float> nextValue = CompileVariable(next);
+                int prevType = ParseVariable(prev, out int prevTypeIndex, out float prevTypeValue);
+                int nextType = ParseVariable(next, out int nextTypeIndex, out float nextTypeValue);
 
-                innerActions.Add((Dictionary<int, float> Variables) =>
+                switch (prevType)
                 {
-                    Stack[funcIndex] = (int)prevValue(Variables) | (int)nextValue(Variables);
-                });
+                    case 0:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] | (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int nextTypeValueInt = (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] | nextTypeValueInt;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)stack[prevTypeIndex] | (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 1:
+                        int prevTypeValueInt = (int)prevTypeValue;
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValueInt | (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int stackResult = prevTypeValueInt | (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = stackResult;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = prevTypeValueInt | (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch (nextType)
+                        {
+                            case 0:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | (int)stack[nextTypeIndex];
+                                });
+                                break;
+                            case 1:
+                                int nextTypeValueInt = (int)nextTypeValue;
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | nextTypeValueInt;
+                                });
+                                break;
+                            case 2:
+                                innerActions.Add((State Variables) =>
+                                {
+                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | (int)Variables.Heap[nextTypeIndex];
+                                });
+                                break;
+                        }
+                        break;
+                }
 
                 Tokens.RemoveRange(tokenNum - 1, 2);
 
@@ -4275,17 +4662,38 @@ public class Milkdrop : MonoBehaviour
             throw new System.Exception("evaluation failed: " + debugOut + " => " + a);
         }
 
-        Func<Dictionary<int, float>, float> finalValue = CompileVariable(Tokens[0]);
+        int finalType = ParseVariable(Tokens[0], out int finalTypeIndex, out float finalTypeValue);
 
-        Func<Dictionary<int, float>, float> result = (Dictionary<int, float> Variables) =>
+        var innerActionsArr = innerActions.ToArray();
+
+        Func<State, float> result;
+
+        switch (finalType)
         {
-            for (int i = 0; i < innerActions.Count; i++)
-            {
-                innerActions[i](Variables);
-            }
+            case 0:
+                result = (State Variables) =>
+                {
+                    for (int i = 0; i < innerActionsArr.Length; i++)
+                    {
+                        innerActionsArr[i](Variables);
+                    }
 
-            return finalValue(Variables);
-        };
+                    return stack[finalTypeIndex];
+                };
+                break;
+            case 1:
+                result = (State Variables) =>
+                {
+                    return finalTypeValue;
+                };
+                break;
+            default:
+                result = (State Variables) =>
+                {
+                    return Variables.Heap[finalTypeIndex];
+                };
+                break;
+        }
 
         return result;
     }
@@ -4451,7 +4859,7 @@ public class Milkdrop : MonoBehaviour
         }
     }
 
-    public void PlayPreset(string preset, float transitionDuration)
+    public void PlayPreset(int presetIndex, float transitionDuration)
     {
         if (CurrentPreset != null && transitionDuration > 0f)
         {
@@ -4463,16 +4871,14 @@ public class Milkdrop : MonoBehaviour
             blendProgress = 0f;
         }
 
-        PresetName = preset;
+        PresetName = PresetFiles[presetIndex].name;
 
         PrevPreset = CurrentPreset;
-        CurrentPreset = LoadedPresets[preset];
-
-        CurrentPreset.Variables = new Dictionary<int, float>();
+        CurrentPreset = LoadPreset(PresetFiles[presetIndex].text);
 
         foreach (var v in CurrentPreset.BaseVariables.Keys)
         {
-            SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables[v]);
+            SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables.Heap[v]);
         }
 
         SetVariable(CurrentPreset.Variables, "frame", CurrentFrame);
@@ -4499,27 +4905,28 @@ public class Milkdrop : MonoBehaviour
         SetVariable(CurrentPreset.Variables, "rand_preset.z", UnityEngine.Random.Range(0f, 1f));
         SetVariable(CurrentPreset.Variables, "rand_preset.w", UnityEngine.Random.Range(0f, 1f));
 
-        List<int> nonUserKeys = CurrentPreset.Variables.Keys.ToList();
+        List<int> nonUserKeys = new List<int>(CurrentPreset.Variables.Keys);
         nonUserKeys.AddRange(regs);
 
-        var afterInit = new Dictionary<int, float>(CurrentPreset.Variables);
+        var afterInit = new State(CurrentPreset.Variables);
 
         CurrentPreset.InitEquationCompiled(afterInit);
 
         CurrentPreset.InitVariables = Pick(afterInit, qs);
+
         CurrentPreset.RegVariables = Pick(afterInit, regs);
         var initUserVars = Pick(afterInit, nonUserKeys.ToArray());
 
-        CurrentPreset.FrameVariables = new Dictionary<int, float>(CurrentPreset.Variables);
+        CurrentPreset.FrameVariables = new State(CurrentPreset.Variables);
 
         foreach (var v in CurrentPreset.InitVariables.Keys)
         {
-            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables.Heap[v]);
         }
 
         foreach (var v in CurrentPreset.RegVariables.Keys)
         {
-            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.RegVariables[v]);
+            SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.RegVariables.Heap[v]);
         }
 
         CurrentPreset.FrameEquationCompiled(CurrentPreset.FrameVariables);
@@ -4543,11 +4950,9 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
                 {
-                    CurrentWave.Variables = new Dictionary<int, float>();
-
                     foreach (var v in CurrentWave.BaseVariables.Keys)
                     {
-                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables[v]);
+                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[v]);
                     }
 
                     SetVariable(CurrentWave.Variables, "frame", CurrentFrame);
@@ -4574,18 +4979,18 @@ public class Milkdrop : MonoBehaviour
                     SetVariable(CurrentWave.Variables, "rand_preset.z", GetVariable(CurrentWave.BaseVariables, "rand_preset.z"));
                     SetVariable(CurrentWave.Variables, "rand_preset.w", GetVariable(CurrentWave.BaseVariables, "rand_preset.w"));
 
-                    List<int> nonUserWaveKeys = CurrentWave.Variables.Keys.ToList();
+                    List<int> nonUserWaveKeys = new List<int>(CurrentWave.Variables.Keys);
                     nonUserWaveKeys.AddRange(regs);
                     nonUserWaveKeys.AddRange(ts);
 
                     foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
                     {
-                        SetVariable(CurrentWave.Variables, v, CurrentPreset.AfterFrameVariables[v]);
+                        SetVariable(CurrentWave.Variables, v, CurrentPreset.AfterFrameVariables.Heap[v]);
                     }
 
                     foreach (var v in CurrentPreset.RegVariables.Keys)
                     {
-                        SetVariable(CurrentWave.Variables, v, CurrentPreset.RegVariables[v]);
+                        SetVariable(CurrentWave.Variables, v, CurrentPreset.RegVariables.Heap[v]);
                     }
 
                     CurrentWave.InitEquationCompiled(CurrentWave.Variables);
@@ -4594,7 +4999,7 @@ public class Milkdrop : MonoBehaviour
 
                     foreach (var v in CurrentWave.BaseVariables.Keys)
                     {
-                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables[v]);
+                        SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[v]);
                     }
 
                     CurrentWave.Inits = Pick(CurrentWave.Variables, ts);
@@ -4617,11 +5022,9 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentShape.BaseVariables, "enabled") != 0f)
                 {
-                    CurrentShape.Variables = new Dictionary<int, float>();
-
                     foreach (var v in CurrentShape.BaseVariables.Keys)
                     {
-                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables[v]);
+                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[v]);
                     }
 
                     SetVariable(CurrentShape.Variables, "frame", CurrentFrame);
@@ -4648,18 +5051,18 @@ public class Milkdrop : MonoBehaviour
                     SetVariable(CurrentShape.Variables, "rand_preset.z", GetVariable(CurrentShape.BaseVariables, "rand_preset.z"));
                     SetVariable(CurrentShape.Variables, "rand_preset.w", GetVariable(CurrentShape.BaseVariables, "rand_preset.w"));
 
-                    List<int> nonUserShapeKeys = CurrentShape.Variables.Keys.ToList();
+                    List<int> nonUserShapeKeys = new List<int>(CurrentShape.Variables.Keys);
                     nonUserShapeKeys.AddRange(regs);
                     nonUserShapeKeys.AddRange(ts);
 
                     foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
                     {
-                        SetVariable(CurrentShape.Variables, v, CurrentPreset.AfterFrameVariables[v]);
+                        SetVariable(CurrentShape.Variables, v, CurrentPreset.AfterFrameVariables.Heap[v]);
                     }
 
                     foreach (var v in CurrentPreset.RegVariables.Keys)
                     {
-                        SetVariable(CurrentShape.Variables, v, CurrentPreset.RegVariables[v]);
+                        SetVariable(CurrentShape.Variables, v, CurrentPreset.RegVariables.Heap[v]);
                     }
 
                     CurrentShape.InitEquationCompiled(CurrentShape.Variables);
@@ -4668,7 +5071,7 @@ public class Milkdrop : MonoBehaviour
 
                     foreach (var v in CurrentShape.BaseVariables.Keys)
                     {
-                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables[v]);
+                        SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[v]);
                     }
 
                     CurrentShape.Inits = Pick(CurrentShape.Variables, ts);
@@ -4684,7 +5087,7 @@ public class Milkdrop : MonoBehaviour
         }
         else
         {
-            throw new System.NotImplementedException("Compiling shaders is not supported yet");
+            Debug.LogError("Compiling shaders is not supported yet");
         }
 
         if (string.IsNullOrEmpty(CurrentPreset.Comp))
@@ -4693,7 +5096,7 @@ public class Milkdrop : MonoBehaviour
         }
         else
         {
-            throw new System.NotImplementedException("Compiling shaders is not supported yet");
+            Debug.LogError("Compiling shaders is not supported yet");
         }
 
         CurrentPreset.DarkenCenterMaterial = new Material(DarkenCenterShader);

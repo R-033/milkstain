@@ -471,7 +471,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 778be6d8a4d14486fa6b618934f66e75, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 9149fdcc8ea674950a1c9a51837aaca9, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -624,12 +624,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
+      propertyPath: MaxFPS
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: PresetName
-      value: Mstress & Juppy - Dancer
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: RandomOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: TargetAudio
@@ -637,7 +641,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: ChangePresetIn
-      value: 100000
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176291, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: m_Name
