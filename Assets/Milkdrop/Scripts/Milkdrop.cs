@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 public class Milkdrop : MonoBehaviour
 {
-    static readonly int HeapSize = 512;
+    static readonly int HeapSize = 1024;
 
     public class State
     {
