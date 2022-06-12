@@ -1483,7 +1483,7 @@ public class Milkdrop : MonoBehaviour
 
                     if (isBorderThick)
                     {
-                        WaveformRenderer.widthMultiplier = 2f;
+                        WaveformRenderer.widthMultiplier = 1f;
                     }
                     else
                     {
@@ -1705,14 +1705,14 @@ public class Milkdrop : MonoBehaviour
 
                 if (thick)
                 {
-                    WaveformRenderer.widthMultiplier = 2f;
-                    WaveformRenderer2.widthMultiplier = 2f;
-                    WaveformRenderer3.widthMultiplier = 2f;
-                    WaveformRenderer4.widthMultiplier = 2f;
-                    WaveformRenderer5.widthMultiplier = 2f;
-                    WaveformRenderer6.widthMultiplier = 2f;
-                    WaveformRenderer7.widthMultiplier = 2f;
-                    WaveformRenderer8.widthMultiplier = 2f;
+                    WaveformRenderer.widthMultiplier = 1f;
+                    WaveformRenderer2.widthMultiplier = 1f;
+                    WaveformRenderer3.widthMultiplier = 1f;
+                    WaveformRenderer4.widthMultiplier = 1f;
+                    WaveformRenderer5.widthMultiplier = 1f;
+                    WaveformRenderer6.widthMultiplier = 1f;
+                    WaveformRenderer7.widthMultiplier = 1f;
+                    WaveformRenderer8.widthMultiplier = 1f;
                 }
                 else
                 {
@@ -2788,7 +2788,7 @@ public class Milkdrop : MonoBehaviour
 
             if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
             {
-                WaveformRenderer.widthMultiplier = 2f;
+                WaveformRenderer.widthMultiplier = 1f;
             }
             else
             {
@@ -2804,7 +2804,7 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
                 {
-                    WaveformRenderer2.widthMultiplier = 2f;
+                    WaveformRenderer2.widthMultiplier = 1f;
                 }
                 else
                 {
