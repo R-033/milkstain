@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 public class Milkdrop : MonoBehaviour
 {
-    static readonly int HeapSize = 1024;
+    static readonly int HeapSize = 2048;
 
     public class State
     {
@@ -1439,6 +1439,8 @@ public class Milkdrop : MonoBehaviour
 
                 TargetMeshFilter2.gameObject.SetActive(true);
 
+                CurrentShape.ShapeMesh.Clear();
+
                 CurrentShape.ShapeMesh.vertices = CurrentShape.Positions.Take(sides + 1).ToArray();
                 CurrentShape.ShapeMesh.colors = CurrentShape.Colors.Take(sides + 1).ToArray();
                 CurrentShape.ShapeMesh.uv = CurrentShape.UVs.Take(sides + 1).ToArray();
@@ -1677,7 +1679,7 @@ public class Milkdrop : MonoBehaviour
                 {
                     if (i < samples)
                     {
-                        Dots[i].localPosition = new Vector3(CurrentWave.Positions[i].x * aspect_ratio, -CurrentWave.Positions[i].y, 0f);
+                        Dots[i].localPosition = ValidatePosition(new Vector3(CurrentWave.Positions[i].x * aspect_ratio, -CurrentWave.Positions[i].y, 0f));
                         DotRenderers[i].color = CurrentWave.Colors[i];
                         Dots[i].localScale = thick ? baseDotScale : baseDotScale * 0.5f;
                     }
@@ -2586,7 +2588,8 @@ public class Milkdrop : MonoBehaviour
         {
             UnityEngine.Profiling.Profiler.EndSample();
 
-            throw new Exception("No waveform positions set");
+            Debug.LogError("No waveform positions set");
+            return;
         }
 
         float blendMix = 0.5f - 0.5f * Mathf.Cos(blendProgress * Mathf.PI);
@@ -2738,7 +2741,7 @@ public class Milkdrop : MonoBehaviour
             {
                 if (i < smoothedNumVert)
                 {
-                    Dots[i].localPosition = new Vector3(BasicWaveFormPositionsSmooth[i].x * aspect_ratio, BasicWaveFormPositionsSmooth[i].y, 0f);
+                    Dots[i].localPosition = ValidatePosition(new Vector3(BasicWaveFormPositionsSmooth[i].x * aspect_ratio, BasicWaveFormPositionsSmooth[i].y, 0f));
                     DotRenderers[i].color = color;
                     Dots[i].localScale = baseDotScale;
                 }
@@ -2757,7 +2760,7 @@ public class Milkdrop : MonoBehaviour
             {
                 if (i < smoothedNumVert)
                 {
-                    Dots[MaxSamples * 2 + i].localPosition = new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f);
+                    Dots[MaxSamples * 2 + i].localPosition = ValidatePosition(new Vector3(BasicWaveFormPositionsSmooth2[i].x * aspect_ratio, BasicWaveFormPositionsSmooth2[i].y, 0f));
                     DotRenderers[MaxSamples * 2 + i].color = color;
                     Dots[MaxSamples * 2 + i].localScale = baseDotScale;
                 }
@@ -2855,11 +2858,11 @@ public class Milkdrop : MonoBehaviour
             iAbove = iAbove2;
             iAbove2 = Mathf.Min(nVertsIn - 1, i + 2);
 
-            positionsSmoothed[j] = new Vector3(positions[i].x, -positions[i].y, 0f);
+            positionsSmoothed[j] = ValidatePosition(new Vector3(positions[i].x, -positions[i].y, 0f));
 
             if (zCoord)
             {
-                positionsSmoothed[j + 1] = new Vector3
+                positionsSmoothed[j + 1] = ValidatePosition(new Vector3
                 (
                     (c1 * positions[iBelow].x +
                     c2 * positions[i].x +
@@ -2876,11 +2879,11 @@ public class Milkdrop : MonoBehaviour
                     c3 * positions[iAbove].z +
                     c4 * positions[iAbove2].z) *
                     invSum
-                );
+                ));
             }
             else
             {
-                positionsSmoothed[j + 1] = new Vector3
+                positionsSmoothed[j + 1] = ValidatePosition(new Vector3
                 (
                     (c1 * positions[iBelow].x +
                     c2 * positions[i].x +
@@ -2893,7 +2896,7 @@ public class Milkdrop : MonoBehaviour
                     c4 * positions[iAbove2].y) *
                     invSum),
                     0f
-                );
+                ));
             }
 
             colorsSmoothed[j] = colors[i];
@@ -2903,7 +2906,7 @@ public class Milkdrop : MonoBehaviour
             j += 2;
         }
 
-        positionsSmoothed[j] = new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f);
+        positionsSmoothed[j] = ValidatePosition(new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f));
         colorsSmoothed[j] = colors[nVertsIn - 1];
     }
 
@@ -2926,7 +2929,7 @@ public class Milkdrop : MonoBehaviour
             iAbove = iAbove2;
             iAbove2 = Mathf.Min(nVertsIn - 1, i + 2);
 
-            positionsSmoothed[j] = new Vector3(positions[i].x, -positions[i].y, 0f);
+            positionsSmoothed[j] = ValidatePosition(new Vector3(positions[i].x, -positions[i].y, 0f));
 
             if (zCoord)
             {
@@ -2951,7 +2954,7 @@ public class Milkdrop : MonoBehaviour
             }
             else
             {
-                positionsSmoothed[j + 1] = new Vector3
+                positionsSmoothed[j + 1] = ValidatePosition(new Vector3
                 (
                     (c1 * positions[iBelow].x +
                     c2 * positions[i].x +
@@ -2964,14 +2967,29 @@ public class Milkdrop : MonoBehaviour
                     c4 * positions[iAbove2].y) *
                     invSum),
                     0f
-                );
+                ));
             }
 
             iBelow = i;
             j += 2;
         }
 
-        positionsSmoothed[j] = new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f);
+        positionsSmoothed[j] = ValidatePosition(new Vector3(positions[nVertsIn - 1].x, -positions[nVertsIn - 1].y, 0f));
+    }
+
+    Vector3 ValidatePosition(Vector3 pos)
+    {
+        if (float.IsNaN(pos.x))
+        {
+            pos.x = 0f;
+        }
+
+        if (float.IsNaN(pos.y))
+        {
+            pos.y = 0f;
+        }
+
+        return new Vector3(Mathf.Clamp(pos.x, -10f, 10f), Mathf.Clamp(pos.y, -10f, 10f), 0f);
     }
 
     void DrawComp(Preset preset, bool blending)
@@ -3295,7 +3313,8 @@ public class Milkdrop : MonoBehaviour
 
         if (eqIndex < 0)
         {
-            throw new Exception("no assignment in expression " + Expression);
+            //Debug.LogError("no assignment in expression " + Expression);
+            return tokens;
         }
 
         tokens.Add(Expression.Substring(0, eqIndex));
@@ -3460,12 +3479,6 @@ public class Milkdrop : MonoBehaviour
                 val = lineTrimmed.Substring(eqIndex + 1);
             }
 
-
-            if (string.IsNullOrEmpty(val))
-            {
-                continue;
-            }
-
             if (arg.StartsWith("wave_") && char.IsDigit(arg[5]))
             {
                 int num = int.Parse(arg.Split('_')[1]);
@@ -3476,6 +3489,11 @@ public class Milkdrop : MonoBehaviour
                 }
 
                 string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
+
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = ";";
+                }
 
                 if (codeName.StartsWith("init"))
                 {
@@ -3491,7 +3509,7 @@ public class Milkdrop : MonoBehaviour
                 }
                 else
                 {
-                    throw new Exception("Unknown wave code name " + codeName);
+                    Debug.LogError("Unknown wave code name " + codeName + ": " + line);
                 }
             }
             else if (arg.StartsWith("wavecode_"))
@@ -3505,13 +3523,24 @@ public class Milkdrop : MonoBehaviour
 
                 string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
 
+                float result = 0f;
+
+                if (!float.TryParse(val, out result))
+                {
+                    if (val != "-")
+                    {
+                        Debug.LogError("Invalid number " + val + ": " + line);
+                        continue;
+                    }
+                }
+
                 if (VariableNameLookup.ContainsKey(varName))
                 {
-                    SetVariable(preset.Waves[num].BaseVariables, VariableNameLookup[varName], float.Parse(val));
+                    SetVariable(preset.Waves[num].BaseVariables, VariableNameLookup[varName], result);
                 }
                 else
                 {
-                    SetVariable(preset.Waves[num].BaseVariables, varName, float.Parse(val));
+                    SetVariable(preset.Waves[num].BaseVariables, varName, result);
                 }
             }
             else if (arg.StartsWith("shape_") && char.IsDigit(arg[6]))
@@ -3525,6 +3554,11 @@ public class Milkdrop : MonoBehaviour
 
                 string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
 
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = ";";
+                }
+
                 if (codeName.StartsWith("init"))
                 {
                     preset.Shapes[num].InitEquation += val;
@@ -3535,7 +3569,7 @@ public class Milkdrop : MonoBehaviour
                 }
                 else
                 {
-                    throw new Exception("Unknown shape code name " + codeName);
+                    Debug.LogError("Unknown shape code name " + codeName + ": " + line);
                 }
             }
             else if (arg.StartsWith("shapecode_"))
@@ -3549,26 +3583,52 @@ public class Milkdrop : MonoBehaviour
 
                 string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
 
+                float result = 0f;
+
+                if (!float.TryParse(val, out result))
+                {
+                    if (val != "-")
+                    {
+                        Debug.LogError("Invalid number " + val + ": " + line);
+                        continue;
+                    }
+                }
+
                 if (VariableNameLookup.ContainsKey(varName))
                 {
-                    SetVariable(preset.Shapes[num].BaseVariables, VariableNameLookup[varName], float.Parse(val));
+                    SetVariable(preset.Shapes[num].BaseVariables, VariableNameLookup[varName], result);
                 }
                 else
                 {
-                    SetVariable(preset.Shapes[num].BaseVariables, varName, float.Parse(val));
+                    SetVariable(preset.Shapes[num].BaseVariables, varName, result);
                 }
+            }
+            else if (arg.StartsWith("per_frame_init_"))
+            {
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = ";";
+                }
+
+                preset.InitEquation += val;
             }
             else if (arg.StartsWith("per_frame_"))
             {
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = ";";
+                }
+
                 preset.FrameEquation += val;
             }
             else if (arg.StartsWith("per_pixel_"))
             {
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = ";";
+                }
+
                 preset.PixelEquation += val;
-            }
-            else if (arg.StartsWith("per_frame_init_"))
-            {
-                preset.InitEquation += val;
             }
             else if (arg.StartsWith("warp_"))
             {
@@ -3580,13 +3640,24 @@ public class Milkdrop : MonoBehaviour
             }
             else
             {
+                float result = 0f;
+
+                if (!float.TryParse(val, out result))
+                {
+                    if (val != "-")
+                    {
+                        Debug.LogError("Invalid number " + val + ": " + line);
+                        continue;
+                    }
+                }
+
                 if (VariableNameLookup.ContainsKey(arg))
                 {
-                    SetVariable(preset.BaseVariables, VariableNameLookup[arg], float.Parse(val));
+                    SetVariable(preset.BaseVariables, VariableNameLookup[arg], result);
                 }
                 else
                 {
-                    SetVariable(preset.BaseVariables, arg, float.Parse(val));
+                    SetVariable(preset.BaseVariables, arg, result);
                 }
             }
         }
@@ -3659,7 +3730,17 @@ public class Milkdrop : MonoBehaviour
         if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
         {
             index = 0;
-            value = float.Parse(token);
+            if (!float.TryParse(token, out value))
+            {
+                if (token == ".")
+                {
+                    value = 0f;
+                }
+                else
+                {
+                    Debug.LogError("Invalid variable number: " + token);
+                }
+            }
 
             return 1;
         }
@@ -3770,7 +3851,7 @@ public class Milkdrop : MonoBehaviour
 
                                 Action<State> compiledFunction = (State Variables) =>
                                 {
-                                    throw new Exception("Error compiling function " + functionName + ": " + debugOut);
+                                    Debug.LogError("Error compiling function " + functionName + ": " + debugOut);
                                 };
 
                                 switch (arguments.Count)
@@ -4145,7 +4226,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = (int)stack[prevTypeIndex] % div;
+                                    else stack[funcIndex] = (int)stack[prevTypeIndex] % div;
                                 });
                                 break;
                             case 1:
@@ -4170,7 +4251,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = (int)stack[prevTypeIndex] % div;
+                                    else stack[funcIndex] = (int)stack[prevTypeIndex] % div;
                                 });
                                 break;
                         }
@@ -4184,7 +4265,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = prevTypeValueInt % div;
+                                    else stack[funcIndex] = prevTypeValueInt % div;
                                 });
                                 break;
                             case 1:
@@ -4210,7 +4291,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = prevTypeValueInt % div;
+                                    else stack[funcIndex] = prevTypeValueInt % div;
                                 });
                                 break;
                         }
@@ -4223,7 +4304,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
+                                    else stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
                                 });
                                 break;
                             case 1:
@@ -4248,7 +4329,7 @@ public class Milkdrop : MonoBehaviour
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
-                                    stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
+                                    else stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
                                 });
                                 break;
                         }
