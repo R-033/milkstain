@@ -629,11 +629,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: PresetName
-      value: 
+      value: yin - 280 - Coming home
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: RandomOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: TargetAudio
@@ -641,7 +641,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: ChangePresetIn
-      value: 15
+      value: 15000
       objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: TransitionTime

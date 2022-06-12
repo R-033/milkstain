@@ -1788,12 +1788,11 @@ public class Milkdrop : MonoBehaviour
 
                             for (int j = _start; j < _end; j++)
                             {
-                                colorKeys[j - _start] = new GradientColorKey(CurrentWave.SmoothedColors[j], j / (float)(_end - _start - 1));
-                                alphaKeys[j - _start] = new GradientAlphaKey(CurrentWave.SmoothedColors[j].a, j / (float)(_end - _start - 1));
+                                colorKeys[j - _start] = new GradientColorKey(CurrentWave.SmoothedColors[j], (j - _start) / (float)(_end - _start - 1));
+                                alphaKeys[j - _start] = new GradientAlphaKey(CurrentWave.SmoothedColors[j].a, (j - _start) / (float)(_end - _start - 1));
                             }
 
-                            grad.colorKeys = colorKeys;
-                            grad.alphaKeys = alphaKeys;
+                            grad.SetKeys(colorKeys, alphaKeys);
 
                             renderer.colorGradient = grad;
                         }
