@@ -191,6 +191,7 @@ public class Milkdrop : MonoBehaviour
     private float CurrentTime = 0f;
 
     private Vector3 baseDotScale;
+    private Vector3 baseSquareScale;
 
     private Dictionary<string, string> VariableNameLookup = new Dictionary<string, string>
     {
@@ -501,7 +502,11 @@ public class Milkdrop : MonoBehaviour
 
         MotionVectorsPositions = new Vector3[MotionVectorsSize.x * MotionVectorsSize.y * 2];
 
-        baseDotScale = DotPrefab.transform.localScale;
+        var dotSprite = DotPrefab.GetComponent<SpriteRenderer>().sprite;
+        var squareSprite = MotionVectorPrefab.GetComponent<SpriteRenderer>().sprite;
+
+        baseDotScale = Vector3.one * (4f / Resolution.y);
+        baseSquareScale = Vector3.one * (2f / Resolution.y);
 
         Dots = new Transform[MaxSamples * 4];
         DotRenderers = new SpriteRenderer[MaxSamples * 4];
@@ -528,9 +533,9 @@ public class Milkdrop : MonoBehaviour
         freqArrayL = new float[MaxSamples];
         freqArrayR = new float[MaxSamples];
 
-        PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
-        TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
-        FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
+        PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+        TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+        FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
 
         TargetMeshWarp = new Mesh();
         Vector3[] vertices = new Vector3[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -750,7 +755,7 @@ public class Milkdrop : MonoBehaviour
 
     void Render()
     {
-        CurrentTime += 1f / FPS;
+        CurrentTime += Mathf.Max(Time.deltaTime, 1f / MaxFPS);
         CurrentFrame++;
 
         if (blending)
@@ -943,6 +948,8 @@ public class Milkdrop : MonoBehaviour
         SetVariable(preset.FrameVariables, "pixelsy", Resolution.y);
 
         preset.FrameEquationCompiled(preset.FrameVariables);
+
+        CurrentPreset.AfterFrameVariables = Pick(CurrentPreset.FrameVariables, qs);
 
         UnityEngine.Profiling.Profiler.EndSample();
     }
@@ -1393,7 +1400,7 @@ public class Milkdrop : MonoBehaviour
                 bool isBorderThick = Mathf.Abs(thickoutline) >= 1f;
                 bool isAdditive = Mathf.Abs(additive) >= 1f;
 
-                CurrentShape.Positions[0] = new Vector3(x, y, 0f);
+                CurrentShape.Positions[0] = new Vector3(x, -y, 0f);
 
                 CurrentShape.Colors[0] = new Color(r, g, b, a * blendProgress);
 
@@ -1414,7 +1421,7 @@ public class Milkdrop : MonoBehaviour
                     CurrentShape.Positions[k] = new Vector3
                     (
                         x + rad * Mathf.Cos(angSum),
-                        y + rad * Mathf.Sin(angSum),
+                        -(y + rad * Mathf.Sin(angSum)),
                         0f
                     );
 
@@ -1483,11 +1490,11 @@ public class Milkdrop : MonoBehaviour
 
                     if (isBorderThick)
                     {
-                        WaveformRenderer.widthMultiplier = 1f;
+                        WaveformRenderer.widthMultiplier = 2f / Resolution.y;
                     }
                     else
                     {
-                        WaveformRenderer.widthMultiplier = 0.5f;
+                        WaveformRenderer.widthMultiplier = 1f / Resolution.y;
                     }
 
                     WaveformRenderer.colorGradient = new Gradient()
@@ -1705,25 +1712,25 @@ public class Milkdrop : MonoBehaviour
 
                 if (thick)
                 {
-                    WaveformRenderer.widthMultiplier = 1f;
-                    WaveformRenderer2.widthMultiplier = 1f;
-                    WaveformRenderer3.widthMultiplier = 1f;
-                    WaveformRenderer4.widthMultiplier = 1f;
-                    WaveformRenderer5.widthMultiplier = 1f;
-                    WaveformRenderer6.widthMultiplier = 1f;
-                    WaveformRenderer7.widthMultiplier = 1f;
-                    WaveformRenderer8.widthMultiplier = 1f;
+                    WaveformRenderer.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer3.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer4.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer5.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer6.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer7.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer8.widthMultiplier = 2f / Resolution.y;
                 }
                 else
                 {
-                    WaveformRenderer.widthMultiplier = 0.5f;
-                    WaveformRenderer2.widthMultiplier = 0.5f;
-                    WaveformRenderer3.widthMultiplier = 0.5f;
-                    WaveformRenderer4.widthMultiplier = 0.5f;
-                    WaveformRenderer5.widthMultiplier = 0.5f;
-                    WaveformRenderer6.widthMultiplier = 0.5f;
-                    WaveformRenderer7.widthMultiplier = 0.5f;
-                    WaveformRenderer8.widthMultiplier = 0.5f;
+                    WaveformRenderer.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer3.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer4.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer5.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer6.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer7.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer8.widthMultiplier = 1f / Resolution.y;
                 }
 
                 WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
@@ -2104,7 +2111,7 @@ public class Milkdrop : MonoBehaviour
                 Vector3 dir = pos2 - pos1;
                 float distance = dir.magnitude;
                 MotionVectors[i].localPosition = Vector3.Lerp(pos1, pos2, 0.5f);
-                MotionVectors[i].localScale = new Vector3(distance, 0.0017f, 0.0017f);
+                MotionVectors[i].localScale = new Vector3(distance * baseSquareScale.x, baseSquareScale.y, baseSquareScale.z);
                 MotionVectors[i].right = dir.normalized;
                 MotionVectorRenderers[i].color = color;
             }
@@ -2788,11 +2795,11 @@ public class Milkdrop : MonoBehaviour
 
             if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
             {
-                WaveformRenderer.widthMultiplier = 1f;
+                WaveformRenderer.widthMultiplier = 2f / Resolution.y;
             }
             else
             {
-                WaveformRenderer.widthMultiplier = 0.5f;
+                WaveformRenderer.widthMultiplier = 1f / Resolution.y;
             }
 
             if (newWaveMode == 7 || oldWaveMode == 7)
@@ -2804,11 +2811,11 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
                 {
-                    WaveformRenderer2.widthMultiplier = 1f;
+                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y;
                 }
                 else
                 {
-                    WaveformRenderer2.widthMultiplier = 0.5f;
+                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y;
                 }
             }
 
@@ -3524,13 +3531,15 @@ public class Milkdrop : MonoBehaviour
 
                 float result = 0f;
 
+                if (val == "." || val == "-")
+                {
+                    val = "0";
+                }
+
                 if (!float.TryParse(val, out result))
                 {
-                    if (val != "-")
-                    {
-                        Debug.LogError("Invalid number " + val + ": " + line);
-                        continue;
-                    }
+                    Debug.LogError("Invalid number " + val + ": " + line);
+                    continue;
                 }
 
                 if (VariableNameLookup.ContainsKey(varName))
@@ -3584,13 +3593,15 @@ public class Milkdrop : MonoBehaviour
 
                 float result = 0f;
 
+                if (val == "." || val == "-")
+                {
+                    val = "0";
+                }
+
                 if (!float.TryParse(val, out result))
                 {
-                    if (val != "-")
-                    {
-                        Debug.LogError("Invalid number " + val + ": " + line);
-                        continue;
-                    }
+                    Debug.LogError("Invalid number " + val + ": " + line);
+                    continue;
                 }
 
                 if (VariableNameLookup.ContainsKey(varName))
@@ -3641,13 +3652,15 @@ public class Milkdrop : MonoBehaviour
             {
                 float result = 0f;
 
+                if (val == "." || val == "-")
+                {
+                    val = "0";
+                }
+
                 if (!float.TryParse(val, out result))
                 {
-                    if (val != "-")
-                    {
-                        Debug.LogError("Invalid number " + val + ": " + line);
-                        continue;
-                    }
+                    Debug.LogError("Invalid number " + val + ": " + line);
+                    continue;
                 }
 
                 if (VariableNameLookup.ContainsKey(arg))
@@ -3729,16 +3742,15 @@ public class Milkdrop : MonoBehaviour
         if (token[0] == '.' || token[0] == '-' || char.IsDigit(token[0]))
         {
             index = 0;
+
+            if (token == ".")
+            {
+                token = "0";
+            }
+
             if (!float.TryParse(token, out value))
             {
-                if (token == ".")
-                {
-                    value = 0f;
-                }
-                else
-                {
-                    Debug.LogError("Invalid variable number: " + token);
-                }
+                Debug.LogError("Invalid variable number: " + token);
             }
 
             return 1;
@@ -4131,19 +4143,25 @@ public class Milkdrop : MonoBehaviour
                             case 0:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = stack[prevTypeIndex] / stack[nextTypeIndex];
+                                    float div = stack[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = stack[prevTypeIndex] / div;
                                 });
                                 break;
                             case 1:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = stack[prevTypeIndex] / nextTypeValue;
+                                    float div = nextTypeValue;
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = stack[prevTypeIndex] / div;
                                 });
                                 break;
                             case 2:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = stack[prevTypeIndex] / Variables.Heap[nextTypeIndex];
+                                    float div = Variables.Heap[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = stack[prevTypeIndex] / div;
                                 });
                                 break;
                         }
@@ -4154,11 +4172,13 @@ public class Milkdrop : MonoBehaviour
                             case 0:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = prevTypeValue / stack[nextTypeIndex];
+                                    float div = stack[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = prevTypeValue / div;
                                 });
                                 break;
                             case 1:
-                                float stackResult = prevTypeValue / nextTypeValue;
+                                float stackResult = nextTypeValue == 0f ? 0f : prevTypeValue / nextTypeValue;
                                 innerActions.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
@@ -4167,7 +4187,9 @@ public class Milkdrop : MonoBehaviour
                             case 2:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = prevTypeValue / Variables.Heap[nextTypeIndex];
+                                    float div = Variables.Heap[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = prevTypeValue / div;
                                 });
                                 break;
                         }
@@ -4178,19 +4200,33 @@ public class Milkdrop : MonoBehaviour
                             case 0:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / stack[nextTypeIndex];
+                                    float div = stack[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = Variables.Heap[prevTypeIndex] / div;
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                if (nextTypeValue == 0f)
                                 {
-                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / nextTypeValue;
-                                });
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = 0f;
+                                    });
+                                }
+                                else
+                                {
+                                    innerActions.Add((State Variables) =>
+                                    {
+                                        stack[funcIndex] = Variables.Heap[prevTypeIndex] / nextTypeValue;
+                                    });
+                                }
                                 break;
                             case 2:
                                 innerActions.Add((State Variables) =>
                                 {
-                                    stack[funcIndex] = Variables.Heap[prevTypeIndex] / Variables.Heap[nextTypeIndex];
+                                    float div = Variables.Heap[nextTypeIndex];
+                                    if (div == 0f) stack[funcIndex] = 0f;
+                                    else stack[funcIndex] = Variables.Heap[prevTypeIndex] / div;
                                 });
                                 break;
                         }
