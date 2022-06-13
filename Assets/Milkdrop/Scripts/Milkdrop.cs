@@ -132,6 +132,7 @@ public class Milkdrop : MonoBehaviour
     public Vector2Int MeshSizeComp = new Vector2Int(32, 24);
     public Vector2Int MotionVectorsSize = new Vector2Int(64, 48);
     public Vector2Int Resolution = new Vector2Int(1200, 900);
+    public float Scale = 1f;
     public int MaxShapeSides = 101;
     public int MaxSamples = 512;
     public float MaxFPS = 30f;
@@ -505,8 +506,8 @@ public class Milkdrop : MonoBehaviour
         var dotSprite = DotPrefab.GetComponent<SpriteRenderer>().sprite;
         var squareSprite = MotionVectorPrefab.GetComponent<SpriteRenderer>().sprite;
 
-        baseDotScale = Vector3.one * (4f / Resolution.y);
-        baseSquareScale = Vector3.one * (2f / Resolution.y);
+        baseDotScale = Vector3.one * (4f / Resolution.y * Scale);
+        baseSquareScale = Vector3.one * (2f / Resolution.y * Scale);
 
         Dots = new Transform[MaxSamples * 4];
         DotRenderers = new SpriteRenderer[MaxSamples * 4];
@@ -1478,7 +1479,7 @@ public class Milkdrop : MonoBehaviour
                 TargetCamera.targetTexture = TempTexture;
                 TargetCamera.Render();
 
-                 TargetMeshFilter2.gameObject.SetActive(false);
+                TargetMeshFilter2.gameObject.SetActive(false);
 
                 if (hasBorder)
                 {
@@ -1490,11 +1491,11 @@ public class Milkdrop : MonoBehaviour
 
                     if (isBorderThick)
                     {
-                        WaveformRenderer.widthMultiplier = 2f / Resolution.y;
+                        WaveformRenderer.widthMultiplier = 2f / Resolution.y * Scale;
                     }
                     else
                     {
-                        WaveformRenderer.widthMultiplier = 1f / Resolution.y;
+                        WaveformRenderer.widthMultiplier = 1f / Resolution.y * Scale;
                     }
 
                     WaveformRenderer.colorGradient = new Gradient()
@@ -1712,25 +1713,25 @@ public class Milkdrop : MonoBehaviour
 
                 if (thick)
                 {
-                    WaveformRenderer.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer3.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer4.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer5.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer6.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer7.widthMultiplier = 2f / Resolution.y;
-                    WaveformRenderer8.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer3.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer4.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer5.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer6.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer7.widthMultiplier = 2f / Resolution.y * Scale;
+                    WaveformRenderer8.widthMultiplier = 2f / Resolution.y * Scale;
                 }
                 else
                 {
-                    WaveformRenderer.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer3.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer4.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer5.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer6.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer7.widthMultiplier = 1f / Resolution.y;
-                    WaveformRenderer8.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer3.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer4.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer5.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer6.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer7.widthMultiplier = 1f / Resolution.y * Scale;
+                    WaveformRenderer8.widthMultiplier = 1f / Resolution.y * Scale;
                 }
 
                 WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
@@ -2795,11 +2796,11 @@ public class Milkdrop : MonoBehaviour
 
             if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
             {
-                WaveformRenderer.widthMultiplier = 2f / Resolution.y;
+                WaveformRenderer.widthMultiplier = 2f / Resolution.y * Scale;
             }
             else
             {
-                WaveformRenderer.widthMultiplier = 1f / Resolution.y;
+                WaveformRenderer.widthMultiplier = 1f / Resolution.y * Scale;
             }
 
             if (newWaveMode == 7 || oldWaveMode == 7)
@@ -2811,11 +2812,11 @@ public class Milkdrop : MonoBehaviour
 
                 if (GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f)
                 {
-                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y;
+                    WaveformRenderer2.widthMultiplier = 2f / Resolution.y * Scale;
                 }
                 else
                 {
-                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y;
+                    WaveformRenderer2.widthMultiplier = 1f / Resolution.y * Scale;
                 }
             }
 
