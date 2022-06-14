@@ -40,12 +40,16 @@ Shader "Milkdrop/DoNothing"
             }
 
             sampler2D _MainTex;
+            float4 _MainTex_HDR;
 
             float4 frag (v2f i) : SV_Target
             {
                 float2 uv = i.uv;
 
-                return float4(tex2D(_MainTex, uv).rgb, 1.0);
+                float4 tex = tex2D(_MainTex, uv);
+                float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
+
+                return float4(texHDR.rgb, 1.0);
             }
             ENDCG
         }

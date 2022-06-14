@@ -3,6 +3,8 @@ Shader "Milkdrop/DefaultCompShader"
     Properties
     {
         _MainTex ("sampler_main", 2D) = "white" {}
+        _MainTexPrev ("prev sampler", 2D) = "white" {}
+        blending ("blending", Float) = 0
         //_MainTex2 ("sampler_fw_main", 2D) = "white" {}
         //_MainTex3 ("sampler_fc_main", 2D) = "white" {}
         //_MainTex4 ("sampler_pw_main", 2D) = "white" {}
@@ -90,6 +92,7 @@ Shader "Milkdrop/DefaultCompShader"
             {
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                float2 uv_orig : TEXCOORD1;
                 float4 color : TEXCOORD2;
             };
 
@@ -97,8 +100,10 @@ Shader "Milkdrop/DefaultCompShader"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.uv.x = v.vertex.x * 0.5 + 0.5;
                 o.uv.y = -v.vertex.y * 0.5 + 0.5;
+                o.uv_orig = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.color = v.color;
                 return o;
             }
@@ -109,6 +114,10 @@ Shader "Milkdrop/DefaultCompShader"
             }
 
             sampler2D _MainTex; // sampler_main
+            sampler2D _MainTexPrev;
+            float4 _MainTex_HDR;
+            float4 _MainTexPrev_HDR;
+            float blending;
             //sampler2D _MainTex2; // sampler_fw_main
             //sampler2D _MainTex3; // sampler_fc_main
             //sampler2D _MainTex4; // sampler_pw_main
@@ -222,14 +231,14 @@ Shader "Milkdrop/DefaultCompShader"
                 float3 ret;
 
                 float2 uv = i.uv;
-                float2 uv_orig = i.uv;
+                float2 uv_orig = i.uv_orig;
                 //uv.y = 1.0 - uv.y;
                 //uv_orig.y = 1.0 - uv_orig.y;
 
                 float rad = length(uv - 0.5);
                 float ang = atan2(uv.x - 0.5, uv.y - 0.5);
 
-                float3 hue_shader = i.color;
+                float3 hue_shader = i.color.xyz;
 
                 // part that changes
                 float orient_horiz = echo_orientation % 2.0;
@@ -238,9 +247,16 @@ Shader "Milkdrop/DefaultCompShader"
                 float2 uv_echo = ((uv - 0.5) *
                                 (1.0 / echo_zoom) *
                                 float2(orient_x, orient_y)) + 0.5;
+                
+                float4 tex = tex2D(_MainTex, uv_orig);
+                float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
+                float4 texEcho = tex2D(_MainTexPrev, uv_echo);
+                float3 texEchoHDR = DecodeHDR(texEcho, _MainTexPrev_HDR);
+                float4 texPrev = tex2D(_MainTexPrev, uv);
+                float3 texPrevHDR = DecodeHDR(texPrev, _MainTexPrev_HDR);
 
-                ret = lerp(tex2D(_MainTex, uv).xyz,
-                            tex2D(_MainTex, uv_echo).xyz,
+                ret = lerp(texPrevHDR.xyz,
+                            texEchoHDR.xyz,
                             echo_alpha);
 
                 ret *= gammaAdj;
@@ -256,8 +272,7 @@ Shader "Milkdrop/DefaultCompShader"
                 if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
                 if(invert != 0) ret = 1.0 - ret;
 
-                return float4(lerp(tex2D(_MainTex, uv).xyz, ret, 1.0), 1.0);
-                //return float4(ret * i.color.w, 1.0);
+                return float4(lerp(texHDR.xyz, ret, max(1.0 - blending, i.color.w)), 1.0);
             }
             ENDCG
         }

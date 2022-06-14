@@ -3,6 +3,8 @@ Shader "Milkdrop/DefaultWarpShader"
     Properties
     {
         _MainTex ("sampler_main", 2D) = "white" {}
+        _MainTexPrev ("prev sampler", 2D) = "white" {}
+        blending ("blending", Float) = 0
         //_MainTex2 ("sampler_fw_main", 2D) = "white" {}
         //_MainTex3 ("sampler_fc_main", 2D) = "white" {}
         //_MainTex4 ("sampler_pw_main", 2D) = "white" {}
@@ -97,6 +99,10 @@ Shader "Milkdrop/DefaultWarpShader"
             }
 
             sampler2D _MainTex; // sampler_main
+            sampler2D _MainTexPrev;
+            float4 _MainTex_HDR;
+            float4 _MainTexPrev_HDR;
+            float blending;
             //sampler2D _MainTex2; // sampler_fw_main
             //sampler2D _MainTex3; // sampler_fc_main
             //sampler2D _MainTex4; // sampler_pw_main
@@ -207,11 +213,15 @@ Shader "Milkdrop/DefaultWarpShader"
                 float rad = length(uv_orig - 0.5);
                 float ang = atan2(uv_orig.x - 0.5, uv_orig.y - 0.5);
 
-                // part that changes
-                ret = tex2D(_MainTex, uv).xyz * decay;
+                float4 tex = tex2D(_MainTex, uv_orig);
+                float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
+                float4 texPrev = tex2D(_MainTexPrev, uv);
+                float3 texPrevHDR = DecodeHDR(texPrev, _MainTexPrev_HDR);
 
-                return float4(lerp(tex2D(_MainTex, uv_orig).xyz, ret * i.color.xyz, 1.0), 1.0);
-                //return float4(ret * i.color.xyz * i.color.w, 1.0);
+                // part that changes
+                ret = texPrevHDR.xyz * decay;
+
+                return float4(lerp(texHDR.xyz, ret * i.color.xyz, max(1.0 - blending, i.color.w)), 1.0);
             }
             ENDCG
         }

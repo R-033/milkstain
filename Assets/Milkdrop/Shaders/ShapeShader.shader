@@ -3,6 +3,7 @@ Shader "Milkdrop/ShapeShader"
     Properties
     {
         _MainTex ("sampler_main", 2D) = "white" {}
+        _MainTexPrev ("prev sampler", 2D) = "white" {}
         uTextured ("uTextured", Float) = 0
         additive ("additive", Float) = 0
     }
@@ -46,6 +47,7 @@ Shader "Milkdrop/ShapeShader"
             }
 
             sampler2D _MainTex; // sampler_main
+            sampler2D _MainTexPrev;
             float uTextured;
             float additive;
 
@@ -58,7 +60,7 @@ Shader "Milkdrop/ShapeShader"
 
                 if (uTextured != 0)
                 {
-                    waveColor.xyz *= tex2D(_MainTex, uv_orig).xyz;
+                    waveColor.xyz *= tex2D(_MainTexPrev, uv_orig).xyz;
                 }
 
                 if (additive != 0)

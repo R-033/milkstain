@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 public class Milkdrop : MonoBehaviour
 {
     static readonly int HeapSize = 2048;
+    static readonly int StackSize = 2048;
 
     public class State
     {
@@ -144,11 +145,17 @@ public class Milkdrop : MonoBehaviour
     [HideInInspector]
     public float presetChangeTimer = 0f;
 
+    [HideInInspector]
     public float Bass;
+    [HideInInspector]
     public float BassAtt;
+    [HideInInspector]
     public float Mid;
+    [HideInInspector]
     public float MidAtt;
+    [HideInInspector]
     public float Treb;
+    [HideInInspector]
     public float TrebAtt;
 
     public MeshFilter TargetMeshFilter;
@@ -185,6 +192,8 @@ public class Milkdrop : MonoBehaviour
     public Transform BorderSideTop;
     public Transform BorderSideBottom;
     public Transform BorderParent;
+
+    public TextMesh SuperText;
 
     public bool RandomOrder = true;
 
@@ -273,6 +282,7 @@ public class Milkdrop : MonoBehaviour
 
     private bool initialized = false;
 
+    [HideInInspector]
     public float FPS;
     public string PresetName;
 
@@ -288,7 +298,7 @@ public class Milkdrop : MonoBehaviour
     private Transform[] MotionVectors;
     private SpriteRenderer[] MotionVectorRenderers;
 
-    private float[] Stack = new float[2048];
+    private float[] Stack = new float[StackSize];
 
     private int[] audioSampleStarts;
     private int[] audioSampleStops;
@@ -771,26 +781,6 @@ public class Milkdrop : MonoBehaviour
 
         UpdateAudioLevels();
 
-        RunFrameEquations(CurrentPreset);
-        RunPixelEquations(CurrentPreset, false);
-
-        var pick = Pick(CurrentPreset.PixelVariables, regs);
-
-        foreach (var v in pick.Keys)
-        {
-            SetVariable(CurrentPreset.RegVariables, v, pick.Heap[v]);
-        }
-
-        // assing regs to global
-
-        if (blending)
-        {
-            RunFrameEquations(PrevPreset);
-            RunPixelEquations(PrevPreset, true);
-
-            MixFrameEquations();
-        }
-
         RenderImage();
     }
 
@@ -1187,21 +1177,41 @@ public class Milkdrop : MonoBehaviour
 
     void RenderImage()
     {
+        RunFrameEquations(CurrentPreset);
+        RunPixelEquations(CurrentPreset, false);
+
+        var pick = Pick(CurrentPreset.PixelVariables, regs);
+
+        foreach (var v in pick.Keys)
+        {
+            SetVariable(CurrentPreset.RegVariables, v, pick.Heap[v]);
+        }
+
+        // assing regs to global
+
+        if (blending)
+        {
+            RunFrameEquations(PrevPreset);
+            RunPixelEquations(PrevPreset, true);
+
+            MixFrameEquations();
+        }
+
         var swapTexture = TempTexture;
         TempTexture = PrevTempTexture;
         PrevTempTexture = swapTexture;
 
         TempTexture.wrapMode = GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
 
-        //if (!blending)
-        //{
+        if (!blending)
+        {
             DrawWarp(CurrentPreset, false);
-        //}
-        //else
-        //{
-        //    DrawWarp(PrevPreset, false);
-        //    DrawWarp(CurrentPreset, true);
-        //}
+        }
+        else
+        {
+            DrawWarp(PrevPreset, false);
+            DrawWarp(CurrentPreset, true);
+        }
 
         // blur
 
@@ -1226,17 +1236,37 @@ public class Milkdrop : MonoBehaviour
 
         DrawInnerBorder();
 
-        // text
+        //DrawSuperText();
 
-        //if (!blending)
-        //{
+        if (!blending)
+        {
             DrawComp(CurrentPreset, false);
-        //}
-        //else
-        //{
-        //    DrawComp(PrevPreset, false);
-        //    DrawComp(CurrentPreset, true);
-        //}
+        }
+        else
+        {
+            DrawComp(PrevPreset, false);
+            DrawComp(CurrentPreset, true);
+        }
+    }
+
+    void DrawSuperText()
+    {
+        UnityEngine.Profiling.Profiler.BeginSample("DrawSuperText");
+
+        SuperText.gameObject.SetActive(true);
+
+        TargetMeshFilter.sharedMesh = TargetMeshWarp;
+        TargetMeshRenderer.sharedMaterial = DoNothingMaterial;
+
+        DoNothingMaterial.mainTexture = TempTexture;
+
+        TargetCamera.targetTexture = TempTexture;
+        TargetCamera.Render();
+
+        SuperText.gameObject.SetActive(false);
+
+        UnityEngine.Profiling.Profiler.EndSample();
+
     }
 
     void DrawShapes(Preset preset, float blendProgress)
@@ -1468,6 +1498,7 @@ public class Milkdrop : MonoBehaviour
                 TargetMeshRenderer2.sharedMaterial = ShapeMaterial;
 
                 ShapeMaterial.mainTexture = TempTexture;
+                ShapeMaterial.SetTexture("_MainTexPrev", PrevTempTexture);
                 ShapeMaterial.SetFloat("uTextured", textured);
                 ShapeMaterial.SetFloat("additive", additive);
 
@@ -1847,9 +1878,12 @@ public class Milkdrop : MonoBehaviour
 
         TargetMeshRenderer.sharedMaterial = preset.WarpMaterial;
 
-        preset.WarpMaterial.mainTexture = blending ? TempTexture : PrevTempTexture;
+        preset.WarpMaterial.mainTexture = TempTexture;
+
+        preset.WarpMaterial.SetTexture("_MainTexPrev", PrevTempTexture);
 
         preset.WarpMaterial.SetFloat("decay", GetVariable(preset.FrameVariables, "decay"));
+        preset.WarpMaterial.SetFloat("blending", blending ? 1f : 0f);
 
         TargetCamera.targetTexture = TempTexture;
         TargetCamera.Render();
@@ -3062,6 +3096,14 @@ public class Milkdrop : MonoBehaviour
 
                 float alpha = 1f;
 
+                CompColor[offsetColor] = new Color
+                (
+                    hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y),
+                    hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y),
+                    hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y),
+                    alpha
+                );
+
                 if (blending)
                 {
                     x *= MeshSize.x + 1;
@@ -3081,15 +3123,9 @@ public class Milkdrop : MonoBehaviour
                         alpha01 * dx * (1 - dy) +
                         alpha10 * (1 - dx) * dy +
                         alpha11 * dx * dy;
+                    
+                    CompColor[offsetColor].a = alpha;
                 }
-
-                CompColor[offsetColor] = new Color
-                (
-                    hueBase[0] * x * y + hueBase[3] * (1f - x) * y + hueBase[6] * x * (1f - y) + hueBase[9] * (1f - x) * (1f - y),
-                    hueBase[1] * x * y + hueBase[4] * (1f - x) * y + hueBase[7] * x * (1f - y) + hueBase[10] * (1f - x) * (1f - y),
-                    hueBase[2] * x * y + hueBase[5] * (1f - x) * y + hueBase[8] * x * (1f - y) + hueBase[11] * (1f - x) * (1f - y),
-                    alpha
-                );
 
                 offsetColor++;
             }
@@ -3098,7 +3134,11 @@ public class Milkdrop : MonoBehaviour
         TargetMeshFilter.sharedMesh = TargetMeshComp;
         TargetMeshComp.SetColors(CompColor);
 
-        preset.CompMaterial.mainTexture = TempTexture;
+        preset.CompMaterial.mainTexture = FinalTexture;
+
+        preset.CompMaterial.SetTexture("_MainTexPrev", TempTexture);
+
+        preset.CompMaterial.SetFloat("blending", blending ? 1f : 0f);
 
         preset.CompMaterial.SetFloat("gammaAdj", GetVariable(preset.FrameVariables, "gammaadj"));
         preset.CompMaterial.SetFloat("echo_zoom", GetVariable(preset.FrameVariables, "echo_zoom"));
@@ -3697,7 +3737,9 @@ public class Milkdrop : MonoBehaviour
 
     Action<State> CompileEquation(List<List<string>> Equation)
     {
-        List<Action<State>> innerActions = new List<Action<State>>();
+        var stack = Stack;
+
+        List<Action<State>> actionsList = new List<Action<State>>();
         
         foreach (var line in Equation)
         {
@@ -3711,21 +3753,40 @@ public class Milkdrop : MonoBehaviour
 
             int stackIndex = 0;
 
-            Func<State, float> compiledLine = CompileExpression(line.Skip(1).ToList(), ref stackIndex);
+            string finalToken = CompileExpression(line.Skip(1).ToList(), actionsList, ref stackIndex);
 
-            innerActions.Add((State Variables) =>
+            int finalType = ParseVariable(finalToken, out int finalIndex, out float finalValue);
+
+            switch (finalType)
             {
-                Variables.Set(varIndex, compiledLine(Variables));
-            });
+                case 0:
+                    actionsList.Add((State Variables) =>
+                    {
+                        Variables.Set(varIndex, stack[finalIndex]);
+                    });
+                    break;
+                case 1:
+                    actionsList.Add((State Variables) =>
+                    {
+                        Variables.Set(varIndex, finalValue);
+                    });
+                    break;
+                case 2:
+                    actionsList.Add((State Variables) =>
+                    {
+                        Variables.Set(varIndex, Variables.Heap[finalIndex]);
+                    });
+                    break;
+            }
         }
 
-        var innerActionsArr = innerActions.ToArray();
+        var actionArray = actionsList.ToArray();
 
         return (State Variables) =>
         {
-            for (int i = 0; i < innerActionsArr.Length; i++)
+            for (int i = 0; i < actionArray.Length; i++)
             {
-                innerActionsArr[i](Variables);
+                actionArray[i](Variables);
             }
         };
     }
@@ -3764,11 +3825,9 @@ public class Milkdrop : MonoBehaviour
         return 2;
     }
 
-    Func<State, float> CompileExpression(List<string> Tokens, ref int stackIndex)
+    string CompileExpression(List<string> Tokens, List<Action<State>> actionsList, ref int stackIndex)
     {
         var stack = Stack;
-
-        List<Action<State>> innerActions = new List<Action<State>>();
 
         string debugOut = "";
 
@@ -3849,11 +3908,11 @@ public class Milkdrop : MonoBehaviour
                                     arguments[arguments.Count - 1].Add(token3);
                                 }
 
-                                List<Func<State, float>> argumentValues = new List<Func<State, float>>();
+                                List<string> argumentValues = new List<string>();
 
                                 foreach (List<string> argument in arguments)
                                 {
-                                    argumentValues.Add(CompileExpression(argument, ref stackIndex));
+                                    argumentValues.Add(CompileExpression(argument, actionsList, ref stackIndex));
                                 }
 
                                 string functionName = Tokens[tokenNum - 1];
@@ -3861,43 +3920,350 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Action<State> compiledFunction = (State Variables) =>
-                                {
-                                    Debug.LogError("Error compiling function " + functionName + ": " + debugOut);
-                                };
-
                                 switch (arguments.Count)
                                 {
                                     case 1:
                                         var func1 = Funcs1Arg[functionName];
-                                        var arg1_0 = argumentValues[0];
-                                        compiledFunction = (State Variables) =>
+                                        int arg1_0 = ParseVariable(argumentValues[0], out int arg1_0_Index, out float arg1_0_Value);
+
+                                        switch (arg1_0)
                                         {
-                                            stack[funcIndex] = func1(arg1_0(Variables));
-                                        };
+                                            case 0:
+                                                actionsList.Add((State Variables) =>
+                                                {
+                                                    stack[funcIndex] = func1(stack[arg1_0_Index]);
+                                                });
+                                                break;
+                                            case 1:
+                                                actionsList.Add((State Variables) =>
+                                                {
+                                                    stack[funcIndex] = func1(arg1_0_Value);
+                                                });
+                                                break;
+                                            case 2:
+                                                actionsList.Add((State Variables) =>
+                                                {
+                                                    stack[funcIndex] = func1(Variables.Heap[arg1_0_Index]);
+                                                });
+                                                break;
+                                        }
+
                                         break;
                                     case 2:
                                         var func2 = Funcs2Arg[functionName];
-                                        var arg2_0 = argumentValues[0];
-                                        var arg2_1 = argumentValues[1];
-                                        compiledFunction = (State Variables) =>
+                                        int arg2_0 = ParseVariable(argumentValues[0], out int arg2_0_Index, out float arg2_0_Value);
+                                        int arg2_1 = ParseVariable(argumentValues[1], out int arg2_1_Index, out float arg2_1_Value);
+
+                                        switch (arg2_0)
                                         {
-                                            stack[funcIndex] = func2(arg2_0(Variables), arg2_1(Variables));
-                                        };
+                                            case 0:
+                                                switch (arg2_1)
+                                                {
+                                                    case 0:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(stack[arg2_0_Index], stack[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                    case 1:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(stack[arg2_0_Index], arg2_1_Value);
+                                                        });
+                                                        break;
+                                                    case 2:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(stack[arg2_0_Index], Variables.Heap[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                }
+                                                break;
+                                            case 1:
+                                                switch (arg2_1)
+                                                {
+                                                    case 0:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(arg2_0_Value, stack[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                    case 1:
+                                                        float result = func2(arg2_0_Value, arg2_1_Value);
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = result;
+                                                        });
+                                                        break;
+                                                    case 2:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(arg2_0_Value, Variables.Heap[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                }
+                                                break;
+                                            case 2:
+                                                switch (arg2_1)
+                                                {
+                                                    case 0:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(Variables.Heap[arg2_0_Index], stack[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                    case 1:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(Variables.Heap[arg2_0_Index], arg2_1_Value);
+                                                        });
+                                                        break;
+                                                    case 2:
+                                                        actionsList.Add((State Variables) =>
+                                                        {
+                                                            stack[funcIndex] = func2(Variables.Heap[arg2_0_Index], Variables.Heap[arg2_1_Index]);
+                                                        });
+                                                        break;
+                                                }
+                                                break;
+                                        }
+
                                         break;
                                     case 3:
                                         var func3 = Funcs3Arg[functionName];
-                                        var arg3_0 = argumentValues[0];
-                                        var arg3_1 = argumentValues[1];
-                                        var arg3_2 = argumentValues[2];
-                                        compiledFunction = (State Variables) =>
+                                        int arg3_0 = ParseVariable(argumentValues[0], out int arg3_0_Index, out float arg3_0_Value);
+                                        int arg3_1 = ParseVariable(argumentValues[1], out int arg3_1_Index, out float arg3_1_Value);
+                                        int arg3_2 = ParseVariable(argumentValues[2], out int arg3_2_Index, out float arg3_2_Value);
+
+                                        switch (arg3_0)
                                         {
-                                            stack[funcIndex] = func3(arg3_0(Variables), arg3_1(Variables), arg3_2(Variables));
-                                        };
+                                            case 0:
+                                                switch (arg3_1)
+                                                {
+                                                    case 0:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 1:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 2:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
+                                                break;
+                                            case 1:
+                                                switch (arg3_1)
+                                                {
+                                                    case 0:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 1:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, arg3_1_Value, stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                float result = func3(arg3_0_Value, arg3_1_Value, arg3_2_Value);
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = result;
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 2:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
+                                                break;
+                                            case 2:
+                                                switch (arg3_1)
+                                                {
+                                                    case 0:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 1:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                    case 2:
+                                                        switch (arg3_2)
+                                                        {
+                                                            case 0:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                            case 1:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                });
+                                                                break;
+                                                            case 2:
+                                                                actionsList.Add((State Variables) =>
+                                                                {
+                                                                    stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                });
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
+                                                break;
+                                        }
+
                                         break;
                                 }
-
-                                innerActions.Add(compiledFunction);
 
                                 Tokens.RemoveRange(tokenNum - 1, tokenNum2 - tokenNum + 1);
 
@@ -3910,12 +4276,31 @@ public class Milkdrop : MonoBehaviour
                                 int funcIndex = stackIndex++;
                                 string funcId = "#" + funcIndex;
 
-                                Func<State, float> exp = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), ref stackIndex);
+                                string resultToken = CompileExpression(Tokens.Skip(tokenNum + 1).Take(tokenNum2 - tokenNum - 1).ToList(), actionsList, ref stackIndex);
 
-                                innerActions.Add((State Variables) =>
+                                int resultType = ParseVariable(resultToken, out int resultIndex, out float resultValue);
+
+                                switch (resultType)
                                 {
-                                    stack[funcIndex] = exp(Variables);
-                                });
+                                    case 0:
+                                        actionsList.Add((State Variables) =>
+                                        {
+                                            stack[funcIndex] = stack[resultIndex];
+                                        });
+                                        break;
+                                    case 1:
+                                        actionsList.Add((State Variables) =>
+                                        {
+                                            stack[funcIndex] = resultValue;
+                                        });
+                                        break;
+                                    case 2:
+                                        actionsList.Add((State Variables) =>
+                                        {
+                                            stack[funcIndex] = Variables.Heap[resultIndex];
+                                        });
+                                        break;
+                                }
 
                                 Tokens.RemoveRange(tokenNum, tokenNum2 - tokenNum);
 
@@ -3962,20 +4347,20 @@ public class Milkdrop : MonoBehaviour
                     switch (nextType)
                     {
                         case 0:
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = +stack[nextTypeIndex];
                             });
                             break;
                         case 1:
                             float stackResult = +nextTypeValue;
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = stackResult;
                             });
                             break;
                         case 2:
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = +Variables.Heap[nextTypeIndex];
                             });
@@ -4002,20 +4387,20 @@ public class Milkdrop : MonoBehaviour
                     switch (nextType)
                     {
                         case 0:
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = -stack[nextTypeIndex];
                             });
                             break;
                         case 1:
                             float stackResult = -nextTypeValue;
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = stackResult;
                             });
                             break;
                         case 2:
-                            innerActions.Add((State Variables) =>
+                            actionsList.Add((State Variables) =>
                             {
                                 stack[funcIndex] = -Variables.Heap[nextTypeIndex];
                             });
@@ -4050,19 +4435,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] * stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] * nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] * Variables.Heap[nextTypeIndex];
                                 });
@@ -4073,20 +4458,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue * stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 float stackResult = prevTypeValue * nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue * Variables.Heap[nextTypeIndex];
                                 });
@@ -4097,19 +4482,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] * stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] * nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] * Variables.Heap[nextTypeIndex];
                                 });
@@ -4142,7 +4527,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = stack[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4150,7 +4535,7 @@ public class Milkdrop : MonoBehaviour
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = nextTypeValue;
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4158,7 +4543,7 @@ public class Milkdrop : MonoBehaviour
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = Variables.Heap[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4171,7 +4556,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = stack[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4180,13 +4565,13 @@ public class Milkdrop : MonoBehaviour
                                 break;
                             case 1:
                                 float stackResult = nextTypeValue == 0f ? 0f : prevTypeValue / nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = Variables.Heap[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4199,7 +4584,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = stack[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4209,21 +4594,21 @@ public class Milkdrop : MonoBehaviour
                             case 1:
                                 if (nextTypeValue == 0f)
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = 0f;
                                     });
                                 }
                                 else
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = Variables.Heap[prevTypeIndex] / nextTypeValue;
                                     });
                                 }
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     float div = Variables.Heap[nextTypeIndex];
                                     if (div == 0f) stack[funcIndex] = 0f;
@@ -4258,7 +4643,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4269,21 +4654,21 @@ public class Milkdrop : MonoBehaviour
                                 int div = (int)nextTypeValue;
                                 if (div == 0)
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = 0f;
                                     });
                                 }
                                 else
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = (int)stack[prevTypeIndex] % div;
                                     });
                                 }
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4297,7 +4682,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4308,7 +4693,7 @@ public class Milkdrop : MonoBehaviour
                                 int div = (int)nextTypeValue;
                                 if (div == 0)
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = 0f;
                                     });
@@ -4316,14 +4701,14 @@ public class Milkdrop : MonoBehaviour
                                 else
                                 {
                                     float stackResult = prevTypeValueInt % div;
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = stackResult;
                                     });
                                 }
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4336,7 +4721,7 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)stack[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4347,21 +4732,21 @@ public class Milkdrop : MonoBehaviour
                                 int div = (int)nextTypeValue;
                                 if (div == 0)
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = 0f;
                                     });
                                 }
                                 else
                                 {
-                                    innerActions.Add((State Variables) =>
+                                    actionsList.Add((State Variables) =>
                                     {
                                         stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] % div;
                                     });
                                 }
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     int div = (int)Variables.Heap[nextTypeIndex];
                                     if (div == 0) stack[funcIndex] = 0f;
@@ -4401,19 +4786,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] + stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] + nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] + Variables.Heap[nextTypeIndex];
                                 });
@@ -4424,20 +4809,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue + stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 float stackResult = prevTypeValue + nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue + Variables.Heap[nextTypeIndex];
                                 });
@@ -4448,19 +4833,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] + stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] + nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] + Variables.Heap[nextTypeIndex];
                                 });
@@ -4493,19 +4878,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] - stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] - nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stack[prevTypeIndex] - Variables.Heap[nextTypeIndex];
                                 });
@@ -4516,20 +4901,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue - stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 float stackResult = prevTypeValue - nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValue - Variables.Heap[nextTypeIndex];
                                 });
@@ -4540,19 +4925,19 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] - stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] - nextTypeValue;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = Variables.Heap[prevTypeIndex] - Variables.Heap[nextTypeIndex];
                                 });
@@ -4590,20 +4975,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] & (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int nextTypeValueInt = (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] & nextTypeValueInt;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] & (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4615,20 +5000,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValueInt & (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int stackResult = prevTypeValueInt & (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValueInt & (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4639,20 +5024,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int nextTypeValueInt = (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & nextTypeValueInt;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] & (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4690,20 +5075,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] | (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int nextTypeValueInt = (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] | nextTypeValueInt;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)stack[prevTypeIndex] | (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4715,20 +5100,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValueInt | (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int stackResult = prevTypeValueInt | (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = stackResult;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = prevTypeValueInt | (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4739,20 +5124,20 @@ public class Milkdrop : MonoBehaviour
                         switch (nextType)
                         {
                             case 0:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | (int)stack[nextTypeIndex];
                                 });
                                 break;
                             case 1:
                                 int nextTypeValueInt = (int)nextTypeValue;
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | nextTypeValueInt;
                                 });
                                 break;
                             case 2:
-                                innerActions.Add((State Variables) =>
+                                actionsList.Add((State Variables) =>
                                 {
                                     stack[funcIndex] = (int)Variables.Heap[prevTypeIndex] | (int)Variables.Heap[nextTypeIndex];
                                 });
@@ -4779,40 +5164,7 @@ public class Milkdrop : MonoBehaviour
             throw new System.Exception("evaluation failed: " + debugOut + " => " + a);
         }
 
-        int finalType = ParseVariable(Tokens[0], out int finalTypeIndex, out float finalTypeValue);
-
-        var innerActionsArr = innerActions.ToArray();
-
-        Func<State, float> result;
-
-        switch (finalType)
-        {
-            case 0:
-                result = (State Variables) =>
-                {
-                    for (int i = 0; i < innerActionsArr.Length; i++)
-                    {
-                        innerActionsArr[i](Variables);
-                    }
-
-                    return stack[finalTypeIndex];
-                };
-                break;
-            case 1:
-                result = (State Variables) =>
-                {
-                    return finalTypeValue;
-                };
-                break;
-            default:
-                result = (State Variables) =>
-                {
-                    return Variables.Heap[finalTypeIndex];
-                };
-                break;
-        }
-
-        return result;
+        return Tokens[0];
     }
 
     void GenPlasma(int x0, int x1, int y0, int y1, float dt)
