@@ -5,12 +5,14 @@ using System.Linq;
 using UnityEngine.UI;
 using System;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace Milkstain
 {
     public class Equations
     {
-        static readonly int StackSize = 2048;
+        const int StackSize = 2048;
+        static readonly float EPSILON = Mathf.Epsilon;
 
         private static readonly float[] Stack = new float[StackSize];
 
@@ -27,20 +29,20 @@ namespace Milkstain
         {
             {"sqr", Func_Sqr},
             {"sqrt", Func_Sqrt},
-            {"log", Func_Log},
-            {"log10", Func_Log10},
             {"sign", Func_Sign},
             {"rand", Func_Rand},
             {"bnot", Func_Bnot},
-            {"sin", Func_Sin},
-            {"cos", Func_Cos},
             {"abs", Func_Abs},
-            {"tan", Func_Tan},
             {"int", Func_Int},
-            {"asin", Func_Asin},
-            {"acos", Func_Acos},
-            {"atan", Func_Atan},
-            {"exp", Func_Exp}
+            {"log", Mathf.Log},
+            {"log10", Mathf.Log10},
+            {"sin", Mathf.Sin},
+            {"cos", Mathf.Cos},
+            {"tan", Mathf.Tan},
+            {"asin", Mathf.Asin},
+            {"acos", Mathf.Acos},
+            {"atan", Mathf.Atan},
+            {"exp", Mathf.Exp}
         };
 
         static readonly Dictionary<string, Func2> Funcs2Arg = new Dictionary<string, Func2>
@@ -54,12 +56,7 @@ namespace Milkstain
             {"below", Func_Below},
             {"min", Func_Min},
             {"max", Func_Max},
-            {"atan2", Func_Atan2}
-        };
-
-        static readonly Dictionary<string, Func3> Funcs3Arg = new Dictionary<string, Func3>
-        {
-            {"if", Func_Ifcond}
+            {"atan2", Mathf.Atan2}
         };
 
         static float Func_Int(float x)
@@ -69,42 +66,12 @@ namespace Milkstain
 
         static float Func_Abs(float x)
         {
-            if (x < 0)
+            if (x < 0f)
             {
                 return -x;
             }
 
             return x;
-        }
-
-        static float Func_Sin(float x)
-        {
-            return Mathf.Sin(x);
-        }
-
-        static float Func_Cos(float x)
-        {
-            return Mathf.Cos(x);
-        }
-
-        static float Func_Tan(float x)
-        {
-            return Mathf.Tan(x);
-        }
-
-        static float Func_Asin(float x)
-        {
-            return Mathf.Asin(x);
-        }
-
-        static float Func_Acos(float x)
-        {
-            return Mathf.Acos(x);
-        }
-
-        static float Func_Atan(float x)
-        {
-            return Mathf.Atan(x);
         }
 
         static float Func_Sqr(float x)
@@ -114,7 +81,12 @@ namespace Milkstain
 
         static float Func_Sqrt(float x)
         {
-            return Mathf.Sqrt(Func_Abs(x));
+            if (x < 0f)
+            {
+                return Mathf.Sqrt(-x);
+            }
+
+            return Mathf.Sqrt(x);
         }
 
         static float Func_Pow(float x, float y)
@@ -129,18 +101,13 @@ namespace Milkstain
             return 0f;
         }
 
-        static float Func_Log(float x)
-        {
-            return Mathf.Log(x);
-        }
-
-        static float Func_Log10(float x)
-        {
-            return Mathf.Log10(x);
-        }
-
         static float Func_Sign(float x)
         {
+            if (Func_Abs(x) < EPSILON)
+            {
+                return 0f;
+            }
+
             return x < 0f ? -1f : 1f;
         }
 
@@ -157,7 +124,7 @@ namespace Milkstain
         static float Func_Sigmoid(float x, float y)
         {
             float t = 1f + Mathf.Exp(-x * y);
-            return Mathf.Abs(t) > Mathf.Epsilon ? 1f / t : 0f;
+            return Func_Abs(t) > EPSILON ? 1f / t : 0f;
         }
 
         static float Func_Rand(float x)
@@ -167,27 +134,22 @@ namespace Milkstain
 
         static float Func_Bor(float x, float y)
         {
-            return Mathf.Abs(x) > Mathf.Epsilon || Mathf.Abs(y) > Mathf.Epsilon ? 1f : 0f;
+            return Func_Abs(x) > EPSILON || Func_Abs(y) > EPSILON ? 1f : 0f;
         }
 
         static float Func_Bnot(float x)
         {
-            return Mathf.Abs(x) < Mathf.Epsilon ? 1f : 0f;
+            return Func_Abs(x) < EPSILON ? 1f : 0f;
         }
 
         static float Func_Band(float x, float y)
         {
-            return Mathf.Abs(x) > Mathf.Epsilon && Mathf.Abs(y) > Mathf.Epsilon ? 1f : 0f;
-        }
-
-        static float Func_Ifcond(float x, float y, float z)
-        {
-            return Mathf.Abs(x) > Mathf.Epsilon ? y : z;
+            return Func_Abs(x) > EPSILON && Func_Abs(y) > EPSILON ? 1f : 0f;
         }
 
         static float Func_Equal(float x, float y)
         {
-            return Mathf.Abs(x - y) < Mathf.Epsilon ? 1f : 0f;
+            return Func_Abs(x - y) < EPSILON ? 1f : 0f;
         }
 
         static float Func_Above(float x, float y)
@@ -198,16 +160,6 @@ namespace Milkstain
         static float Func_Below(float x, float y)
         {
             return x < y ? 1f : 0f;
-        }
-
-        static float Func_Atan2(float x, float y)
-        {
-            return Mathf.Atan2(x, y);
-        }
-
-        static float Func_Exp(float x)
-        {
-            return Mathf.Exp(x);
         }
 
         private static List<string> TokenizeExpression(string Expression)
@@ -334,7 +286,7 @@ namespace Milkstain
                     token = "0";
                 }
 
-                if (!float.TryParse(token, out value))
+                if (!float.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
                 {
                     Debug.LogError("Invalid variable number: " + token);
                 }
@@ -459,6 +411,7 @@ namespace Milkstain
                                                     });
                                                     break;
                                                 case 1:
+                                                    float result = func1(arg1_0_Value);
                                                     actionsList.Add((State Variables) =>
                                                     {
                                                         stack[funcIndex] = func1(arg1_0_Value);
@@ -554,7 +507,6 @@ namespace Milkstain
 
                                             break;
                                         case 3:
-                                            var func3 = Funcs3Arg[functionName];
                                             int arg3_0 = ParseVariable(argumentValues[0], out int arg3_0_Index, out float arg3_0_Value);
                                             int arg3_1 = ParseVariable(argumentValues[1], out int arg3_1_Index, out float arg3_1_Value);
                                             int arg3_2 = ParseVariable(argumentValues[2], out int arg3_2_Index, out float arg3_2_Value);
@@ -570,19 +522,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -593,19 +545,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? arg3_1_Value : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? arg3_1_Value : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? arg3_1_Value : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -616,19 +568,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(stack[arg3_0_Index], Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(stack[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -644,19 +596,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? stack[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? stack[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? stack[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -667,11 +619,11 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, arg3_1_Value, stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? arg3_1_Value : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
-                                                                    float result = func3(arg3_0_Value, arg3_1_Value, arg3_2_Value);
+                                                                    float result = Func_Abs(arg3_0_Value) > 0f ? arg3_1_Value : arg3_2_Value;
                                                                     actionsList.Add((State Variables) =>
                                                                     {
                                                                         stack[funcIndex] = result;
@@ -680,7 +632,7 @@ namespace Milkstain
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = arg3_0_Value != 0f ? arg3_1_Value : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -691,19 +643,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? Variables.Heap[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? Variables.Heap[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(arg3_0_Value, Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(arg3_0_Value) > 0f ? Variables.Heap[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -719,19 +671,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], stack[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? stack[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -742,19 +694,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? arg3_1_Value : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? arg3_1_Value : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], arg3_1_Value, Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? arg3_1_Value : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }
@@ -765,19 +717,19 @@ namespace Milkstain
                                                                 case 0:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], stack[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : stack[arg3_2_Index];
                                                                     });
                                                                     break;
                                                                 case 1:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], arg3_2_Value);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : arg3_2_Value;
                                                                     });
                                                                     break;
                                                                 case 2:
                                                                     actionsList.Add((State Variables) =>
                                                                     {
-                                                                        stack[funcIndex] = func3(Variables.Heap[arg3_0_Index], Variables.Heap[arg3_1_Index], Variables.Heap[arg3_2_Index]);
+                                                                        stack[funcIndex] = Func_Abs(Variables.Heap[arg3_0_Index]) > 0f ? Variables.Heap[arg3_1_Index] : Variables.Heap[arg3_2_Index];
                                                                     });
                                                                     break;
                                                             }

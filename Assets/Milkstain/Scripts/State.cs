@@ -9,7 +9,7 @@ namespace Milkstain
 {
     public class State
     {
-        static readonly int HeapSize = 2048;
+        const int HeapSize = 2048;
 
         public State()
         {
@@ -102,7 +102,6 @@ namespace Milkstain
             {"bdrawthick", "thick"}
         };
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int RegisterVariable(string name)
         {
             if (VariableNameTable.TryGetValue(name, out int result))
@@ -117,7 +116,6 @@ namespace Milkstain
             return ind;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetVariable(State Variables, string name, float defaultValue)
         {
             int key;
@@ -135,7 +133,6 @@ namespace Milkstain
             return defaultValue;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetVariable(State Variables, string name)
         {
             int key;
@@ -148,7 +145,6 @@ namespace Milkstain
             return Variables.Heap[key];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetVariable(State Variables, string name, float value)
         {
             RegisterVariable(name);
@@ -158,13 +154,11 @@ namespace Milkstain
             Variables.Set(key, value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetVariable(State Variables, int key)
         {
             return Variables.Heap[key];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetVariable(State Variables, int key, float value)
         {
             Variables.Set(key, value);

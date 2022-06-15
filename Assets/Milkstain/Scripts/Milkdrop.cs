@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine.UI;
 using System;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace Milkstain
 {
@@ -3094,7 +3095,7 @@ namespace Milkstain
                         val = "0";
                     }
 
-                    if (!float.TryParse(val, out result))
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                     {
                         Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
@@ -3156,7 +3157,7 @@ namespace Milkstain
                         val = "0";
                     }
 
-                    if (!float.TryParse(val, out result))
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                     {
                         Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
@@ -3215,7 +3216,7 @@ namespace Milkstain
                         val = "0";
                     }
 
-                    if (!float.TryParse(val, out result))
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                     {
                         Debug.LogError("Invalid number " + val + ": " + line);
                         continue;

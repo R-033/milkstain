@@ -78,7 +78,7 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - additivewave: 1
+    - additivewave: 0
     - aspect_ratio: 1.3333334
     - wave_dots: 1
     m_Colors:
