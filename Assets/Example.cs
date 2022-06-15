@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class Example : MonoBehaviour
 {
-    public Milkdrop milkdrop;
+    public Milkstain.Milkdrop milkdrop;
     public RawImage TargetGraphic;
     public AudioSource TargetAudio;
 
