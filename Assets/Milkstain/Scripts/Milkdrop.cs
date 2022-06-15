@@ -1436,7 +1436,7 @@ namespace Milkstain
                 float frameB = State.GetVariable(CurrentWave.FrameVariables, "b");
                 float frameA = State.GetVariable(CurrentWave.FrameVariables, "a");
 
-                float waveScale = State.GetVariable(CurrentWave.FrameVariables, "wave_scale");
+                float waveScale = State.GetVariable(CurrentPreset.BaseVariables, "wave_scale");
 
                 samples -= sep;
 
