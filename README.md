@@ -8,8 +8,6 @@ Implementation of Milkdrop Visualizer in Unity. Based on <a href=https://github.
 ### Requirements
 Milkstain can be driven from any ```AudioSource``` as long as ```AudioClip``` is not compressed. Otherwise the time array will be filled with zeros.
 
-RenderTextures are used for generating output image. To display visualizer on a surface just pass ```FinalTexture``` into your material on runtime.
-
 ### Playing presets
 For visualizer to work, first you need to instantiate the prefab ```Assets/Milkstain/Resources/Milkdrop.prefab```. It has everything already set up.
 
