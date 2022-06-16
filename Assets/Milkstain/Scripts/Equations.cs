@@ -216,6 +216,8 @@ namespace Milkstain
             var stack = Stack;
 
             List<Action<State>> actionsList = new List<Action<State>>();
+
+            List<int> modifiedVariables = new List<int>();
             
             foreach (var line in Equation)
             {
@@ -225,7 +227,13 @@ namespace Milkstain
                 string varName = line[0];
 
                 State.RegisterVariable(varName);
+
                 int varIndex = State.VariableNameTable[varName];
+
+                if (!modifiedVariables.Contains(varIndex))
+                {
+                    modifiedVariables.Add(varIndex);
+                }
 
                 int stackIndex = 0;
 
@@ -238,23 +246,43 @@ namespace Milkstain
                     case 0:
                         actionsList.Add((State Variables) =>
                         {
-                            Variables.Set(varIndex, stack[finalIndex]);
+                            Variables.Heap[varIndex] = stack[finalIndex];
                         });
                         break;
                     case 1:
                         actionsList.Add((State Variables) =>
                         {
-                            Variables.Set(varIndex, finalValue);
+                            Variables.Heap[varIndex] = finalValue;
                         });
                         break;
                     case 2:
                         actionsList.Add((State Variables) =>
                         {
-                            Variables.Set(varIndex, Variables.Heap[finalIndex]);
+                            Variables.Heap[varIndex] = Variables.Heap[finalIndex];
                         });
                         break;
                 }
             }
+
+            List<State> processedStates = new List<State>();
+
+            actionsList.Insert(0, (State Variables) =>
+            {
+                if (processedStates.Contains(Variables))
+                {
+                    return;
+                }
+
+                processedStates.Add(Variables);
+
+                foreach (int varIndex in modifiedVariables)
+                {
+                    if (!Variables.Keys.Contains(varIndex))
+                    {
+                        Variables.Keys.Add(varIndex);
+                    }
+                }
+            });
 
             var actionArray = actionsList.ToArray();
 

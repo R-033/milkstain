@@ -1,4 +1,5 @@
 [preset00]
+fRating=1
 fGammaAdj=2
 fDecay=0.999
 fVideoEchoZoom=4.013491
@@ -46,4 +47,4 @@ wave_y=0.5
 per_frame_1=decay = .999999970089;
 per_frame_2=wave_g = sin(time);
 per_pixel_1=dx = dx + ((x + 1)*.001) * -rand(40);
-fRating=1
+

@@ -91,7 +91,7 @@ per_frame_27=wave_r=wave_r+wave_r*sin(q4+q5);
 per_frame_28=wave_b=wave_b+wave_b*q2*sin(q3);
 per_frame_29=wave_g=wave_g+wave_g*q2;
 per_frame_30=ob_r=ob_r+ob_r*sin(q1+q2*2.14);
-per_frame_31=ob_b=ob_b+ob_b*sin(q2+q3*2.14);
+per_frame_31=ob_bob_b+ob_b*sin(q2+q3*2.14);
 per_frame_32=ob_g=ob_g+ob_g*sin(q3+q1*2.14);
 per_frame_33=ib_r=ib_r+ib_r*cos(q5+q1*2.14);
 per_frame_34=ib_b=ib_b+ib_*cos(q5+q2*2.14);

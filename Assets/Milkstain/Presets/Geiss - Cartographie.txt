@@ -1,5 +1,5 @@
 [preset00]
-fRating=2
+fRating=1
 fGammaAdj=1.35
 fVideoEchoZoom=2
 fVideoEchoAlpha=0
@@ -49,4 +49,3 @@ per_frame_7=decay=decay-0.025*pow(0.5+0.5*sin(time*1.5),4.8);
 per_pixel_1=dx=0.05*sin(x*80+y*94+rad*97+ang*22+time*0.733);
 per_pixel_2=dy=0.05*sin(x*60+y*114+rad*77+ang*32+time*0.83);
 per_pixel_3=zoom=zoom+0.05*rad;
-fRating=2

@@ -85,6 +85,8 @@ namespace Milkstain
 
         public bool RandomOrder = true;
 
+        public bool SkipUnsupported = true;
+
         private ulong CurrentFrame = 0;
         private float CurrentTime = 0f;
 
@@ -530,20 +532,35 @@ namespace Milkstain
                 return;
             }
 
-            int ind;
-            if (RandomOrder)
+            bool result;
+            int fallbackCounter = 0;
+
+            do
             {
-                ind = UnityEngine.Random.Range(0, PresetFiles.Length);
-            }
-            else
-            {
-                ind = index++;
-                if (index >= PresetFiles.Length)
+                if (fallbackCounter > 100)
                 {
-                    index = 0;
+                    return;
                 }
+
+                int ind;
+                if (RandomOrder)
+                {
+                    ind = UnityEngine.Random.Range(0, PresetFiles.Length);
+                }
+                else
+                {
+                    ind = index++;
+                    if (index >= PresetFiles.Length)
+                    {
+                        index = 0;
+                    }
+                }
+
+                result = PlayPreset(ind, transitionDuration);
+
+                fallbackCounter++;
             }
-            PlayPreset(ind, transitionDuration);
+            while (!result);
         }
 
         void LateUpdate()
@@ -3414,7 +3431,7 @@ namespace Milkstain
             }
         }
 
-        public void PlayPreset(int presetIndex, float transitionDuration)
+        public bool PlayPreset(int presetIndex, float transitionDuration)
         {
             if (CurrentPreset != null && transitionDuration > 0f)
             {
@@ -3426,10 +3443,21 @@ namespace Milkstain
                 blendProgress = 0f;
             }
 
-            PresetName = PresetFiles[presetIndex].name;
+            var newPreset = LoadPreset(PresetFiles[presetIndex].text);
+
+            if (SkipUnsupported)
+            {
+                if (!string.IsNullOrEmpty(newPreset.Warp) || !string.IsNullOrEmpty(newPreset.Comp))
+                {
+                    blending = false;
+                    return false;
+                }
+            }
 
             PrevPreset = CurrentPreset;
-            CurrentPreset = LoadPreset(PresetFiles[presetIndex].text);
+            CurrentPreset = newPreset;
+
+            PresetName = PresetFiles[presetIndex].name;
 
             foreach (var v in CurrentPreset.BaseVariables.Keys)
             {
@@ -3636,19 +3664,13 @@ namespace Milkstain
                 }
             }
 
-            if (!string.IsNullOrEmpty(CurrentPreset.Warp))
-            {
-                Debug.LogError("Compiling shaders is not supported yet");
-            }
-            CurrentPreset.WarpMaterial = new Material(DefaultWarpShader);
+            CurrentPreset.WarpMaterial = new Material(DefaultWarpShader); // todo
 
-            if (!string.IsNullOrEmpty(CurrentPreset.Comp))
-            {
-                Debug.LogError("Compiling shaders is not supported yet");
-            }
-            CurrentPreset.CompMaterial = new Material(DefaultCompShader);
+            CurrentPreset.CompMaterial = new Material(DefaultCompShader); // todo
 
             CurrentPreset.DarkenCenterMaterial = new Material(DarkenCenterShader);
+
+            return true;
         }
     }
 }

@@ -1,5 +1,5 @@
 [preset00]
-fRating=3.000000
+fRating=4.000000
 fGammaAdj=1.280000
 fDecay=0.960000
 fVideoEchoZoom=0.996630

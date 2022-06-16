@@ -423,7 +423,7 @@ shape_3_per_frame18=rad=rad*0.7+a*0.015
 per_frame_1=
 per_frame_2=vol=(bass+mid+treb)*0.25;
 per_frame_3=vol=vol*vol;
-per_frame_4=mtime=mtime+vol*0.018*(75/fps);
+per_frame_4=mtime=mtime+vol*0.018;
 per_frame_5=q7=mtime;
 per_frame_6=q8=vol;
 per_frame_7=

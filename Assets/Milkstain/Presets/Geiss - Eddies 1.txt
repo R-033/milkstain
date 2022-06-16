@@ -1,9 +1,8 @@
 [preset00]
-fRating=1.000000
-fGammaAdj=2.7
-fDecay=0.98
-fVideoEchoZoom=2
-fVideoEchoAlpha=0
+fGammaAdj=2.700000
+fDecay=0.980000
+fVideoEchoZoom=2.000000
+fVideoEchoAlpha=0.000000
 nVideoEchoOrientation=0
 nWaveMode=1
 bAdditiveWaves=0
@@ -20,30 +19,30 @@ bBrighten=0
 bDarken=0
 bSolarize=0
 bInvert=0
-fWaveAlpha=1
+fWaveAlpha=1.000000
 fWaveScale=0.870018
-fWaveSmoothing=0.1
-fWaveParam=0.4
-fModWaveAlphaStart=0.75
-fModWaveAlphaEnd=0.95
-fWarpAnimSpeed=1
+fWaveSmoothing=0.100000
+fWaveParam=0.400000
+fModWaveAlphaStart=0.750000
+fModWaveAlphaEnd=0.950000
+fWarpAnimSpeed=1.000000
 fWarpScale=2.593743
-fZoomExponent=1
-fShader=0
-zoom=1.00496
-rot=0
-cx=0.5
-cy=0.5
-dx=0
-dy=0
+fZoomExponent=1.000000
+fShader=0.000000
+zoom=1.004960
+rot=0.000000
+cx=0.500000
+cy=0.500000
+dx=0.000000
+dy=0.000000
 warp=0.278033
 sx=0.999666
-sy=0.9999
-wave_r=0.65
-wave_g=0.65
-wave_b=0.65
-wave_x=0.5
-wave_y=0.5
+sy=0.999900
+wave_r=0.650000
+wave_g=0.650000
+wave_b=0.650000
+wave_x=0.500000
+wave_y=0.500000
 per_frame_1=wave_r = wave_r + 0.350*( 0.60*sin(0.980*time) + 0.40*sin(1.047*time) );
 per_frame_2=wave_g = wave_g + 0.350*( 0.60*sin(0.835*time) + 0.40*sin(1.081*time) );
 per_frame_3=wave_b = wave_b + 0.350*( 0.60*sin(0.814*time) + 0.40*sin(1.011*time) );
@@ -66,4 +65,4 @@ per_pixel_11=ang2 = atan2(du,dv);
 per_pixel_12=mult = 0.008/(dist+0.4);
 per_pixel_13=dx = dx + mult*sin(ang2+1.5);
 per_pixel_14=dy = dy + mult*cos(ang2+1.5);
-fRating=4
+fRating=4.000000

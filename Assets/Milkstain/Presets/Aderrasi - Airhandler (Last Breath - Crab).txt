@@ -136,8 +136,8 @@ shapecode_0_border_r=1.000000
 shapecode_0_border_g=1.000000
 shapecode_0_border_b=1.000000
 shapecode_0_border_a=0.000000
-shape_0_init1=t1 = rand(100)*0.01;
-shape_0_init2=t2 = rand(100)*0.01;
+shape_0_init1=t1 = int(rand(100))*0.01;
+shape_0_init2=t2 = int(rand(100))*0.01;
 shape_0_per_frame1=// Loadus & Geiss custom shape design
 shape_0_per_frame2=x = x+0.2*sin(5*q4);
 shape_0_per_frame3=y = y+0.2*cos(5*q4);
@@ -173,8 +173,8 @@ shapecode_1_border_r=1.000000
 shapecode_1_border_g=1.000000
 shapecode_1_border_b=1.000000
 shapecode_1_border_a=0.000000
-shape_1_init1=t1 = rand(100)*0.01;
-shape_1_init2=t2 = rand(100)*0.01;
+shape_1_init1=t1 = int(rand(100))*0.01;
+shape_1_init2=t2 = int(rand(100))*0.01;
 shape_1_per_frame1=// Loadus & Geiss custom shape design
 shape_1_per_frame2=x = x + 0.05*sin(time*1.05+3);
 shape_1_per_frame3=y = y + 0.03*sin(time*1.29+1);
@@ -212,8 +212,8 @@ shapecode_2_border_r=1.000000
 shapecode_2_border_g=1.000000
 shapecode_2_border_b=1.000000
 shapecode_2_border_a=0.000000
-shape_2_init1=t1 = rand(100)*0.01;
-shape_2_init2=t2 = rand(100)*0.01;
+shape_2_init1=t1 = int(rand(100))*0.01;
+shape_2_init2=t2 = int(rand(100))*0.01;
 shape_2_per_frame1=// Loadus & Geiss custom shape design
 shape_2_per_frame2=x = x + 0.05*sin(time*0.17);
 shape_2_per_frame3=y = y + 0.03*sin(time*0.83);

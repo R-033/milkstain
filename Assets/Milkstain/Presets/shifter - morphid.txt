@@ -74,15 +74,15 @@ wavecode_0_r=1.000000
 wavecode_0_g=1.000000
 wavecode_0_b=1.000000
 wavecode_0_a=1.000000
-wave_0_init1=t1 = rand(1001)*.001*.7 + .2;
-wave_0_init2=t2 = rand(1001)*.001*.7 + .2;
-wave_0_init3=t3 = rand(1001)*.001*.7 + .2;
-wave_0_init4=t4 = rand(1001)*.001*.7 + .2;
+wave_0_init1=t1 = int(rand(1001))*.001*.7 + .2;
+wave_0_init2=t2 = int(rand(1001))*.001*.7 + .2;
+wave_0_init3=t3 = int(rand(1001))*.001*.7 + .2;
+wave_0_init4=t4 = int(rand(1001))*.001*.7 + .2;
 wave_0_init5=
-wave_0_init6=t5 = rand(1001)*.001*7 + 2;
-wave_0_init7=t6 = rand(1001)*.001*7 + 2;
-wave_0_init8=t7 = rand(1001)*.001*7 + 2;
-wave_0_init9=t8 = rand(1001)*.001*7 + 2;
+wave_0_init6=t5 = int(rand(1001))*.001*7 + 2;
+wave_0_init7=t6 = int(rand(1001))*.001*7 + 2;
+wave_0_init8=t7 = int(rand(1001))*.001*7 + 2;
+wave_0_init9=t8 = int(rand(1001))*.001*7 + 2;
 wave_0_init10=
 wave_0_per_point1=sz = value1*.2;
 wave_0_per_point2=sp = sample*6.28*6;
@@ -117,10 +117,10 @@ wavecode_1_r=1.000000
 wavecode_1_g=1.000000
 wavecode_1_b=1.000000
 wavecode_1_a=1.000000
-wave_1_init1=t1 = rand(1001)*.001*.7 + .2;
-wave_1_init2=t2 = rand(1001)*.001*.7 + .2;
-wave_1_init3=t3 = rand(1001)*.001*.7 + .2;
-wave_1_init4=t4 = rand(1001)*.001*.7 + .2;
+wave_1_init1=t1 = int(rand(1001))*.001*.7 + .2;
+wave_1_init2=t2 = int(rand(1001))*.001*.7 + .2;
+wave_1_init3=t3 = int(rand(1001))*.001*.7 + .2;
+wave_1_init4=t4 = int(rand(1001))*.001*.7 + .2;
 wave_1_per_point1=sz = value2*.2;
 wave_1_per_point2=sp = sample*6.28*6;
 wave_1_per_point3=
@@ -149,10 +149,10 @@ wavecode_2_r=1.000000
 wavecode_2_g=1.000000
 wavecode_2_b=1.000000
 wavecode_2_a=1.000000
-wave_2_init1=t1 = rand(1001)*.001*.7 + .2;
-wave_2_init2=t2 = rand(1001)*.001*.7 + .2;
-wave_2_init3=t3 = rand(1001)*.001*.7 + .2;
-wave_2_init4=t4 = rand(1001)*.001*.7 + .2;
+wave_2_init1=t1 = int(rand(1001))*.001*.7 + .2;
+wave_2_init2=t2 = int(rand(1001))*.001*.7 + .2;
+wave_2_init3=t3 = int(rand(1001))*.001*.7 + .2;
+wave_2_init4=t4 = int(rand(1001))*.001*.7 + .2;
 wave_2_per_point1=sz = value2*.2;
 wave_2_per_point2=sp = sample*6.28*2;
 wave_2_per_point3=
@@ -173,10 +173,10 @@ wavecode_3_r=0.000000
 wavecode_3_g=0.000000
 wavecode_3_b=0.000000
 wavecode_3_a=0.000000
-wave_3_per_point1=x = rand(1001)*.001;
-wave_3_per_point2=y = rand(1001)*.001;
+wave_3_per_point1=x = int(rand(1001))*.001;
+wave_3_per_point2=y = int(rand(1001))*.001;
 wave_3_per_point3=
-wave_3_per_point4=a = below(rand(500),mid*50);
+wave_3_per_point4=a = below(int(rand(500)),mid*50);
 shapecode_0_enabled=1
 shapecode_0_sides=4
 shapecode_0_additive=0
@@ -200,7 +200,7 @@ shapecode_0_border_r=1.000000
 shapecode_0_border_g=1.000000
 shapecode_0_border_b=1.000000
 shapecode_0_border_a=0.300000
-shape_0_per_frame1=//ang = rand(1001)*.001*6.2832;
+shape_0_per_frame1=//ang = int(rand(1001))*.001*6.2832;
 shape_0_per_frame2=
 shape_0_per_frame3=tex_zoom = 1/rad;
 shape_0_per_frame4=

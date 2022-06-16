@@ -68,7 +68,7 @@ wavecode_0_bSpectrum=0
 wavecode_0_bUseDots=0
 wavecode_0_bDrawThick=1
 wavecode_0_bAdditive=0
-wavecode_0_scaling=1.000000
+wavecode_0_scaling=1.0000
 wavecode_0_smoothing=0.500000
 wavecode_0_r=1.000000
 wavecode_0_g=1.000000
@@ -278,13 +278,13 @@ shapecode_0_border_r=1.000000
 shapecode_0_border_g=1.000000
 shapecode_0_border_b=1.000000
 shapecode_0_border_a=0.040000
-shape_0_per_frame1=meantreb = 0.01*(meantreb*99+treb);
-shape_0_per_frame2=trebdiff = (treb - meantreb)*15;
-shape_0_per_frame3=tr = min(above(trebdiff,0)*trebdiff*.005,.11);
+shape_0_per_frame1=temp1 = 0.01*(temp1*99+bass);
+shape_0_per_frame2=temp2 = (bass - temp1)*15;
+shape_0_per_frame3=temp3 = min(above(temp2,0)*temp2*.005,.11);
 shape_0_per_frame4=
-shape_0_per_frame5=tr_prg= tr_prg+tr;
+shape_0_per_frame5=temp4= temp4+temp3;
 shape_0_per_frame6=
-shape_0_per_frame7=tex_ang =-tr_prg;
+shape_0_per_frame7=tex_ang =-temp4;
 shapecode_1_enabled=1
 shapecode_1_sides=100
 shapecode_1_additive=0
