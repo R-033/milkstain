@@ -22,8 +22,8 @@ Every preset is stored as a ```TextAsset``` in ```PresetFiles``` array. It will 
 Usage example is included into the project.
 
 ## Limitations
-Currently presets with custom Warp and Comp shaders are not supported because Unity requires shaders to be precompiled in editor. If you don't plan to give user ability to load custom presets, shaders can be precompiled and then used for a specific preset.
+Currently presets with custom Warp and Comp shaders are not supported because Unity requires shaders to be precompiled in editor. If you don't plan to give user ability to load custom presets, shaders can be precompiled and then used for a specific preset. Custom editor script for generating shaders may be added in the future.
 
-Custom editor script for generating shaders may be added in the future.
+Some complex presets can have big performance impact despite optimization efforts.
 
 I wrote this port for a small throwaway easter egg in my own project, so it might be inaccurate or contain bugs!
