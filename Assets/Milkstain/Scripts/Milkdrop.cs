@@ -3455,6 +3455,18 @@ namespace Milkstain
                 }
             }
 
+            if (PrevPreset != null)
+            {
+                Destroy(PrevPreset.WarpMaterial);
+                Destroy(PrevPreset.CompMaterial);
+                Destroy(PrevPreset.DarkenCenterMaterial);
+
+                foreach (var shape in PrevPreset.Shapes)
+                {
+                    Destroy(shape.ShapeMesh);
+                }
+            }
+
             PrevPreset = CurrentPreset;
             CurrentPreset = newPreset;
 
