@@ -186,6 +186,7 @@ namespace Milkstain
         void OnDestroy()
         {
             Destroy(TempTexture);
+            Destroy(PrevTempTexture);
             Destroy(FinalTexture);
             Destroy(TargetMeshWarp);
             Destroy(TargetMeshDarkenCenter);
