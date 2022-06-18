@@ -11,26 +11,27 @@ namespace Milkstain
     {
         const int HeapSize = 2048;
 
-        public State()
+        public State(Preset preset)
         {
             Keys = new List<int>();
             Heap = new float[HeapSize];
+            SourcePreset = preset;
         }
 
         public State(State other)
         {
             Keys = new List<int>(other.Keys);
-
             Heap = new float[HeapSize];
-
             for (int i = 0; i < Keys.Count; i++)
             {
                 Heap[Keys[i]] = other.Heap[Keys[i]];
             }
+            SourcePreset = other.SourcePreset;
         }
         
         public List<int> Keys;
         public float[] Heap;
+        public Preset SourcePreset;
 
         public void Set(int index, float value)
         {

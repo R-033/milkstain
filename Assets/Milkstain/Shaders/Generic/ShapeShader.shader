@@ -60,7 +60,7 @@ Shader "Milkdrop/ShapeShader"
 
                 if (uTextured != 0)
                 {
-                    waveColor.xyz *= tex2D(_MainTexPrev, uv_orig).xyz;
+                    waveColor *= tex2D(_MainTexPrev, uv_orig);
                 }
 
                 if (additive != 0)

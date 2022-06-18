@@ -7,17 +7,27 @@ namespace Milkstain
 {
     public class Shape
     {
-        public State BaseVariables = new State();
+        public Shape(Preset preset)
+        {
+            BaseVariables = new State(preset);
+            Variables = new State(preset);
+            InitVariables = new State(preset);
+            FrameVariables = new State(preset);
+            FrameMap = new State(preset);
+            Inits = new State(preset);
+        }
+
+        public State BaseVariables;
         public string InitEquationSource = "";
         public Action<State> InitEquationCompiled;
         public string FrameEquationSource = "";
         public Action<State> FrameEquationCompiled;
-        public State Variables = new State();
-        public State InitVariables = new State();
-        public State FrameVariables = new State();
+        public State Variables;
+        public State InitVariables;
+        public State FrameVariables;
         public int[] UserKeys = new int[0];
-        public State FrameMap = new State();
-        public State Inits = new State();
+        public State FrameMap;
+        public State Inits;
 
         public Vector3[] Positions;
         public Color[] Colors;
@@ -25,5 +35,8 @@ namespace Milkstain
         public Vector3[] BorderPositions;
 
         public Mesh ShapeMesh;
+
+        public string TextureName;
+        public Texture Texture;
     }
 }

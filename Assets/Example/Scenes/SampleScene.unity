@@ -647,6 +647,10 @@ PrefabInstance:
       propertyPath: TransitionTime
       value: 5.7
       objectReference: {fileID: 0}
+    - target: {fileID: 1654534779277176289, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
+      propertyPath: SkipUnsupported
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1654534779277176291, guid: 35ba82c23573c40b9891a06304a9660c, type: 3}
       propertyPath: m_Name
       value: Milkdrop

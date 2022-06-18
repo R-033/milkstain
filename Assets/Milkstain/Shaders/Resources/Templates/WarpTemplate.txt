@@ -1,4 +1,4 @@
-Shader "Milkdrop/DefaultCompShader"
+Shader "Milkdrop/{0}"
 {
     Properties
     {
@@ -20,14 +20,7 @@ Shader "Milkdrop/DefaultCompShader"
         _MainTex14 ("sampler_noisevol_lq", 3D) = "white" {}
         _MainTex15 ("sampler_noisevol_hq", 3D) = "white" {}
         time ("time", Float) = 1
-        gammaAdj ("gammaAdj", Float) = 1
-        echo_zoom ("echo_zoom", Float) = 1
-        echo_alpha ("echo_alpha", Float) = 1
-        echo_orientation ("echo_orientation", Float) = 1
-        invert ("invert", Float) = 1
-        brighten ("brighten", Float) = 1
-        _darken ("darken", Float) = 1
-        solarize ("solarize", Float) = 1
+        decay ("decay", Float) = 1
         resolution ("resolution", Vector) = (1,1,1,1)
         aspect ("aspect", Vector) = (1,1,1,1)
         texsize ("texsize", Vector) = (1,1,1,1)
@@ -67,7 +60,8 @@ Shader "Milkdrop/DefaultCompShader"
         blur3_max ("blur3_max", Float) = 1
         rand_frame ("rand_frame", Vector) = (1,1,1,1)
         rand_preset ("rand_preset", Vector) = (1,1,1,1)
-        fShader ("fShader", Float) = 1
+
+        {1}
     }
     SubShader
     {
@@ -100,17 +94,10 @@ Shader "Milkdrop/DefaultCompShader"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-                o.uv.x = v.vertex.x * 0.5 + 0.5;
-                o.uv.y = -v.vertex.y * 0.5 + 0.5;
+                o.uv = v.uv;
                 o.uv_orig = v.vertex.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
                 o.color = v.color;
                 return o;
-            }
-
-            float lum(float3 v)
-            {
-                return dot(v, float3(0.32,0.49,0.29));
             }
 
             sampler2D _MainTex; // sampler_main
@@ -133,14 +120,7 @@ Shader "Milkdrop/DefaultCompShader"
             sampler3D _MainTex14; // sampler_noisevol_lq
             sampler3D _MainTex15; // sampler_noisevol_hq
             float time;
-            float gammaAdj;
-            float echo_zoom;
-            float echo_alpha;
-            float echo_orientation;
-            float invert;
-            float brighten;
-            float _darken;
-            float solarize;
+            float decay;
             float2 resolution;
             float4 aspect;
             float4 texsize;
@@ -220,9 +200,10 @@ Shader "Milkdrop/DefaultCompShader"
             float bias3;
             float4 rand_frame;
             float4 rand_preset;
-            float fShader;
 
             float PI = 3.14159265359;
+
+            {2}
 
             float4 frag (v2f i) : SV_Target
             {
@@ -231,43 +212,17 @@ Shader "Milkdrop/DefaultCompShader"
                 float2 uv = i.uv;
                 float2 uv_orig = i.uv_orig;
 
-                float rad = length(uv - 0.5);
-                float ang = atan2(uv.x - 0.5, uv.y - 0.5);
+                float rad = length(uv_orig - 0.5);
+                float ang = atan2(uv_orig.x - 0.5, uv_orig.y - 0.5);
 
-                float3 hue_shader = i.color.xyz;
-
-                float orient_horiz = echo_orientation % 2.0;
-                float orient_x = (orient_horiz != 0.0) ? -1.0 : 1.0;
-                float orient_y = (echo_orientation >= 2.0) ? -1.0 : 1.0;
-                float2 uv_echo = ((uv - 0.5) *
-                                (1.0 / echo_zoom) *
-                                float2(orient_x, orient_y)) + 0.5;
-                
                 float4 tex = tex2D(_MainTex, uv_orig);
                 float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
-                float4 texEcho = tex2D(_MainTexPrev, uv_echo);
-                float3 texEchoHDR = DecodeHDR(texEcho, _MainTexPrev_HDR);
                 float4 texPrev = tex2D(_MainTexPrev, uv);
                 float3 texPrevHDR = DecodeHDR(texPrev, _MainTexPrev_HDR);
 
-                ret = lerp(texPrevHDR.xyz,
-                            texEchoHDR.xyz,
-                            echo_alpha);
+                {3}
 
-                ret *= gammaAdj;
-
-                if(fShader >= 1.0) {
-                    ret *= hue_shader;
-                } else if(fShader > 0.001) {
-                    ret *= (1.0 - fShader) + (fShader * hue_shader);
-                }
-
-                if(brighten != 0) ret = sqrt(ret);
-                if(_darken != 0) ret = ret*ret;
-                if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
-                if(invert != 0) ret = 1.0 - ret;
-
-                return float4(lerp(texHDR.xyz, ret, max(1.0 - blending, i.color.w)), 1.0);
+                return float4(lerp(texHDR.xyz, ret * i.color.xyz, max(1.0 - blending, i.color.w)), 1.0);
             }
             ENDCG
         }

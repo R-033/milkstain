@@ -1,4 +1,4 @@
-Shader "Milkdrop/DefaultCompShader"
+Shader "Milkdrop/{0}"
 {
     Properties
     {
@@ -68,6 +68,8 @@ Shader "Milkdrop/DefaultCompShader"
         rand_frame ("rand_frame", Vector) = (1,1,1,1)
         rand_preset ("rand_preset", Vector) = (1,1,1,1)
         fShader ("fShader", Float) = 1
+
+        {1}
     }
     SubShader
     {
@@ -224,6 +226,8 @@ Shader "Milkdrop/DefaultCompShader"
 
             float PI = 3.14159265359;
 
+            {2}
+
             float4 frag (v2f i) : SV_Target
             {
                 float3 ret;
@@ -236,36 +240,7 @@ Shader "Milkdrop/DefaultCompShader"
 
                 float3 hue_shader = i.color.xyz;
 
-                float orient_horiz = echo_orientation % 2.0;
-                float orient_x = (orient_horiz != 0.0) ? -1.0 : 1.0;
-                float orient_y = (echo_orientation >= 2.0) ? -1.0 : 1.0;
-                float2 uv_echo = ((uv - 0.5) *
-                                (1.0 / echo_zoom) *
-                                float2(orient_x, orient_y)) + 0.5;
-                
-                float4 tex = tex2D(_MainTex, uv_orig);
-                float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
-                float4 texEcho = tex2D(_MainTexPrev, uv_echo);
-                float3 texEchoHDR = DecodeHDR(texEcho, _MainTexPrev_HDR);
-                float4 texPrev = tex2D(_MainTexPrev, uv);
-                float3 texPrevHDR = DecodeHDR(texPrev, _MainTexPrev_HDR);
-
-                ret = lerp(texPrevHDR.xyz,
-                            texEchoHDR.xyz,
-                            echo_alpha);
-
-                ret *= gammaAdj;
-
-                if(fShader >= 1.0) {
-                    ret *= hue_shader;
-                } else if(fShader > 0.001) {
-                    ret *= (1.0 - fShader) + (fShader * hue_shader);
-                }
-
-                if(brighten != 0) ret = sqrt(ret);
-                if(_darken != 0) ret = ret*ret;
-                if(solarize != 0) ret = ret * (1.0 - ret) * 4.0;
-                if(invert != 0) ret = 1.0 - ret;
+                {3}
 
                 return float4(lerp(texHDR.xyz, ret, max(1.0 - blending, i.color.w)), 1.0);
             }

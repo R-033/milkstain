@@ -2219,6 +2219,34 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 8bb7728f0b7284f02bfa6da6d4b17f3c, type: 3}
   - {fileID: 4900000, guid: b850782de4f814a45b7911df969bdc2b, type: 3}
   - {fileID: 4900000, guid: 5bdf58771d5394ba58f59ee6b4123382, type: 3}
+  PresetWarpShaders: []
+  PresetCompShaders: []
+  PresetTextures:
+  - {fileID: 2800000, guid: e83566a35a0e44efdb835721d42f0d11, type: 3}
+  - {fileID: 2800000, guid: 1769a681720bd4f8f9024449c8bf8471, type: 3}
+  - {fileID: 2800000, guid: 381abd49dab5c40c2a727334e57b2061, type: 3}
+  - {fileID: 2800000, guid: bd58163e9a48c4ecbb2ac06f5d9f65e8, type: 3}
+  - {fileID: 2800000, guid: 226a3a9d414a84a64b04f5685a81fc51, type: 3}
+  - {fileID: 2800000, guid: 84518879612e54bf783d15d606900860, type: 3}
+  - {fileID: 2800000, guid: 549ab71b5efc24a47a00c965cb2a873d, type: 3}
+  - {fileID: 2800000, guid: c42377a8909094b339ab14f7b6067457, type: 3}
+  - {fileID: 2800000, guid: e50c7ab052e9142ef9574d80439ec76d, type: 3}
+  - {fileID: 2800000, guid: 92408348d17c14b4daaa09315b0cbf83, type: 3}
+  - {fileID: 2800000, guid: 3a43cf6e8a3ff463eafa0f4f38726a97, type: 3}
+  - {fileID: 2800000, guid: 2b81ca8e4995e4fe2a4f9491e2c296d4, type: 3}
+  - {fileID: 2800000, guid: 45cad12bfffdb4e6799e87ea753914bf, type: 3}
+  - {fileID: 2800000, guid: 12daa3674ae824921a4b25a96d8e6e5c, type: 3}
+  - {fileID: 2800000, guid: a0b5305def1b640fd82cec7189260382, type: 3}
+  - {fileID: 2800000, guid: 40b89e2f5064c4948a73c2d26a0f4ab0, type: 3}
+  - {fileID: 2800000, guid: 5a06c77c7040d4060a42a472aa6ebb3c, type: 3}
+  - {fileID: 2800000, guid: f3b6789d758d84418a94d91fa9405e30, type: 3}
+  - {fileID: 2800000, guid: ca5889536f88849fc9b4452c5f28af5c, type: 3}
+  - {fileID: 2800000, guid: a27bfad458a0f4b709c0b2c8676538f1, type: 3}
+  - {fileID: 2800000, guid: f9288d512c09d4e06aa53b7c6062c5d0, type: 3}
+  - {fileID: 2800000, guid: 5b1335fa9b8b4400e99246d7bec653cc, type: 3}
+  - {fileID: 2800000, guid: c22ed81a5fc8248d69e7ad57152ca356, type: 3}
+  - {fileID: 2800000, guid: 0a675c8d7863542b1927d2775197ba6b, type: 3}
+  - {fileID: 2800000, guid: 438a1476dec4a4ccc8bde2a259d4b98a, type: 3}
   MeshSize: {x: 48, y: 36}
   MeshSizeComp: {x: 32, y: 24}
   MotionVectorsSize: {x: 64, y: 48}
@@ -2263,6 +2291,7 @@ MonoBehaviour:
   BorderParent: {fileID: 1654534779114536300}
   SuperText: {fileID: 9218397685660751165}
   RandomOrder: 1
+  SkipUnsupported: 1
   FinalTexture: {fileID: 0}
   FPS: 0
   PresetName: 

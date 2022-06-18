@@ -7,20 +7,31 @@ namespace Milkstain
 {
     public class Wave
     {
-        public State BaseVariables = new State();
+        public Wave(Preset preset)
+        {
+            BaseVariables = new State(preset);
+            Variables = new State(preset);
+            InitVariables = new State(preset);
+            FrameVariables = new State(preset);
+            PointVariables = new State(preset);
+            FrameMap = new State(preset);
+            Inits = new State(preset);
+        }
+
+        public State BaseVariables;
         public string InitEquationSource = "";
         public Action<State> InitEquationCompiled;
         public string FrameEquationSource = "";
         public Action<State> FrameEquationCompiled;
         public string PointEquationSource = "";
         public Action<State> PointEquationCompiled;
-        public State Variables = new State();
-        public State InitVariables = new State();
-        public State FrameVariables = new State();
-        public State PointVariables = new State();
+        public State Variables;
+        public State InitVariables;
+        public State FrameVariables;
+        public State PointVariables;
         public int[] UserKeys = new int[0];
-        public State FrameMap = new State();
-        public State Inits = new State();
+        public State FrameMap;
+        public State Inits;
 
         public float[] PointsDataL;
         public float[] PointsDataR;

@@ -15,6 +15,10 @@ namespace Milkstain
 
         public TextAsset[] PresetFiles;
 
+        public Texture[] PresetTextures;
+        public Shader[] PresetWarpShaders;
+        public Shader[] PresetCompShaders;
+
         private Preset PrevPreset;
 
         public Vector2Int MeshSize = new Vector2Int(48, 36);
@@ -1327,7 +1331,7 @@ namespace Milkstain
                     TargetMeshRenderer2.sharedMaterial = ShapeMaterial;
 
                     ShapeMaterial.mainTexture = TempTexture;
-                    ShapeMaterial.SetTexture("_MainTexPrev", PrevTempTexture);
+                    ShapeMaterial.SetTexture("_MainTexPrev", CurrentShape.Texture == null ? PrevTempTexture : CurrentShape.Texture);
                     ShapeMaterial.SetFloat("uTextured", textured);
                     ShapeMaterial.SetFloat("additive", additive);
 
@@ -3012,7 +3016,7 @@ namespace Milkstain
             }
         }
 
-        private Preset LoadPreset(string file)
+        public static Preset LoadPreset(string file)
         {
             var preset = new Preset();
 
@@ -3068,7 +3072,7 @@ namespace Milkstain
 
                     while (num >= preset.Waves.Count)
                     {
-                        preset.Waves.Add(new Wave());
+                        preset.Waves.Add(new Wave(preset));
                     }
 
                     string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
@@ -3101,7 +3105,7 @@ namespace Milkstain
 
                     while (num >= preset.Waves.Count)
                     {
-                        preset.Waves.Add(new Wave());
+                        preset.Waves.Add(new Wave(preset));
                     }
 
                     string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
@@ -3134,7 +3138,7 @@ namespace Milkstain
 
                     while (num >= preset.Shapes.Count)
                     {
-                        preset.Shapes.Add(new Shape());
+                        preset.Shapes.Add(new Shape(preset));
                     }
 
                     string codeName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
@@ -3163,31 +3167,38 @@ namespace Milkstain
 
                     while (num >= preset.Shapes.Count)
                     {
-                        preset.Shapes.Add(new Shape());
+                        preset.Shapes.Add(new Shape(preset));
                     }
 
                     string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
 
-                    float result = 0f;
-
-                    if (val == "." || val == "-")
+                    if (varName == "imageurl")
                     {
-                        val = "0";
-                    }
-
-                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
-                    {
-                        Debug.LogError("Invalid number " + val + ": " + line);
-                        continue;
-                    }
-
-                    if (State.VariableNameLookup.ContainsKey(varName))
-                    {
-                        State.SetVariable(preset.Shapes[num].BaseVariables, State.VariableNameLookup[varName], result);
+                        preset.Shapes[num].TextureName = System.IO.Path.GetFileNameWithoutExtension(val);
                     }
                     else
                     {
-                        State.SetVariable(preset.Shapes[num].BaseVariables, varName, result);
+                        float result = 0f;
+
+                        if (val == "." || val == "-")
+                        {
+                            val = "0";
+                        }
+
+                        if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+                        {
+                            Debug.LogError("Invalid number " + val + ": " + line);
+                            continue;
+                        }
+
+                        if (State.VariableNameLookup.ContainsKey(varName))
+                        {
+                            State.SetVariable(preset.Shapes[num].BaseVariables, State.VariableNameLookup[varName], result);
+                        }
+                        else
+                        {
+                            State.SetVariable(preset.Shapes[num].BaseVariables, varName, result);
+                        }
                     }
                 }
                 else if (arg.StartsWith("per_frame_init_"))
@@ -3236,7 +3247,7 @@ namespace Milkstain
 
                     if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                     {
-                        Debug.LogError("Invalid number " + val + ": " + line);
+                        //Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
                     }
 
@@ -3449,6 +3460,7 @@ namespace Milkstain
             if (SkipUnsupported)
             {
                 if (!string.IsNullOrEmpty(newPreset.Warp) || !string.IsNullOrEmpty(newPreset.Comp))
+                //if (string.IsNullOrEmpty(newPreset.Warp) && string.IsNullOrEmpty(newPreset.Comp))
                 {
                     blending = false;
                     return false;
@@ -3673,6 +3685,23 @@ namespace Milkstain
                         CurrentShape.Inits = State.Pick(CurrentShape.Variables, ts);
                         CurrentShape.UserKeys = State.Omit(CurrentShape.Variables, nonUserShapeKeys.ToArray()).Keys.ToArray();
                         CurrentShape.FrameMap = State.Pick(CurrentShape.Variables, CurrentShape.UserKeys);
+                    }
+
+                    if (!string.IsNullOrEmpty(CurrentShape.TextureName))
+                    {
+                        foreach (var tex in PresetTextures)
+                        {
+                            if (tex.name == CurrentShape.TextureName)
+                            {
+                                CurrentShape.Texture = tex;
+                                break;
+                            }
+                        }
+
+                        if (CurrentShape.Texture == null)
+                        {
+                            Debug.LogError("Texture not found: " + CurrentShape.TextureName);
+                        }
                     }
                 }
             }
