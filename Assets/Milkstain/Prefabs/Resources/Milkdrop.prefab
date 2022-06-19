@@ -2219,8 +2219,6 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 8bb7728f0b7284f02bfa6da6d4b17f3c, type: 3}
   - {fileID: 4900000, guid: b850782de4f814a45b7911df969bdc2b, type: 3}
   - {fileID: 4900000, guid: 5bdf58771d5394ba58f59ee6b4123382, type: 3}
-  PresetWarpShaders: []
-  PresetCompShaders: []
   PresetTextures:
   - {fileID: 2800000, guid: e83566a35a0e44efdb835721d42f0d11, type: 3}
   - {fileID: 2800000, guid: 1769a681720bd4f8f9024449c8bf8471, type: 3}
@@ -2247,6 +2245,8 @@ MonoBehaviour:
   - {fileID: 2800000, guid: c22ed81a5fc8248d69e7ad57152ca356, type: 3}
   - {fileID: 2800000, guid: 0a675c8d7863542b1927d2775197ba6b, type: 3}
   - {fileID: 2800000, guid: 438a1476dec4a4ccc8bde2a259d4b98a, type: 3}
+  PresetWarpShaders: []
+  PresetCompShaders: []
   MeshSize: {x: 48, y: 36}
   MeshSizeComp: {x: 32, y: 24}
   MotionVectorsSize: {x: 64, y: 48}
@@ -2279,11 +2279,11 @@ MonoBehaviour:
   TargetCamera: {fileID: 1654534780806502025}
   TargetAudio: {fileID: 0}
   DefaultWarpShader: {fileID: 4800000, guid: cd82fc570590c4e2d92765825614a240, type: 3}
-  DarkenCenterShader: {fileID: 4800000, guid: de980b6bea38f4529a6f8266e2d15a21, type: 3}
   DefaultCompShader: {fileID: 4800000, guid: 315b6a4d15a2749af9832897a3d7d844, type: 3}
   DoNothingMaterial: {fileID: 2100000, guid: 3f9651530f32b423aad8f1dc97067131, type: 2}
   BorderMaterial: {fileID: 2100000, guid: 4f67ca6eb8d164f959379848d65602c2, type: 2}
   ShapeMaterial: {fileID: 2100000, guid: 51c1410d1af374417b8d1356896430b6, type: 2}
+  DarkenCenterMaterial: {fileID: 2100000, guid: 712dc150dc0d9464bac45986c7284a32, type: 2}
   BorderSideLeft: {fileID: 1654534779783331365}
   BorderSideRight: {fileID: 1654534779293009037}
   BorderSideTop: {fileID: 1654534779142031204}
@@ -2291,7 +2291,7 @@ MonoBehaviour:
   BorderParent: {fileID: 1654534779114536300}
   SuperText: {fileID: 9218397685660751165}
   RandomOrder: 1
-  SkipUnsupported: 1
+  SkipCustomShaded: 1
   FinalTexture: {fileID: 0}
   FPS: 0
   PresetName: 

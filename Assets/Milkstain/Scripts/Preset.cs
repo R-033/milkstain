@@ -44,7 +44,6 @@ namespace Milkstain
         public State AfterFrameVariables;
 
         public Material WarpMaterial;
-        public Material DarkenCenterMaterial;
         public Material CompMaterial;
 
         public float[] MegaBuf = new float[1048576];
