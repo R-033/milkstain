@@ -24,7 +24,13 @@ Every preset is stored as a ```TextAsset``` in ```PresetFiles``` array. It will 
 Usage example is included into the project.
 
 ## Limitations
-Currently presets with custom Warp and Comp shaders are not supported because Unity requires shaders to be precompiled in editor. If you don't plan to give user ability to load custom presets, shaders can be precompiled and then used for a specific preset. Custom editor script for generating shaders may be added in the future.
+Unity requires shaders to be precompiled in editor so presets for Milkdrop 2.0 with custom Warp and Comp shaders will need to be precompiled in editor. There is experimental support for such presets, however to make them work you need to do these steps:
+
+- Open Window -> Milkdrop Shader Compiler and press "Compile All Shaders" button.
+
+- Open ```Assets/Milkstain/Resources/Milkdrop.prefab``` and assign created shaders from ```/Custom/``` folders to "Preset Warp Shaders" and "Preset Comp Shaders".
+
+- Untick "Skip Custom Shaded" at the bottom.
 
 Some complex presets can have big performance impact despite optimization efforts.
 
