@@ -423,13 +423,13 @@ namespace Milkstain
             Blur2Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.125f), Mathf.RoundToInt(Resolution.y * 0.125f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
             Blur3Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.0625f), Mathf.RoundToInt(Resolution.y * 0.0625f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
 
-            TextureNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
-            TextureNoiseLQLite = new Texture2D(32, 32, TextureFormat.RGBAFloat, false);
-            TextureNoiseMQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
-            TextureNoiseHQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
-            TexturePWNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
-            TextureNoiseVolLQ = new Texture3D(32, 32, 32, TextureFormat.RGBAFloat, false);
-            TextureNoiseVolHQ = new Texture3D(32, 32, 32, TextureFormat.RGBAFloat, false);
+            TextureNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            TextureNoiseLQLite = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+            TextureNoiseMQ = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            TextureNoiseHQ = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            TexturePWNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            TextureNoiseVolLQ = new Texture3D(32, 32, 32, TextureFormat.RGBA32, false);
+            TextureNoiseVolHQ = new Texture3D(32, 32, 32, TextureFormat.RGBA32, false);
 
             CreateNoiseTex(TextureNoiseLQ, 256, 1);
             CreateNoiseTex(TextureNoiseLQLite, 32, 1);
