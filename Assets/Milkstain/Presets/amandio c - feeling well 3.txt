@@ -303,7 +303,7 @@ shape_3_per_frame1=i=instance;   sa=i/num_inst;
 shape_3_per_frame2=
 shape_3_per_frame3=n1=34;     n2=30;      p=((i/n2)%n1)/n1;
 shape_3_per_frame4=
-shape_3_per_frame5=c =  equal(i,(510+510*sin(.12*time))%1020);
+shape_3_per_frame5=c =  i == (510+510*sin(.12*time))%1020;
 shape_3_per_frame6=t = n1*6.28*sa +  20*sin(.02*time+.1*q1+.1*q2);
 shape_3_per_frame7=
 shape_3_per_frame8=z=(.15+.05*sin(.16*time))*(1+5*p)*(1+.4*sin(time+10*p));

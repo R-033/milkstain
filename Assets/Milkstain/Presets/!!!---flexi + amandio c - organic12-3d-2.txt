@@ -283,7 +283,7 @@ per_frame_3=beat = (time >  t0+3); t0 = if(beat, time, t0);
 per_frame_4=
 per_frame_5=speed = min(0.2,dist_-.02) * (1+2*avg) *(1-slow*.0)*.7/q7; //#
 per_frame_6=ds = ds * dec_s + (1-dec_s)*speed*.25/fps_; 
-per_frame_7=RotZ = if (equal(RotZ,0),beat*(rand(100)<20*travel)*(rand(10)/10-.3),
+per_frame_7=RotZ = if (RotZ==0,beat*(rand(100)<20*travel)*(rand(10)/10-.3),
 per_frame_8=                   bnot(beat*(rand(100)<30))*RotZ);
 per_frame_9=slow = if (bnot(slow), beat*(rand(1000*avg)<6), bnot(beat*(rand(100)<50)));
 per_frame_10=look = if (bnot(look), beat*(rand(1000*speed)<12), bnot(beat*(rand(100)<50)));
