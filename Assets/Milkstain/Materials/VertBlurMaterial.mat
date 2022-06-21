@@ -74,13 +74,13 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - ed1: 0.75
-    - ed2: 0.25
+    - ed1: 1
+    - ed2: 0
     - ed3: 5
     - wdiv: 0.027322402
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - texsize: {r: 960, g: 495, b: 0.0010416667, a: 0.002020202}
+    - texsize: {r: 506, g: 336, b: 0.0019762847, a: 0.0029761905}
     - wds: {r: 14.200001, g: 4.1, b: 0.90140843, a: 2.487805}
   m_BuildTextureStacks: []

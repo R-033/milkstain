@@ -74,14 +74,14 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - bias: -0.6666667
-    - scale: 1.6666666
+    - bias: -0
+    - scale: 1
     - wdiv: 0.027322402
     - ws: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - ds: {r: 0.9743589, g: 2.90625, b: 4.774194, a: 6.6}
-    - texsize: {r: 1920, g: 990, b: 0.00052083336, a: 0.001010101}
+    - texsize: {r: 1013, g: 672, b: 0.0009871669, a: 0.0014880953}
     - ws: {r: 7.8, g: 6.4, b: 3.1, a: 1}
   m_BuildTextureStacks: []

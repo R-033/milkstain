@@ -183,7 +183,7 @@ namespace Milkstain
 
                             if (line.Contains("//"))
                             {
-                                line = line.Split("//")[0];
+                                line = line.Split(new string[] {"//"}, System.StringSplitOptions.RemoveEmptyEntries)[0];
                             }
 
                             if (line.Contains('{'))
@@ -210,7 +210,7 @@ namespace Milkstain
                                 line.StartsWith("sampler2D ")
                             )
                             {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
+                                string[] varNames = string.Join(" ", line.Replace(';', ' ').Split(new char[] {' '}, System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
                                 
 
                                 foreach (var varName in varNames)
@@ -331,7 +331,7 @@ namespace Milkstain
 
                             if (line.Contains("//"))
                             {
-                                line = line.Split("//")[0];
+                                line = line.Split(new string[] {"//"}, System.StringSplitOptions.RemoveEmptyEntries)[0];
                             }
 
                             if (line.Contains('{'))
@@ -358,7 +358,7 @@ namespace Milkstain
                                 line.StartsWith("sampler2D ")
                             )
                             {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
+                                string[] varNames = string.Join(" ", line.Replace(';', ' ').Split(new char[] {' '}, System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
 
                                 foreach (var varName in varNames)
                                 {
