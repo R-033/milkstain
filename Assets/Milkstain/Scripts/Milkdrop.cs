@@ -108,10 +108,15 @@ namespace Milkstain
         private Color[] WarpColor;
         private Color[] CompColor;
 
-        private RenderTexture PrevTempTexture;
-        private RenderTexture TempTexture;
         [HideInInspector]
         public RenderTexture FinalTexture;
+
+        private RenderTexture PrevTempTexture;
+        private RenderTexture TempTexture;
+
+        private RenderTexture Blur1Texture;
+        private RenderTexture Blur2Texture;
+        private RenderTexture Blur3Texture;
 
         private Mesh TargetMeshWarp;
         private Mesh TargetMeshDarkenCenter;
@@ -196,6 +201,9 @@ namespace Milkstain
             Destroy(TargetMeshWarp);
             Destroy(TargetMeshDarkenCenter);
             Destroy(TargetMeshComp);
+            Destroy(Blur1Texture);
+            Destroy(Blur2Texture);
+            Destroy(Blur3Texture);
 
             UnloadPresets();
         }
@@ -366,6 +374,10 @@ namespace Milkstain
             PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
             TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
             FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            Blur1Texture = new RenderTexture(Resolution.x / 2, Resolution.y / 2, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur2Texture = new RenderTexture(Resolution.x / 4, Resolution.y / 4, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur3Texture = new RenderTexture(Resolution.x / 8, Resolution.y / 8, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
 
             TargetMeshWarp = new Mesh();
             Vector3[] vertices = new Vector3[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -1047,7 +1059,9 @@ namespace Milkstain
                 DrawWarp(CurrentPreset, true);
             }
 
-            // blur
+            Graphics.Blit(PrevTempTexture, Blur1Texture);
+            Graphics.Blit(Blur1Texture, Blur2Texture);
+            Graphics.Blit(Blur2Texture, Blur3Texture);
 
             DrawMotionVectors();
 
@@ -1726,9 +1740,9 @@ namespace Milkstain
             CurrentPreset.WarpMaterial.SetTexture("_MainTex4", PrevTempTexture);
             CurrentPreset.WarpMaterial.SetTexture("_MainTex5", PrevTempTexture);
 
-            // sampler_blur1
-            // sampler_blur2
-            // sampler_blur3
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex6", Blur1Texture);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex7", Blur2Texture);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex8", Blur3Texture);
 
             // sampler_noise_lq
             // sampler_noise_mq
@@ -1737,8 +1751,6 @@ namespace Milkstain
             // sampler_pw_noise_lq
             // sampler_noisevol_lq
             // sampler_noisevol_hq
-
-            // user textures
 
             CurrentPreset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
             CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
@@ -3164,9 +3176,9 @@ namespace Milkstain
             CurrentPreset.CompMaterial.SetTexture("_MainTex4", TempTexture);
             CurrentPreset.CompMaterial.SetTexture("_MainTex5", TempTexture);
 
-            // sampler_blur1
-            // sampler_blur2
-            // sampler_blur3
+            CurrentPreset.CompMaterial.SetTexture("_MainTex6", Blur1Texture);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex7", Blur2Texture);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex8", Blur3Texture);
 
             // sampler_noise_lq
             // sampler_noise_mq
@@ -3175,8 +3187,6 @@ namespace Milkstain
             // sampler_pw_noise_lq
             // sampler_noisevol_lq
             // sampler_noisevol_hq
-
-            // user textures
 
             CurrentPreset.CompMaterial.SetFloat("time", CurrentTime);
             CurrentPreset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
@@ -4115,6 +4125,12 @@ namespace Milkstain
             else
             {
                 CurrentPreset.CompMaterial = new Material(DefaultCompShader);
+            }
+
+            foreach (var tex in PresetTextures)
+            {
+                CurrentPreset.WarpMaterial.SetTexture("sampler_" + tex.name, tex);
+                CurrentPreset.CompMaterial.SetTexture("sampler_" + tex.name, tex);
             }
 
             return true;

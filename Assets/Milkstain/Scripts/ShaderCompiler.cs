@@ -19,6 +19,24 @@ namespace Milkstain
 
         static string ProcessShaderCode(string raw)
         {
+            raw = raw.Replace("sampler ", "sampler2D ");
+            
+            raw = raw.Replace("sampler2D sampler_main", "");
+            raw = raw.Replace("sampler2D sampler_fw_main", "");
+            raw = raw.Replace("sampler2D sampler_fc_main", "");
+            raw = raw.Replace("sampler2D sampler_pw_main", "");
+            raw = raw.Replace("sampler2D sampler_pc_main", "");
+            raw = raw.Replace("sampler2D sampler_blur1", "");
+            raw = raw.Replace("sampler2D sampler_blur2", "");
+            raw = raw.Replace("sampler2D sampler_blur3", "");
+            raw = raw.Replace("sampler2D sampler_noise_lq", "");
+            raw = raw.Replace("sampler2D sampler_noise_lq_lite", "");
+            raw = raw.Replace("sampler2D sampler_noise_mq", "");
+            raw = raw.Replace("sampler2D sampler_noise_hq", "");
+            raw = raw.Replace("sampler2D sampler_pw_noise_lq", "");
+            raw = raw.Replace("sampler3D sampler_noisevol_lq", "");
+            raw = raw.Replace("sampler3D sampler_noisevol_hq", "");
+
             raw = raw.Replace("sampler_main", "_MainTexPrev");
             raw = raw.Replace("sampler_fw_main", "_MainTex2");
             raw = raw.Replace("sampler_fc_main", "_MainTex3");
@@ -38,6 +56,13 @@ namespace Milkstain
             raw = raw.Replace("lum (", "Luminance (");
             raw = raw.Replace("tex2d", "tex2D");
             raw = raw.Replace("tex3d", "tex3D");
+            raw = raw.Replace("front", "_front");
+            raw = raw.Replace("back", "_back");
+
+            raw = raw.Replace("double ", "float ");
+            raw = raw.Replace("double2 ", "float2 ");
+            raw = raw.Replace("double3 ", "float3 ");
+            raw = raw.Replace("double4 ", "float4 ");
 
             return raw;
         }
@@ -70,11 +95,12 @@ namespace Milkstain
 
                         int state = 0;
 
+                        int depth = 0;
+
                         for (int i = 0; i < lines.Length; i++)
                         {
-                            string line = lines[i];
-
-                            int depth = 0;
+                            string lineRaw = lines[i];
+                            string line = lineRaw.Trim();
 
                             switch (state)
                             {
@@ -100,7 +126,7 @@ namespace Milkstain
                                     }
                                     else
                                     {
-                                        header += line + "\n";
+                                        header += lineRaw + "\n";
                                     }
                                     break;
                                 case 1:
@@ -110,7 +136,7 @@ namespace Milkstain
                                         state = 2;
                                         if (depth > 1)
                                         {
-                                            body += line + "\n";
+                                            body += lineRaw + "\n";
                                         }
                                     }
                                     break;
@@ -128,73 +154,60 @@ namespace Milkstain
                                         }
                                         else
                                         {
-                                            body += line + "\n";
+                                            body += lineRaw + "\n";
                                         }
                                     }
                                     else if (line.Contains("}"))
                                     {
                                         depth--;
-                                        body += line + "\n";
+                                        body += lineRaw + "\n";
                                     }
                                     else
                                     {
-                                        body += line + "\n";
+                                        body += lineRaw + "\n";
                                     }
                                     break;
                             }
                         }
 
+                        header = ProcessShaderCode(header);
+                        body = ProcessShaderCode(body);
+
                         var header_lines = header.Replace('\n', ' ').Split(';');
+
+                        depth = 0;
 
                         for (int i = 0; i < header_lines.Length; i++)
                         {
                             string line = header_lines[i].Trim();
+
+                            if (line.Contains("//"))
+                            {
+                                line = line.Split("//")[0];
+                            }
+
+                            if (line.Contains('{'))
+                            {
+                                depth++;
+                            }
+
+                            if (line.Contains('}'))
+                            {
+                                depth--;
+                            }
 
                             if (line.Contains('('))
                             {
                                 continue;
                             }
 
+                            if (depth > 0)
+                            {
+                                continue;
+                            }
+
                             if (
-                                line.StartsWith("float ") || line.StartsWith("half ") || line.StartsWith("fixed ") || line.StartsWith("int ")
-                            )
-                            {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-
-                                    properties += n + " (\"" + n + "\", Float) = 1\n";
-                                }
-                            }
-                            else if (
-                                line.StartsWith("float2 ") || line.StartsWith("half2 ") || line.StartsWith("fixed2 ") || line.StartsWith("int2 ") ||
-                                line.StartsWith("float3 ") || line.StartsWith("half3 ") || line.StartsWith("fixed3 ") || line.StartsWith("int3 ") ||
-                                line.StartsWith("float4 ") || line.StartsWith("half4 ") || line.StartsWith("fixed4 ") || line.StartsWith("int4 ")
-                            )
-                            {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-
-                                    properties += n + " (\"" + n + "\", Vector) = (1,1,1,1)\n";
-                                }
-                            }
-                            else if (
-                                line.StartsWith("sampler ")
+                                line.StartsWith("sampler2D ")
                             )
                             {
                                 string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
@@ -214,7 +227,7 @@ namespace Milkstain
                             }
                         }
 
-                        string result = warpTemplate.Replace("{0}", shaderName).Replace("{1}", properties).Replace("{2}", ProcessShaderCode(header)).Replace("{3}", ProcessShaderCode(body));
+                        string result = warpTemplate.Replace("{0}", shaderName).Replace("{1}", properties).Replace("{2}", header).Replace("{3}", body);
 
                         File.WriteAllText(Application.dataPath + "/Milkstain/Shaders/Warp/Custom/" + shaderName + ".shader", result);
                     }
@@ -234,7 +247,8 @@ namespace Milkstain
 
                         for (int i = 0; i < lines.Length; i++)
                         {
-                            string line = lines[i];
+                            string lineRaw = lines[i];
+                            string line = lineRaw.Trim();
 
                             switch (state)
                             {
@@ -260,7 +274,7 @@ namespace Milkstain
                                     }
                                     else
                                     {
-                                        header += line + "\n";
+                                        header += lineRaw + "\n";
                                     }
                                     break;
                                 case 1:
@@ -270,7 +284,7 @@ namespace Milkstain
                                         state = 2;
                                         if (depth > 1)
                                         {
-                                            body += line + "\n";
+                                            body += lineRaw + "\n";
                                         }
                                     }
                                     break;
@@ -288,73 +302,60 @@ namespace Milkstain
                                         }
                                         else
                                         {
-                                            body += line + "\n";
+                                            body += lineRaw + "\n";
                                         }
                                     }
                                     else if (line.Contains("}"))
                                     {
                                         depth--;
-                                        body += line + "\n";
+                                        body += lineRaw + "\n";
                                     }
                                     else
                                     {
-                                        body += line + "\n";
+                                        body += lineRaw + "\n";
                                     }
                                     break;
                             }
                         }
 
+                        header = ProcessShaderCode(header);
+                        body = ProcessShaderCode(body);
+
                         var header_lines = header.Split('\n');
+
+                        depth = 0;
 
                         for (int i = 0; i < header_lines.Length; i++)
                         {
                             string line = header_lines[i].Trim();
+
+                            if (line.Contains("//"))
+                            {
+                                line = line.Split("//")[0];
+                            }
+
+                            if (line.Contains('{'))
+                            {
+                                depth++;
+                            }
+
+                            if (line.Contains('}'))
+                            {
+                                depth--;
+                            }
 
                             if (line.Contains('('))
                             {
                                 continue;
                             }
 
+                            if (depth > 0)
+                            {
+                                continue;
+                            }
+
                             if (
-                                line.StartsWith("float ") || line.StartsWith("half ") || line.StartsWith("fixed ") || line.StartsWith("int ")
-                            )
-                            {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-
-                                    properties += n + " (\"" + n + "\", Float) = 1\n";
-                                }
-                            }
-                            else if (
-                                line.StartsWith("float2 ") || line.StartsWith("half2 ") || line.StartsWith("fixed2 ") || line.StartsWith("int2 ") ||
-                                line.StartsWith("float3 ") || line.StartsWith("half3 ") || line.StartsWith("fixed3 ") || line.StartsWith("int3 ") ||
-                                line.StartsWith("float4 ") || line.StartsWith("half4 ") || line.StartsWith("fixed4 ") || line.StartsWith("int4 ")
-                            )
-                            {
-                                string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-                                    
-                                    properties += n + " (\"" + n + "\", Vector) = (1,1,1,1)\n";
-                                }
-                            }
-                            else if (
-                                line.StartsWith("sampler ")
+                                line.StartsWith("sampler2D ")
                             )
                             {
                                 string[] varNames = string.Join(' ', line.Replace(';', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
@@ -373,7 +374,7 @@ namespace Milkstain
                             }
                         }
 
-                        string result = compTemplate.Replace("{0}", shaderName).Replace("{1}", properties).Replace("{2}", ProcessShaderCode(header)).Replace("{3}", ProcessShaderCode(body));
+                        string result = compTemplate.Replace("{0}", shaderName).Replace("{1}", properties.Replace("\n", "\n\t\t")).Replace("{2}", header.Replace("\n", "\n\t\t\t")).Replace("{3}", body.Replace("\n", "\n\t\t\t\t"));
 
                         File.WriteAllText(Application.dataPath + "/Milkstain/Shaders/Comp/Custom/" + shaderName + ".shader", result);
                     }

@@ -61,7 +61,8 @@ Shader "Milkdrop/{0}"
         rand_frame ("rand_frame", Vector) = (1,1,1,1)
         rand_preset ("rand_preset", Vector) = (1,1,1,1)
 
-{1}
+        // properties
+        {1}
 
     }
     SubShader
@@ -227,24 +228,26 @@ Shader "Milkdrop/{0}"
                 return tex2D(_MainTex8, uv).xyz;
             }
 
-{2}
+            // header
+            {2}
 
-            float4 frag (v2f i) : SV_Target
+            float4 frag (v2f IN) : SV_Target
             {
                 float3 ret = 0;
 
-                float2 uv = i.uv;
-                float2 uv_orig = i.uv_orig;
+                float2 uv = IN.uv;
+                float2 uv_orig = IN.uv_orig;
 
                 float rad = length(uv_orig - 0.5);
                 float ang = atan2(uv_orig.x - 0.5, uv_orig.y - 0.5);
 
-{3}
+                // body
+                {3}
 
-                float4 tex = tex2D(_MainTex, uv_orig);
-                float3 texHDR = DecodeHDR(tex, _MainTex_HDR);
+                float4 __tex = tex2D(_MainTex, uv_orig);
+                float3 __texHDR = DecodeHDR(__tex, _MainTex_HDR);
 
-                return float4(lerp(texHDR.xyz, ret * i.color.xyz, max(1.0 - blending, i.color.w)), 1.0);
+                return float4(lerp(__texHDR.xyz, ret * IN.color.xyz, max(1.0 - blending, IN.color.w)), 1.0);
             }
             ENDCG
         }
