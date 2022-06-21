@@ -52,8 +52,8 @@ namespace Milkstain
             raw = raw.Replace("sampler_pw_noise_lq", "_MainTex13");
             raw = raw.Replace("sampler_noisevol_lq", "_MainTex14");
             raw = raw.Replace("sampler_noisevol_hq", "_MainTex15");
-            raw = raw.Replace("lum(", "Luminance(");
-            raw = raw.Replace("lum (", "Luminance (");
+            raw = raw.Replace("lum(", "lum__(");
+            raw = raw.Replace("lum (", "lum__ (");
             raw = raw.Replace("tex2d", "tex2D");
             raw = raw.Replace("tex3d", "tex3D");
             raw = raw.Replace("front", "_front");

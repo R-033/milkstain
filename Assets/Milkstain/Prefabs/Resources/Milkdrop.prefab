@@ -2281,6 +2281,8 @@ MonoBehaviour:
   DefaultWarpShader: {fileID: 4800000, guid: cd82fc570590c4e2d92765825614a240, type: 3}
   DefaultCompShader: {fileID: 4800000, guid: 315b6a4d15a2749af9832897a3d7d844, type: 3}
   DoNothingMaterial: {fileID: 2100000, guid: 3f9651530f32b423aad8f1dc97067131, type: 2}
+  BlurMaterialHorizontal: {fileID: 2100000, guid: 37ccef21325854ca484edcd9ed26adf1, type: 2}
+  BlurMaterialVertical: {fileID: 2100000, guid: d803aa173b28e423093c0d5b2f331629, type: 2}
   BorderMaterial: {fileID: 2100000, guid: 4f67ca6eb8d164f959379848d65602c2, type: 2}
   ShapeMaterial: {fileID: 2100000, guid: 51c1410d1af374417b8d1356896430b6, type: 2}
   DarkenCenterMaterial: {fileID: 2100000, guid: 712dc150dc0d9464bac45986c7284a32, type: 2}

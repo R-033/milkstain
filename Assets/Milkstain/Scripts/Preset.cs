@@ -30,8 +30,9 @@ namespace Milkstain
         public List<Shape> Shapes = new List<Shape>();
         public string WarpEquation = "";
         public string CompEquation = "";
-        public string Warp;
-        public string Comp;
+        public string Warp = "";
+        public string Comp = "";
+        public int MaxBlurLevel;
 
         public State Variables;
         public State InitVariables;

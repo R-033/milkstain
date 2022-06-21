@@ -74,6 +74,9 @@ namespace Milkstain
 
         public Material DoNothingMaterial;
 
+        public Material BlurMaterialHorizontal;
+        public Material BlurMaterialVertical;
+
         public Material BorderMaterial;
 
         public Material ShapeMaterial;
@@ -112,11 +115,25 @@ namespace Milkstain
         public RenderTexture FinalTexture;
 
         private RenderTexture PrevTempTexture;
+
+        private RenderTexture TempTextureFW;
+        private RenderTexture TempTextureFC;
+        private RenderTexture TempTexturePW;
+        private RenderTexture TempTexturePC;
+
         private RenderTexture TempTexture;
 
         private RenderTexture Blur1Texture;
         private RenderTexture Blur2Texture;
         private RenderTexture Blur3Texture;
+
+        private Texture2D TextureNoiseLQ;
+        private Texture2D TextureNoiseMQ;
+        private Texture2D TextureNoiseHQ;
+        private Texture2D TextureNoiseLQLite;
+        private Texture2D TexturePWNoiseLQ;
+        private Texture3D TextureNoiseVolLQ;
+        private Texture3D TextureNoiseVolHQ;
 
         private Mesh TargetMeshWarp;
         private Mesh TargetMeshDarkenCenter;
@@ -193,10 +210,16 @@ namespace Milkstain
         int varInd_sx;
         int varInd_sy;
 
+        (float[], float[]) blurValues;
+
         void OnDestroy()
         {
             Destroy(TempTexture);
             Destroy(PrevTempTexture);
+            Destroy(TempTextureFW);
+            Destroy(TempTextureFC);
+            Destroy(TempTexturePW);
+            Destroy(TempTexturePC);
             Destroy(FinalTexture);
             Destroy(TargetMeshWarp);
             Destroy(TargetMeshDarkenCenter);
@@ -204,6 +227,13 @@ namespace Milkstain
             Destroy(Blur1Texture);
             Destroy(Blur2Texture);
             Destroy(Blur3Texture);
+            Destroy(TextureNoiseLQ);
+            Destroy(TextureNoiseMQ);
+            Destroy(TextureNoiseHQ);
+            Destroy(TextureNoiseLQLite);
+            Destroy(TexturePWNoiseLQ);
+            Destroy(TextureNoiseVolLQ);
+            Destroy(TextureNoiseVolHQ);
 
             UnloadPresets();
         }
@@ -372,12 +402,52 @@ namespace Milkstain
             freqArrayR = new float[MaxSamples];
 
             PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            TempTextureFW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTextureFW.filterMode = FilterMode.Bilinear;
+            TempTextureFW.wrapMode = TextureWrapMode.Repeat;
+            TempTextureFC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTextureFC.filterMode = FilterMode.Bilinear;
+            TempTextureFC.wrapMode = TextureWrapMode.Clamp;
+            TempTexturePW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTexturePW.filterMode = FilterMode.Point;
+            TempTexturePW.wrapMode = TextureWrapMode.Repeat;
+            TempTexturePC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTexturePC.filterMode = FilterMode.Point;
+            TempTexturePC.wrapMode = TextureWrapMode.Clamp;
+
             TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
             FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
 
-            Blur1Texture = new RenderTexture(Resolution.x / 2, Resolution.y / 2, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            Blur2Texture = new RenderTexture(Resolution.x / 4, Resolution.y / 4, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            Blur3Texture = new RenderTexture(Resolution.x / 8, Resolution.y / 8, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur1Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.5f), Mathf.RoundToInt(Resolution.y * 0.5f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur2Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.125f), Mathf.RoundToInt(Resolution.y * 0.125f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur3Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.0625f), Mathf.RoundToInt(Resolution.y * 0.0625f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            TextureNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
+            TextureNoiseLQLite = new Texture2D(32, 32, TextureFormat.RGBAFloat, false);
+            TextureNoiseMQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
+            TextureNoiseHQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
+            TexturePWNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBAFloat, false);
+            TextureNoiseVolLQ = new Texture3D(32, 32, 32, TextureFormat.RGBAFloat, false);
+            TextureNoiseVolHQ = new Texture3D(32, 32, 32, TextureFormat.RGBAFloat, false);
+
+            CreateNoiseTex(TextureNoiseLQ, 256, 1);
+            CreateNoiseTex(TextureNoiseLQLite, 32, 1);
+            CreateNoiseTex(TextureNoiseMQ, 256, 4);
+            CreateNoiseTex(TextureNoiseHQ, 256, 8);
+            CreateNoiseVolTex(TextureNoiseVolLQ, 32, 1);
+            CreateNoiseVolTex(TextureNoiseVolHQ, 32, 4);
+
+            TextureNoiseLQ.wrapMode = TextureWrapMode.Repeat;
+            TextureNoiseLQLite.wrapMode = TextureWrapMode.Repeat;
+            TextureNoiseMQ.wrapMode = TextureWrapMode.Repeat;
+            TextureNoiseHQ.wrapMode = TextureWrapMode.Repeat;
+            TextureNoiseVolLQ.wrapMode = TextureWrapMode.Repeat;
+            TextureNoiseVolHQ.wrapMode = TextureWrapMode.Repeat;
+            TexturePWNoiseLQ.wrapMode = TextureWrapMode.Repeat;
+            TexturePWNoiseLQ.filterMode = FilterMode.Point;
+            TexturePWNoiseLQ.SetPixels32(TextureNoiseLQ.GetPixels32());
+            TexturePWNoiseLQ.Apply();
 
             TargetMeshWarp = new Mesh();
             Vector3[] vertices = new Vector3[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -541,6 +611,197 @@ namespace Milkstain
             PlayRandomPreset(0f);
 
             initialized = true;
+        }
+
+        float fCubicInterpolate(float y0, float y1, float y2, float y3, float t)
+        {
+            float t2 = t * t;
+            float t3 = t * t2;
+            float a0 = y3 - y2 - y0 + y1;
+            float a1 = y0 - y1 - a0;
+            float a2 = y2 - y0;
+            float a3 = y1;
+
+            return a0 * t3 + a1 * t2 + a2 * t + a3;
+        }
+
+        Color32 dwCubicInterpolate(Color32 y0, Color32 y1, Color32 y2, Color32 y3, float t)
+        {
+            return new Color32
+            (
+                (byte)Mathf.FloorToInt(Mathf.Clamp01(fCubicInterpolate(y0.r / 255f, y1.r / 255f, y2.r / 255f, y3.r / 255f, t)) * 255f),
+                (byte)Mathf.FloorToInt(Mathf.Clamp01(fCubicInterpolate(y0.g / 255f, y1.g / 255f, y2.g / 255f, y3.g / 255f, t)) * 255f),
+                (byte)Mathf.FloorToInt(Mathf.Clamp01(fCubicInterpolate(y0.b / 255f, y1.b / 255f, y2.b / 255f, y3.b / 255f, t)) * 255f),
+                (byte)Mathf.FloorToInt(Mathf.Clamp01(fCubicInterpolate(y0.a / 255f, y1.a / 255f, y2.a / 255f, y3.a / 255f, t)) * 255f)
+            );
+        }
+
+        void CreateNoiseTex(Texture2D target, int noiseSize, int zoom)
+        {
+            int nsize = noiseSize * noiseSize;
+            int texRange = zoom > 1 ? 216 : 256;
+            float halfTexRange = texRange * 0.5f;
+            
+            Color32[] texArr = new Color32[nsize];
+
+            for (int i = 0; i < nsize; i++)
+            {
+                texArr[i] = new Color32
+                (
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange)
+                );
+            }
+
+            if (zoom > 1)
+            {
+                for (int y = 0; y < noiseSize; y += zoom)
+                {
+                    for (int x = 0; x < noiseSize; x++)
+                    {
+                        if (x % zoom != 0)
+                        {
+                            int baseX = Mathf.FloorToInt(x / (float)zoom) * zoom + noiseSize;
+                            int baseY = y * noiseSize;
+
+                            Color32 y0 = texArr[baseY + ((baseX - zoom) % noiseSize)];
+                            Color32 y1 = texArr[baseY + (baseX % noiseSize)];
+                            Color32 y2 = texArr[baseY + ((baseX + zoom) % noiseSize)];
+                            Color32 y3 = texArr[baseY + ((baseX + zoom * 2) % noiseSize)];
+
+                            float t = (x % zoom) / (float)zoom;
+
+                            texArr[y * noiseSize + x] = dwCubicInterpolate(y0, y1, y2, y3, t);
+                        }
+                    }
+                }
+
+                for (int x = 0; x < noiseSize; x++)
+                {
+                    for (int y = 0; y < noiseSize; y++)
+                    {
+                        if (y % zoom != 0)
+                        {
+                            int baseY = Mathf.FloorToInt(y / (float)zoom) * zoom + noiseSize;
+
+                            Color32 y0 = texArr[((baseY - zoom) % noiseSize) * noiseSize + x];
+                            Color32 y1 = texArr[(baseY % noiseSize) * noiseSize + x];
+                            Color32 y2 = texArr[((baseY + zoom) % noiseSize) * noiseSize + x];
+                            Color32 y3 = texArr[((baseY + zoom * 2) % noiseSize) * noiseSize + x];
+
+                            float t = (y % zoom) / (float)zoom;
+
+                            texArr[y * noiseSize + x] = dwCubicInterpolate(y0, y1, y2, y3, t);
+                        }
+                    }
+                }
+            }
+
+            target.SetPixels32(texArr);
+            target.Apply();
+        }
+
+        void CreateNoiseVolTex(Texture3D target, int noiseSize, int zoom)
+        {
+            int nsize = noiseSize * noiseSize * noiseSize;
+            int texRange = zoom > 1 ? 216 : 256;
+            float halfTexRange = texRange * 0.5f;
+
+            Color32[] texArr = new Color32[nsize];
+
+            for (int i = 0; i < nsize; i++)
+            {
+                texArr[i] = new Color32
+                (
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange),
+                    (byte)Mathf.FloorToInt(UnityEngine.Random.Range(0f, 1f) * texRange + halfTexRange)
+                );
+            }
+
+            int wordsPerSlice = noiseSize * noiseSize;
+            int wordsPerLine = noiseSize;
+
+            if (zoom > 1)
+            {
+                for (int z = 0; z < noiseSize; z += zoom)
+                {
+                    for (int y = 0; y < noiseSize; y += zoom)
+                    {
+                        for (int x = 0; x < noiseSize; x++)
+                        {
+                            if (x % zoom != 0)
+                            {
+                                int baseX = Mathf.FloorToInt(x / (float)zoom) * zoom + noiseSize;
+                                int baseY = z * wordsPerSlice + y * wordsPerLine;
+
+                                Color32 y0 = texArr[baseY + ((baseX - zoom) % noiseSize)];
+                                Color32 y1 = texArr[baseY + (baseX % noiseSize)];
+                                Color32 y2 = texArr[baseY + ((baseX + zoom) % noiseSize)];
+                                Color32 y3 = texArr[baseY + ((baseX + zoom * 2) % noiseSize)];
+
+                                float t = (x % zoom) / (float)zoom;
+
+                                texArr[z * wordsPerSlice + y * wordsPerLine + x] = dwCubicInterpolate(y0, y1, y2, y3, t);
+                            }
+                        }
+                    }
+                }
+
+                for (int z = 0; z < noiseSize; z += zoom)
+                {
+                    for (int x = 0; x < noiseSize; x++)
+                    {
+                        for (int y = 0; y < noiseSize; y++)
+                        {
+                            if (y % zoom != 0)
+                            {
+                                int baseY = Mathf.FloorToInt(y / (float)zoom) * zoom + noiseSize;
+                                int baseZ = z * wordsPerSlice;
+
+                                Color32 y0 = texArr[((baseY - zoom) % noiseSize) * wordsPerLine + x + baseZ];
+                                Color32 y1 = texArr[(baseY % noiseSize) * wordsPerLine + x + baseZ];
+                                Color32 y2 = texArr[((baseY + zoom) % noiseSize) * wordsPerLine + x + baseZ];
+                                Color32 y3 = texArr[((baseY + zoom * 2) % noiseSize) * wordsPerLine + x + baseZ];
+
+                                float t = (y % zoom) / (float)zoom;
+
+                                texArr[y * wordsPerLine + x + baseZ] = dwCubicInterpolate(y0, y1, y2, y3, t);
+                            }
+                        }
+                    }
+                }
+
+                for (int x = 0; x < noiseSize; x++)
+                {
+                    for (int y = 0; y < noiseSize; y++)
+                    {
+                        for (int z = 0; z < noiseSize; z++)
+                        {
+                            if (z % zoom != 0)
+                            {
+                                int baseY = y * wordsPerLine;
+                                int baseZ = Mathf.FloorToInt(z / (float)zoom) * zoom + noiseSize;
+
+                                Color32 y0 = texArr[((baseZ - zoom) % noiseSize) * wordsPerSlice + x + baseY];
+                                Color32 y1 = texArr[(baseZ % noiseSize) * wordsPerSlice + x + baseY];
+                                Color32 y2 = texArr[((baseZ + zoom) % noiseSize) * wordsPerSlice + x + baseY];
+                                Color32 y3 = texArr[((baseZ + zoom * 2) % noiseSize) * wordsPerSlice + x + baseY];
+
+                                float t = (y % zoom) / (float)zoom;
+
+                                texArr[z * wordsPerSlice + x + baseY] = dwCubicInterpolate(y0, y1, y2, y3, t);
+                            }
+                        }
+                    }
+                }
+            }
+
+            target.SetPixels32(texArr);
+            target.Apply();
         }
 
         public void PlayRandomPreset(float transitionDuration)
@@ -1043,11 +1304,17 @@ namespace Milkstain
                 MixFrameEquations();
             }
 
+            blurValues = GetBlurValues(CurrentPreset.FrameVariables);
+
             var swapTexture = TempTexture;
             TempTexture = PrevTempTexture;
             PrevTempTexture = swapTexture;
 
             TempTexture.wrapMode = State.GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+
+            Blur1Texture.wrapMode = TempTexture.wrapMode;
+            Blur2Texture.wrapMode = TempTexture.wrapMode;
+            Blur3Texture.wrapMode = TempTexture.wrapMode;
 
             if (!blending)
             {
@@ -1059,9 +1326,7 @@ namespace Milkstain
                 DrawWarp(CurrentPreset, true);
             }
 
-            Graphics.Blit(PrevTempTexture, Blur1Texture);
-            Graphics.Blit(Blur1Texture, Blur2Texture);
-            Graphics.Blit(Blur2Texture, Blur3Texture);
+            DrawBlur();
 
             DrawMotionVectors();
 
@@ -1095,6 +1360,88 @@ namespace Milkstain
                 DrawComp(PrevPreset, false);
                 DrawComp(CurrentPreset, true);
             }
+        }
+
+        void DrawBlur()
+        {
+            if (CurrentPreset.MaxBlurLevel > 0)
+            {
+                DrawBlurPass(PrevTempTexture, Blur1Texture, 0);
+                
+                if (CurrentPreset.MaxBlurLevel > 1)
+                {
+                    DrawBlurPass(Blur1Texture, Blur2Texture, 1);
+
+                    if (CurrentPreset.MaxBlurLevel > 2)
+                    {
+                        DrawBlurPass(Blur2Texture, Blur3Texture, 2);
+                    }
+                }
+            }
+        }
+
+        Vector2 GetBlurScaleAndBias(int blurLevel)
+        {
+            float[] scale = new float[] {1f, 1f, 1f};
+            float[] bias = new float[] {0f, 0f, 0f};
+
+            float[] blurMins = blurValues.Item1;
+            float[] blurMaxs = blurValues.Item2;
+
+            float tempMin;
+            float tempMax;
+            scale[0] = 1f / (blurMaxs[0] - blurMins[0]);
+            bias[0] = -blurMins[0] * scale[0];
+            tempMin = (blurMins[1] - blurMins[0]) / (blurMaxs[0] - blurMins[0]);
+            tempMax = (blurMaxs[1] - blurMins[0]) / (blurMaxs[0] - blurMins[0]);
+            scale[1] = 1f / (tempMax - tempMin);
+            bias[1] = -tempMin * scale[1];
+            tempMin = (blurMins[2] - blurMins[1]) / (blurMaxs[1] - blurMins[1]);
+            tempMax = (blurMaxs[2] - blurMins[1]) / (blurMaxs[1] - blurMins[1]);
+            scale[2] = 1f / (tempMax - tempMin);
+            bias[2] = -tempMin * scale[2];
+
+            return new Vector2(scale[blurLevel], bias[blurLevel]);
+        }
+
+        void DrawBlurPass(RenderTexture source, RenderTexture target, int blurLevel)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("DrawBlurPass");
+
+            Vector2 scaleAndBias = GetBlurScaleAndBias(blurLevel);
+
+            BlurMaterialHorizontal.SetVector("texsize", new Vector4(source.width, source.height, 1f / source.width, 1f / source.height));
+            BlurMaterialHorizontal.SetFloat("scale", scaleAndBias.x);
+            BlurMaterialHorizontal.SetFloat("bias", scaleAndBias.y);
+            BlurMaterialHorizontal.SetVector("ws", new Vector4(4f + 3.8f, 3.5f + 2.9f, 1.9f + 1.2f, 0.7f + 0.3f));
+            BlurMaterialHorizontal.SetVector("ds", new Vector4(0f + (2f * 3.8f) / (4f + 3.8f), 2f + (2f * 2.9f) / (3.5f + 2.9f), 4f + (2f * 1.2f) / (1.9f + 1.2f), 6f + (2f * 0.3f) / (0.7f + 0.3f)));
+            BlurMaterialHorizontal.SetFloat("wdiv", 0.5f / (4f + 3.8f + 3.5f + 2.9f + 1.9f + 1.2f + 0.7f + 0.3f));
+
+            float b1ed = blurLevel == 0 ? State.GetVariable(CurrentPreset.FrameVariables, "b1ed") : 0f;
+
+            BlurMaterialVertical.SetVector("texsize", new Vector4(target.width, target.height, 1f / target.width, 1f / target.height));
+            BlurMaterialVertical.SetFloat("ed1", 1f - b1ed);
+            BlurMaterialVertical.SetFloat("ed2", b1ed);
+            BlurMaterialVertical.SetFloat("ed3", 5f);
+            BlurMaterialVertical.SetVector("wds", new Vector4(4f + 3.8f + 3.5f + 2.9f, 1.9f + 1.2f + 0.7f + 0.3f, 0f + 2f * ((3.5f + 2.9f) / (4f + 3.8f + 3.5f + 2.9f)), 2f + 2f * ((0.7f + 0.3f) / (1.9f + 1.2f + 0.7f + 0.3f))));
+            BlurMaterialVertical.SetFloat("wdiv", 0.5f / (4f + 3.8f + 3.5f + 2.9f + 1.9f + 1.2f + 0.7f + 0.3f));
+
+            TargetMeshFilter.sharedMesh = TargetMeshWarp;
+            TargetMeshRenderer.sharedMaterial = BlurMaterialHorizontal;
+
+            BlurMaterialHorizontal.mainTexture = source;
+
+            TargetCamera.targetTexture = target;
+            TargetCamera.Render();
+
+            TargetMeshRenderer.sharedMaterial = BlurMaterialVertical;
+
+            BlurMaterialVertical.mainTexture = target;
+
+            TargetCamera.targetTexture = target;
+            TargetCamera.Render();
+
+            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         void DrawSuperText()
@@ -1733,24 +2080,27 @@ namespace Milkstain
             preset.WarpMaterial.SetFloat("decay", State.GetVariable(preset.FrameVariables, "decay"));
             preset.WarpMaterial.SetFloat("blending", blending ? 1f : 0f);
 
-            (float[], float[]) blurValues = GetBlurValues(CurrentPreset.FrameVariables);
+            Graphics.Blit(PrevTempTexture, TempTextureFW);
+            Graphics.Blit(PrevTempTexture, TempTextureFC);
+            Graphics.Blit(PrevTempTexture, TempTexturePW);
+            Graphics.Blit(PrevTempTexture, TempTexturePC);
 
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex2", PrevTempTexture);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex3", PrevTempTexture);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex4", PrevTempTexture);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex5", PrevTempTexture);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
 
             CurrentPreset.WarpMaterial.SetTexture("_MainTex6", Blur1Texture);
             CurrentPreset.WarpMaterial.SetTexture("_MainTex7", Blur2Texture);
             CurrentPreset.WarpMaterial.SetTexture("_MainTex8", Blur3Texture);
 
-            // sampler_noise_lq
-            // sampler_noise_mq
-            // sampler_noise_hq
-            // sampler_noise_lq_lite
-            // sampler_pw_noise_lq
-            // sampler_noisevol_lq
-            // sampler_noisevol_hq
+            CurrentPreset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
             CurrentPreset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
             CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
@@ -3169,24 +3519,27 @@ namespace Milkstain
             preset.CompMaterial.SetFloat("solarize", State.GetVariable(preset.FrameVariables, "solarize"));
             preset.CompMaterial.SetFloat("fShader", State.GetVariable(preset.FrameVariables, "fshader"));
 
-            (float[], float[]) blurValues = GetBlurValues(CurrentPreset.FrameVariables);
+            Graphics.Blit(TempTexture, TempTextureFW);
+            Graphics.Blit(TempTexture, TempTextureFC);
+            Graphics.Blit(TempTexture, TempTexturePW);
+            Graphics.Blit(TempTexture, TempTexturePC);
 
-            CurrentPreset.CompMaterial.SetTexture("_MainTex2", TempTexture);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex3", TempTexture);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex4", TempTexture);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex5", TempTexture);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
+            CurrentPreset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
 
             CurrentPreset.CompMaterial.SetTexture("_MainTex6", Blur1Texture);
             CurrentPreset.CompMaterial.SetTexture("_MainTex7", Blur2Texture);
             CurrentPreset.CompMaterial.SetTexture("_MainTex8", Blur3Texture);
 
-            // sampler_noise_lq
-            // sampler_noise_mq
-            // sampler_noise_hq
-            // sampler_noise_lq_lite
-            // sampler_pw_noise_lq
-            // sampler_noisevol_lq
-            // sampler_noisevol_hq
+            CurrentPreset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
+            CurrentPreset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
             CurrentPreset.CompMaterial.SetFloat("time", CurrentTime);
             CurrentPreset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
@@ -4131,6 +4484,23 @@ namespace Milkstain
             {
                 CurrentPreset.WarpMaterial.SetTexture("sampler_" + tex.name, tex);
                 CurrentPreset.CompMaterial.SetTexture("sampler_" + tex.name, tex);
+            }
+
+            if (CurrentPreset.Warp.Contains("sampler_blur3") || CurrentPreset.Comp.Contains("sampler_blur3") || CurrentPreset.Warp.Contains("GetBlur3") || CurrentPreset.Comp.Contains("GetBlur3"))
+            {
+                CurrentPreset.MaxBlurLevel = 3;
+            }
+            else if (CurrentPreset.Warp.Contains("sampler_blur2") || CurrentPreset.Comp.Contains("sampler_blur2") || CurrentPreset.Warp.Contains("GetBlur2") || CurrentPreset.Comp.Contains("GetBlur2"))
+            {
+                CurrentPreset.MaxBlurLevel = 2;
+            }
+            else if (CurrentPreset.Warp.Contains("sampler_blur1") || CurrentPreset.Comp.Contains("sampler_blur1") || CurrentPreset.Warp.Contains("GetBlur1") || CurrentPreset.Comp.Contains("GetBlur1"))
+            {
+                CurrentPreset.MaxBlurLevel = 1;
+            }
+            else
+            {
+                CurrentPreset.MaxBlurLevel = 0;
             }
 
             return true;

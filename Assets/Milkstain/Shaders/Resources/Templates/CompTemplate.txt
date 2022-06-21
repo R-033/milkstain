@@ -112,7 +112,7 @@ Shader "Milkdrop/{0}"
                 return o;
             }
 
-            float lum(float3 v)
+            float lum__(float3 v)
             {
                 return dot(v, float3(0.32,0.49,0.29));
             }
@@ -127,8 +127,11 @@ Shader "Milkdrop/{0}"
             sampler2D _MainTex4; // sampler_pw_main
             sampler2D _MainTex5; // sampler_pc_main
             sampler2D _MainTex6; // sampler_blur1
+            float4 _MainTex6_HDR;
             sampler2D _MainTex7; // sampler_blur2
+            float4 _MainTex7_HDR;
             sampler2D _MainTex8; // sampler_blur3
+            float4 _MainTex8_HDR;
             sampler2D _MainTex9; // sampler_noise_lq
             sampler2D _MainTex10; // sampler_noise_lq_lite
             sampler2D _MainTex11; // sampler_noise_mq
@@ -233,22 +236,26 @@ Shader "Milkdrop/{0}"
 
             float3 GetPixel(float2 uv) 
             {
-                return tex2D(_MainTexPrev, uv).xyz;
+                float4 __tex = tex2D(_MainTexPrev, uv);
+                return DecodeHDR(__tex, _MainTexPrev_HDR);
             }
 
             float3 GetBlur1(float2 uv) 
             {
-                return tex2D(_MainTex6, uv).xyz;
+                float4 __tex = tex2D(_MainTex6, uv);
+                return DecodeHDR(__tex, _MainTex6_HDR);
             }
 
             float3 GetBlur2(float2 uv) 
             {
-                return tex2D(_MainTex7, uv).xyz;
+                float4 __tex = tex2D(_MainTex7, uv);
+                return DecodeHDR(__tex, _MainTex7_HDR);
             }
 
             float3 GetBlur3(float2 uv) 
             {
-                return tex2D(_MainTex8, uv).xyz;
+                float4 __tex = tex2D(_MainTex8, uv);
+                return DecodeHDR(__tex, _MainTex8_HDR);
             }
 
             // header
