@@ -24,5 +24,11 @@ public class Example : MonoBehaviour
             milkdrop.presetChangeTimer = 0f;
             milkdrop.PlayRandomPreset(2.7f);
         }
+
+        if (Screen.width != milkdrop.Resolution.x || Screen.height != milkdrop.Resolution.y)
+        {
+            milkdrop.UpdateResolution(new Vector2Int(Screen.width, Screen.height));
+            TargetGraphic.texture = milkdrop.FinalTexture;
+        }
     }
 }

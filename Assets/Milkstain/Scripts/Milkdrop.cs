@@ -178,7 +178,7 @@ namespace Milkstain
         private int[] audioSampleStops;
 
         private bool blending;
-        private float blendStartTime;
+        private float presetStartTime;
         private float blendDuration;
         private float blendProgress;
         private float[] blendingVertInfoA;
@@ -211,6 +211,67 @@ namespace Milkstain
         int varInd_sy;
 
         (float[], float[]) blurValues;
+
+        Vector2 AspectRatio;
+
+        public void UpdateResolution(Vector2Int res)
+        {
+            Destroy(TempTexture);
+            Destroy(PrevTempTexture);
+            Destroy(TempTextureFW);
+            Destroy(TempTextureFC);
+            Destroy(TempTexturePW);
+            Destroy(TempTexturePC);
+            Destroy(FinalTexture);
+            Destroy(Blur1Texture);
+            Destroy(Blur2Texture);
+            Destroy(Blur3Texture);
+
+            Resolution = res;
+
+            AspectRatio = new Vector2
+            (
+                Resolution.x > Resolution.y ? 1f : (float)Resolution.x / Resolution.y,
+                Resolution.x > Resolution.y ? (float)Resolution.y / Resolution.x : 1f
+            );
+
+            baseDotScale = Vector3.one * (4f / Resolution.y * Scale);
+            baseSquareScale = Vector3.one * (1f / Resolution.y * Scale);
+
+            PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            TempTextureFW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTextureFW.filterMode = FilterMode.Bilinear;
+            TempTextureFW.wrapMode = TextureWrapMode.Repeat;
+            TempTextureFC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTextureFC.filterMode = FilterMode.Bilinear;
+            TempTextureFC.wrapMode = TextureWrapMode.Clamp;
+            TempTexturePW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTexturePW.filterMode = FilterMode.Point;
+            TempTexturePW.wrapMode = TextureWrapMode.Repeat;
+            TempTexturePC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            TempTexturePC.filterMode = FilterMode.Point;
+            TempTexturePC.wrapMode = TextureWrapMode.Clamp;
+
+            TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            Blur1Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.5f), Mathf.RoundToInt(Resolution.y * 0.5f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur2Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.125f), Mathf.RoundToInt(Resolution.y * 0.125f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            Blur3Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.0625f), Mathf.RoundToInt(Resolution.y * 0.0625f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+
+            TargetMeshFilter.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer3.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer4.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer5.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer6.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer7.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            WaveformRenderer8.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            BorderParent.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+            TargetMeshFilter2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
+        }
 
         void OnDestroy()
         {
@@ -373,55 +434,7 @@ namespace Milkstain
             var dotSprite = DotPrefab.GetComponent<SpriteRenderer>().sprite;
             var squareSprite = MotionVectorPrefab.GetComponent<SpriteRenderer>().sprite;
 
-            baseDotScale = Vector3.one * (4f / Resolution.y * Scale);
-            baseSquareScale = Vector3.one * (1f / Resolution.y * Scale);
-
-            Dots = new Transform[MaxSamples * 4];
-            DotRenderers = new SpriteRenderer[MaxSamples * 4];
-
-            for (int i = 0; i < Dots.Length; i++)
-            {
-                Dots[i] = Instantiate(DotPrefab, DotParent).transform;
-                DotRenderers[i] = Dots[i].GetComponent<SpriteRenderer>();
-            }
-
-            MotionVectors = new Transform[MotionVectorsSize.x * MotionVectorsSize.y];
-            MotionVectorRenderers = new SpriteRenderer[MotionVectorsSize.x * MotionVectorsSize.y];
-
-            for (int i = 0; i < MotionVectors.Length; i++)
-            {
-                MotionVectors[i] = Instantiate(MotionVectorPrefab, MotionVectorParent).transform;
-                MotionVectorRenderers[i] = MotionVectors[i].GetComponent<SpriteRenderer>();
-            }
-
-            timeArray = new float[MaxSamples * 2];
-            timeArrayL = new float[MaxSamples];
-            timeArrayR = new float[MaxSamples];
-
-            freqArrayL = new float[MaxSamples];
-            freqArrayR = new float[MaxSamples];
-
-            PrevTempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-
-            TempTextureFW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            TempTextureFW.filterMode = FilterMode.Bilinear;
-            TempTextureFW.wrapMode = TextureWrapMode.Repeat;
-            TempTextureFC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            TempTextureFC.filterMode = FilterMode.Bilinear;
-            TempTextureFC.wrapMode = TextureWrapMode.Clamp;
-            TempTexturePW = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            TempTexturePW.filterMode = FilterMode.Point;
-            TempTexturePW.wrapMode = TextureWrapMode.Repeat;
-            TempTexturePC = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            TempTexturePC.filterMode = FilterMode.Point;
-            TempTexturePC.wrapMode = TextureWrapMode.Clamp;
-
-            TempTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            FinalTexture = new RenderTexture(Resolution.x, Resolution.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-
-            Blur1Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.5f), Mathf.RoundToInt(Resolution.y * 0.5f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            Blur2Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.125f), Mathf.RoundToInt(Resolution.y * 0.125f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
-            Blur3Texture = new RenderTexture(Mathf.RoundToInt(Resolution.x * 0.0625f), Mathf.RoundToInt(Resolution.y * 0.0625f), 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm);
+            UpdateResolution(Resolution);
 
             TextureNoiseLQ = new Texture2D(256, 256, TextureFormat.RGBA32, false);
             TextureNoiseLQLite = new Texture2D(32, 32, TextureFormat.RGBA32, false);
@@ -448,6 +461,31 @@ namespace Milkstain
             TexturePWNoiseLQ.filterMode = FilterMode.Point;
             TexturePWNoiseLQ.SetPixels32(TextureNoiseLQ.GetPixels32());
             TexturePWNoiseLQ.Apply();
+
+            Dots = new Transform[MaxSamples * 4];
+            DotRenderers = new SpriteRenderer[MaxSamples * 4];
+
+            for (int i = 0; i < Dots.Length; i++)
+            {
+                Dots[i] = Instantiate(DotPrefab, DotParent).transform;
+                DotRenderers[i] = Dots[i].GetComponent<SpriteRenderer>();
+            }
+
+            MotionVectors = new Transform[MotionVectorsSize.x * MotionVectorsSize.y];
+            MotionVectorRenderers = new SpriteRenderer[MotionVectorsSize.x * MotionVectorsSize.y];
+
+            for (int i = 0; i < MotionVectors.Length; i++)
+            {
+                MotionVectors[i] = Instantiate(MotionVectorPrefab, MotionVectorParent).transform;
+                MotionVectorRenderers[i] = MotionVectors[i].GetComponent<SpriteRenderer>();
+            }
+
+            timeArray = new float[MaxSamples * 2];
+            timeArrayL = new float[MaxSamples];
+            timeArrayR = new float[MaxSamples];
+
+            freqArrayL = new float[MaxSamples];
+            freqArrayR = new float[MaxSamples];
 
             TargetMeshWarp = new Mesh();
             Vector3[] vertices = new Vector3[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -538,18 +576,6 @@ namespace Milkstain
                 }
             }
             TargetMeshComp.triangles = triangles;
-
-            TargetMeshFilter.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer3.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer4.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer5.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer6.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer7.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            WaveformRenderer8.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            BorderParent.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
-            TargetMeshFilter2.transform.localScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
 
             WaveformRenderer.enabled = false;
             WaveformRenderer2.enabled = false;
@@ -878,7 +904,7 @@ namespace Milkstain
 
             if (blending)
             {
-                blendProgress = (CurrentTime - blendStartTime) / blendDuration;
+                blendProgress = (CurrentTime - presetStartTime) / blendDuration;
 
                 if (blendProgress > 1f)
                 {
@@ -1010,6 +1036,26 @@ namespace Milkstain
             TrebAtt = att[2];
         }
 
+        void SetGlobalVars(State state)
+        {
+            State.SetVariable(state, "frame", CurrentFrame);
+            State.SetVariable(state, "time", CurrentTime);
+            State.SetVariable(state, "fps", FPS == 0f ? 30f : FPS);
+            State.SetVariable(state, "progress", Mathf.Clamp01((CurrentTime - presetStartTime) / ChangePresetIn));
+            State.SetVariable(state, "bass", Bass);
+            State.SetVariable(state, "bass_att", BassAtt);
+            State.SetVariable(state, "mid", Mid);
+            State.SetVariable(state, "mid_att", MidAtt);
+            State.SetVariable(state, "treb", Treb);
+            State.SetVariable(state, "treb_att", TrebAtt);
+            State.SetVariable(state, "meshx", MeshSize.x);
+            State.SetVariable(state, "meshy", MeshSize.y);
+            State.SetVariable(state, "aspectx", AspectRatio.x);
+            State.SetVariable(state, "aspecty", AspectRatio.y);
+            State.SetVariable(state, "pixelsx", Resolution.x);
+            State.SetVariable(state, "pixelsy", Resolution.y);
+        }
+
         void RunFrameEquations(Preset preset)
         {
             UnityEngine.Profiling.Profiler.BeginSample("RunFrameEquations");
@@ -1029,21 +1075,7 @@ namespace Milkstain
                 State.SetVariable(preset.FrameVariables, v, preset.FrameMap.Heap[v]);
             }
 
-            State.SetVariable(preset.FrameVariables, "frame", CurrentFrame);
-            State.SetVariable(preset.FrameVariables, "time", CurrentTime);
-            State.SetVariable(preset.FrameVariables, "fps", FPS);
-            State.SetVariable(preset.FrameVariables, "bass", Bass);
-            State.SetVariable(preset.FrameVariables, "bass_att", BassAtt);
-            State.SetVariable(preset.FrameVariables, "mid", Mid);
-            State.SetVariable(preset.FrameVariables, "mid_att", MidAtt);
-            State.SetVariable(preset.FrameVariables, "treb", Treb);
-            State.SetVariable(preset.FrameVariables, "treb_att", TrebAtt);
-            State.SetVariable(preset.FrameVariables, "meshx", MeshSize.x);
-            State.SetVariable(preset.FrameVariables, "meshy", MeshSize.y);
-            State.SetVariable(preset.FrameVariables, "aspectx", 1f);
-            State.SetVariable(preset.FrameVariables, "aspecty", 1f);
-            State.SetVariable(preset.FrameVariables, "pixelsx", Resolution.x);
-            State.SetVariable(preset.FrameVariables, "pixelsy", Resolution.y);
+            SetGlobalVars(preset.FrameVariables);
 
             preset.FrameEquationCompiled(preset.FrameVariables);
 
@@ -1073,8 +1105,8 @@ namespace Milkstain
             float texelOffsetX = 0f;
             float texelOffsetY = 0f;
 
-            float aspectx = 1f;
-            float aspecty = 1f;
+            float aspectx = AspectRatio.x;
+            float aspecty = AspectRatio.y;
 
             int offset = 0;
             int offsetColor = 0;
@@ -1503,21 +1535,7 @@ namespace Milkstain
                     }
                 }
 
-                State.SetVariable(CurrentShape.FrameVariables, "frame", CurrentFrame);
-                State.SetVariable(CurrentShape.FrameVariables, "time", CurrentTime);
-                State.SetVariable(CurrentShape.FrameVariables, "fps", FPS);
-                State.SetVariable(CurrentShape.FrameVariables, "bass", Bass);
-                State.SetVariable(CurrentShape.FrameVariables, "bass_att", BassAtt);
-                State.SetVariable(CurrentShape.FrameVariables, "mid", Mid);
-                State.SetVariable(CurrentShape.FrameVariables, "mid_att", MidAtt);
-                State.SetVariable(CurrentShape.FrameVariables, "treb", Treb);
-                State.SetVariable(CurrentShape.FrameVariables, "treb_att", TrebAtt);
-                State.SetVariable(CurrentShape.FrameVariables, "meshx", MeshSize.x);
-                State.SetVariable(CurrentShape.FrameVariables, "meshy", MeshSize.y);
-                State.SetVariable(CurrentShape.FrameVariables, "aspectx", 1f);
-                State.SetVariable(CurrentShape.FrameVariables, "aspecty", 1f);
-                State.SetVariable(CurrentShape.FrameVariables, "pixelsx", Resolution.x);
-                State.SetVariable(CurrentShape.FrameVariables, "pixelsy", Resolution.y);
+                SetGlobalVars(CurrentShape.FrameVariables);
 
                 int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, "num_inst"), 1f, 1024f));
 
@@ -1646,7 +1664,7 @@ namespace Milkstain
                         
                         CurrentShape.Positions[k] = new Vector3
                         (
-                            x + rad * Mathf.Cos(angSum),
+                            x + rad * Mathf.Cos(angSum) * AspectRatio.y,
                             -(y + rad * Mathf.Sin(angSum)),
                             0f
                         );
@@ -1659,7 +1677,7 @@ namespace Milkstain
 
                             CurrentShape.UVs[k] = new Vector2
                             (
-                                0.5f + ((0.5f * Mathf.Cos(texAngSum)) / texZoom),
+                                0.5f + ((0.5f * Mathf.Cos(texAngSum)) / texZoom) * AspectRatio.y,
                                 0.5f + (0.5f * Mathf.Sin(texAngSum)) / texZoom
                             );
                         }
@@ -1789,21 +1807,7 @@ namespace Milkstain
                     State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits.Heap[v]);
                 }
 
-                State.SetVariable(CurrentWave.FrameVariables, "frame", CurrentFrame);
-                State.SetVariable(CurrentWave.FrameVariables, "time", CurrentTime);
-                State.SetVariable(CurrentWave.FrameVariables, "fps", FPS);
-                State.SetVariable(CurrentWave.FrameVariables, "bass", Bass);
-                State.SetVariable(CurrentWave.FrameVariables, "bass_att", BassAtt);
-                State.SetVariable(CurrentWave.FrameVariables, "mid", Mid);
-                State.SetVariable(CurrentWave.FrameVariables, "mid_att", MidAtt);
-                State.SetVariable(CurrentWave.FrameVariables, "treb", Treb);
-                State.SetVariable(CurrentWave.FrameVariables, "treb_att", TrebAtt);
-                State.SetVariable(CurrentWave.FrameVariables, "meshx", MeshSize.x);
-                State.SetVariable(CurrentWave.FrameVariables, "meshy", MeshSize.y);
-                State.SetVariable(CurrentWave.FrameVariables, "aspectx", 1f);
-                State.SetVariable(CurrentWave.FrameVariables, "aspecty", 1f);
-                State.SetVariable(CurrentWave.FrameVariables, "pixelsx", Resolution.x);
-                State.SetVariable(CurrentWave.FrameVariables, "pixelsy", Resolution.y);
+                SetGlobalVars(CurrentWave.FrameVariables);
 
                 CurrentWave.FrameEquationCompiled(CurrentWave.FrameVariables);
 
@@ -1887,8 +1891,8 @@ namespace Milkstain
                         CurrentWave.PointEquationCompiled(CurrentWave.FrameVariables);
                     }
 
-                    float x = State.GetVariable(CurrentWave.FrameVariables, "x") * 2f - 1f;
-                    float y = State.GetVariable(CurrentWave.FrameVariables, "y") * 2f - 1f;
+                    float x = (State.GetVariable(CurrentWave.FrameVariables, "x") * 2f - 1f) * (1f / AspectRatio.x);
+                    float y = (State.GetVariable(CurrentWave.FrameVariables, "y") * 2f - 1f) * (1f / AspectRatio.y);
 
                     float r = State.GetVariable(CurrentWave.FrameVariables, "r");
                     float g = State.GetVariable(CurrentWave.FrameVariables, "g");
@@ -2103,7 +2107,7 @@ namespace Milkstain
             CurrentPreset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
             CurrentPreset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-            CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
+            CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
             CurrentPreset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
             CurrentPreset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
             CurrentPreset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
@@ -2650,8 +2654,8 @@ namespace Milkstain
 
                         positions[i] = new Vector3
                         (
-                            rad * Mathf.Cos(ang) * 1f + wavePosX,
-                            rad * Mathf.Sin(ang) * 1f + wavePosY,
+                            rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
+                            rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
                             0f
                         );
                     }
@@ -2677,8 +2681,8 @@ namespace Milkstain
 
                         positions[i] = new Vector3
                         (
-                            rad * Mathf.Cos(ang) * 1f + wavePosX,
-                            rad * Mathf.Sin(ang) * 1f + wavePosY,
+                            rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
+                            rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
                             0f
                         );
                     }
@@ -2711,8 +2715,8 @@ namespace Milkstain
                     {
                         positions[i] = new Vector3
                         (
-                            waveR[i] * 1f + wavePosX,
-                            waveL[(i + 32) % waveL.Count] * 1f + wavePosY,
+                            waveR[i] * AspectRatio.y + wavePosX,
+                            waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
                             0f
                         );
                     }
@@ -2748,8 +2752,8 @@ namespace Milkstain
                     {
                         positions[i] = new Vector3
                         (
-                            waveR[i] * 1f + wavePosX,
-                            waveL[(i + 32) % waveL.Count] * 1f + wavePosY,
+                            waveR[i] * AspectRatio.y + wavePosX,
+                            waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
                             0f
                         );
                     }
@@ -2836,8 +2840,8 @@ namespace Milkstain
 
                         positions[i] = new Vector3
                         (
-                            (x0 * cosRot - y0 * sinRot) * (1f + wavePosX),
-                            (x0 * sinRot + y0 * cosRot) * (1f + wavePosY),
+                            (x0 * cosRot - y0 * sinRot) * (AspectRatio.y + wavePosX),
+                            (x0 * sinRot + y0 * cosRot) * (AspectRatio.x + wavePosY),
                             0f
                         );
                     }
@@ -3543,7 +3547,7 @@ namespace Milkstain
 
             CurrentPreset.CompMaterial.SetFloat("time", CurrentTime);
             CurrentPreset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-            CurrentPreset.CompMaterial.SetVector("aspect", new Vector4(1f, 1f, 1f, 1f));
+            CurrentPreset.CompMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
             CurrentPreset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
             CurrentPreset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
             CurrentPreset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
@@ -4009,20 +4013,20 @@ namespace Milkstain
             {
                 if (x0 == 0)
                 {
-                    blendingVertInfoC[midy * (MeshSize.x + 1) + x0] = 0.5f * (t00 + t10) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt;
+                    blendingVertInfoC[midy * (MeshSize.x + 1) + x0] = 0.5f * (t00 + t10) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt * AspectRatio.y;
                 }
 
-                blendingVertInfoC[midy * (MeshSize.x + 1) + x1] = 0.5f * (t01 + t11) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt;
+                blendingVertInfoC[midy * (MeshSize.x + 1) + x1] = 0.5f * (t01 + t11) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt * AspectRatio.y;
             }
 
             if (x1 - x0 >= 2)
             {
                 if (y0 == 0)
                 {
-                    blendingVertInfoC[y0 * (MeshSize.x + 1) + midx] = 0.5f * (t00 + t01) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt;
+                    blendingVertInfoC[y0 * (MeshSize.x + 1) + midx] = 0.5f * (t00 + t01) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt * AspectRatio.x;
                 }
 
-                blendingVertInfoC[y1 * (MeshSize.x + 1) + midx] = 0.5f * (t10 + t11) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt;
+                blendingVertInfoC[y1 * (MeshSize.x + 1) + midx] = 0.5f * (t10 + t11) + (UnityEngine.Random.Range(0f, 2f) - 1f) * dt * AspectRatio.x;
             }
 
             if (y1 - y0 >= 2 && x1 - x0 >= 2)
@@ -4068,11 +4072,11 @@ namespace Milkstain
                 int nVert = 0;
                 for (int y = 0; y <= MeshSize.y; y++)
                 {
-                    float fy = y / (float)MeshSize.y;
+                    float fy = y / (float)MeshSize.y * AspectRatio.y;
 
                     for (int x = 0; x <= MeshSize.x; x++)
                     {
-                        float fx = x / (float)MeshSize.x;
+                        float fx = x / (float)MeshSize.x * AspectRatio.x;
 
                         float t = (fx - 0.5f) * vx + (fy - 0.5f) * vy + 0.5f;
                         t = (t - 0.5f) / Mathf.Sqrt(2f) + 0.5f;
@@ -4136,10 +4140,10 @@ namespace Milkstain
                 int nVert = 0;
                 for (int y = 0; y <= MeshSize.y; y++)
                 {
-                    float dy = (y / (float)MeshSize.y - 0.5f);
+                    float dy = (y / (float)MeshSize.y - 0.5f) * AspectRatio.y;
                     for (int x = 0; x <= MeshSize.x; x++)
                     {
-                        float dx = (x / (float)MeshSize.x - 0.5f);
+                        float dx = (x / (float)MeshSize.x - 0.5f) * AspectRatio.x;
 
                         float t = Mathf.Sqrt(dx * dx + dy * dy) * 1.41421f;
 
@@ -4163,10 +4167,11 @@ namespace Milkstain
                 CreateBlendPattern();
 
                 blending = true;
-                blendStartTime = CurrentTime;
                 blendDuration = transitionDuration;
                 blendProgress = 0f;
             }
+
+            presetStartTime = CurrentTime;
 
             var newPreset = LoadPreset(PresetFiles[presetIndex].text);
 
@@ -4201,21 +4206,8 @@ namespace Milkstain
                 State.SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables.Heap[v]);
             }
 
-            State.SetVariable(CurrentPreset.Variables, "frame", CurrentFrame);
-            State.SetVariable(CurrentPreset.Variables, "time", CurrentTime);
-            State.SetVariable(CurrentPreset.Variables, "fps", FPS == 0f ? 30f : FPS);
-            State.SetVariable(CurrentPreset.Variables, "bass", Bass);
-            State.SetVariable(CurrentPreset.Variables, "bass_att", BassAtt);
-            State.SetVariable(CurrentPreset.Variables, "mid", Mid);
-            State.SetVariable(CurrentPreset.Variables, "mid_att", MidAtt);
-            State.SetVariable(CurrentPreset.Variables, "treb", Treb);
-            State.SetVariable(CurrentPreset.Variables, "treb_att", TrebAtt);
-            State.SetVariable(CurrentPreset.Variables, "meshx", MeshSize.x);
-            State.SetVariable(CurrentPreset.Variables, "meshy", MeshSize.y);
-            State.SetVariable(CurrentPreset.Variables, "aspectx", 1f);
-            State.SetVariable(CurrentPreset.Variables, "aspecty", 1f);
-            State.SetVariable(CurrentPreset.Variables, "pixelsx", Resolution.x);
-            State.SetVariable(CurrentPreset.Variables, "pixelsy", Resolution.y);
+            SetGlobalVars(CurrentPreset.Variables);
+
             State.SetVariable(CurrentPreset.Variables, "rand_start.x", UnityEngine.Random.Range(0f, 1f));
             State.SetVariable(CurrentPreset.Variables, "rand_start.y", UnityEngine.Random.Range(0f, 1f));
             State.SetVariable(CurrentPreset.Variables, "rand_start.z", UnityEngine.Random.Range(0f, 1f));
@@ -4275,21 +4267,8 @@ namespace Milkstain
                             State.SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[v]);
                         }
 
-                        State.SetVariable(CurrentWave.Variables, "frame", CurrentFrame);
-                        State.SetVariable(CurrentWave.Variables, "time", CurrentTime);
-                        State.SetVariable(CurrentWave.Variables, "fps", FPS);
-                        State.SetVariable(CurrentWave.Variables, "bass", Bass);
-                        State.SetVariable(CurrentWave.Variables, "bass_att", BassAtt);
-                        State.SetVariable(CurrentWave.Variables, "mid", Mid);
-                        State.SetVariable(CurrentWave.Variables, "mid_att", MidAtt);
-                        State.SetVariable(CurrentWave.Variables, "treb", Treb);
-                        State.SetVariable(CurrentWave.Variables, "treb_att", TrebAtt);
-                        State.SetVariable(CurrentWave.Variables, "meshx", MeshSize.x);
-                        State.SetVariable(CurrentWave.Variables, "meshy", MeshSize.y);
-                        State.SetVariable(CurrentWave.Variables, "aspectx", 1f);
-                        State.SetVariable(CurrentWave.Variables, "aspecty", 1f);
-                        State.SetVariable(CurrentWave.Variables, "pixelsx", Resolution.x);
-                        State.SetVariable(CurrentWave.Variables, "pixelsy", Resolution.y);
+                        SetGlobalVars(CurrentWave.Variables);
+
                         State.SetVariable(CurrentWave.Variables, "rand_start.x", State.GetVariable(CurrentWave.BaseVariables, "rand_start.x"));
                         State.SetVariable(CurrentWave.Variables, "rand_start.y", State.GetVariable(CurrentWave.BaseVariables, "rand_start.y"));
                         State.SetVariable(CurrentWave.Variables, "rand_start.z", State.GetVariable(CurrentWave.BaseVariables, "rand_start.z"));
@@ -4347,21 +4326,8 @@ namespace Milkstain
                             State.SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[v]);
                         }
 
-                        State.SetVariable(CurrentShape.Variables, "frame", CurrentFrame);
-                        State.SetVariable(CurrentShape.Variables, "time", CurrentTime);
-                        State.SetVariable(CurrentShape.Variables, "fps", FPS);
-                        State.SetVariable(CurrentShape.Variables, "bass", Bass);
-                        State.SetVariable(CurrentShape.Variables, "bass_att", BassAtt);
-                        State.SetVariable(CurrentShape.Variables, "mid", Mid);
-                        State.SetVariable(CurrentShape.Variables, "mid_att", MidAtt);
-                        State.SetVariable(CurrentShape.Variables, "treb", Treb);
-                        State.SetVariable(CurrentShape.Variables, "treb_att", TrebAtt);
-                        State.SetVariable(CurrentShape.Variables, "meshx", MeshSize.x);
-                        State.SetVariable(CurrentShape.Variables, "meshy", MeshSize.y);
-                        State.SetVariable(CurrentShape.Variables, "aspectx", 1f);
-                        State.SetVariable(CurrentShape.Variables, "aspecty", 1f);
-                        State.SetVariable(CurrentShape.Variables, "pixelsx", Resolution.x);
-                        State.SetVariable(CurrentShape.Variables, "pixelsy", Resolution.y);
+                        SetGlobalVars(CurrentShape.Variables);
+
                         State.SetVariable(CurrentShape.Variables, "rand_start.x", State.GetVariable(CurrentShape.BaseVariables, "rand_start.x"));
                         State.SetVariable(CurrentShape.Variables, "rand_start.y", State.GetVariable(CurrentShape.BaseVariables, "rand_start.y"));
                         State.SetVariable(CurrentShape.Variables, "rand_start.z", State.GetVariable(CurrentShape.BaseVariables, "rand_start.z"));

@@ -2251,7 +2251,7 @@ MonoBehaviour:
   MeshSizeComp: {x: 32, y: 24}
   MotionVectorsSize: {x: 64, y: 48}
   Resolution: {x: 800, y: 600}
-  Scale: 1
+  Scale: 2
   MaxShapeSides: 101
   MaxSamples: 512
   MaxFPS: 30
