@@ -2089,52 +2089,52 @@ namespace Milkstain
             Graphics.Blit(PrevTempTexture, TempTexturePW);
             Graphics.Blit(PrevTempTexture, TempTexturePC);
 
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
+            preset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
+            preset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
+            preset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
+            preset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
 
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex6", Blur1Texture);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex7", Blur2Texture);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex8", Blur3Texture);
+            preset.WarpMaterial.SetTexture("_MainTex6", Blur1Texture);
+            preset.WarpMaterial.SetTexture("_MainTex7", Blur2Texture);
+            preset.WarpMaterial.SetTexture("_MainTex8", Blur3Texture);
 
-            CurrentPreset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
+            preset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
+            preset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
+            preset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
+            preset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
+            preset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
+            preset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
+            preset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
-            CurrentPreset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-            CurrentPreset.WarpMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
-            CurrentPreset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.WarpMaterial.SetFloat("bass", Bass);
-            CurrentPreset.WarpMaterial.SetFloat("mid", Mid);
-            CurrentPreset.WarpMaterial.SetFloat("treb", Treb);
-            CurrentPreset.WarpMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-            CurrentPreset.WarpMaterial.SetFloat("bass_att", BassAtt);
-            CurrentPreset.WarpMaterial.SetFloat("mid_att", MidAtt);
-            CurrentPreset.WarpMaterial.SetFloat("treb_att", TrebAtt);
-            CurrentPreset.WarpMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-            CurrentPreset.WarpMaterial.SetFloat("time", CurrentTime);
-            CurrentPreset.WarpMaterial.SetFloat("frame", CurrentFrame);
-            CurrentPreset.WarpMaterial.SetFloat("fps", FPS);
-            CurrentPreset.WarpMaterial.SetVector("rand_preset", 
+            preset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+            preset.WarpMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
+            preset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+            preset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+            preset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+            preset.WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+            preset.WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.WarpMaterial.SetFloat("bass", Bass);
+            preset.WarpMaterial.SetFloat("mid", Mid);
+            preset.WarpMaterial.SetFloat("treb", Treb);
+            preset.WarpMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+            preset.WarpMaterial.SetFloat("bass_att", BassAtt);
+            preset.WarpMaterial.SetFloat("mid_att", MidAtt);
+            preset.WarpMaterial.SetFloat("treb_att", TrebAtt);
+            preset.WarpMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+            preset.WarpMaterial.SetFloat("time", CurrentTime);
+            preset.WarpMaterial.SetFloat("frame", CurrentFrame);
+            preset.WarpMaterial.SetFloat("fps", FPS);
+            preset.WarpMaterial.SetVector("rand_preset", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.x"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.y"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.z"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.w")
+                    State.GetVariable(preset.FrameVariables, "rand_preset.x"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.y"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.z"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.w")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("rand_frame", 
+            preset.WarpMaterial.SetVector("rand_frame", 
                 new Vector4(
                     UnityEngine.Random.Range(0f, 1f),
                     UnityEngine.Random.Range(0f, 1f),
@@ -2142,71 +2142,71 @@ namespace Milkstain
                     UnityEngine.Random.Range(0f, 1f)
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qa", 
+            preset.WarpMaterial.SetVector("_qa", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q1"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q2"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q3"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q4")
+                    State.GetVariable(preset.AfterFrameVariables, "q1"),
+                    State.GetVariable(preset.AfterFrameVariables, "q2"),
+                    State.GetVariable(preset.AfterFrameVariables, "q3"),
+                    State.GetVariable(preset.AfterFrameVariables, "q4")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qb", 
+            preset.WarpMaterial.SetVector("_qb", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q5"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q6"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q7"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q8")
+                    State.GetVariable(preset.AfterFrameVariables, "q5"),
+                    State.GetVariable(preset.AfterFrameVariables, "q6"),
+                    State.GetVariable(preset.AfterFrameVariables, "q7"),
+                    State.GetVariable(preset.AfterFrameVariables, "q8")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qc", 
+            preset.WarpMaterial.SetVector("_qc", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q9"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q10"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q11"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q12")
+                    State.GetVariable(preset.AfterFrameVariables, "q9"),
+                    State.GetVariable(preset.AfterFrameVariables, "q10"),
+                    State.GetVariable(preset.AfterFrameVariables, "q11"),
+                    State.GetVariable(preset.AfterFrameVariables, "q12")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qd", 
+            preset.WarpMaterial.SetVector("_qd", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q13"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q14"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q15"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q16")
+                    State.GetVariable(preset.AfterFrameVariables, "q13"),
+                    State.GetVariable(preset.AfterFrameVariables, "q14"),
+                    State.GetVariable(preset.AfterFrameVariables, "q15"),
+                    State.GetVariable(preset.AfterFrameVariables, "q16")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qe", 
+            preset.WarpMaterial.SetVector("_qe", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q17"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q18"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q19"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q20")
+                    State.GetVariable(preset.AfterFrameVariables, "q17"),
+                    State.GetVariable(preset.AfterFrameVariables, "q18"),
+                    State.GetVariable(preset.AfterFrameVariables, "q19"),
+                    State.GetVariable(preset.AfterFrameVariables, "q20")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qf", 
+            preset.WarpMaterial.SetVector("_qf", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q21"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q22"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q23"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q24")
+                    State.GetVariable(preset.AfterFrameVariables, "q21"),
+                    State.GetVariable(preset.AfterFrameVariables, "q22"),
+                    State.GetVariable(preset.AfterFrameVariables, "q23"),
+                    State.GetVariable(preset.AfterFrameVariables, "q24")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qg", 
+            preset.WarpMaterial.SetVector("_qg", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q25"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q26"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q27"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q28")
+                    State.GetVariable(preset.AfterFrameVariables, "q25"),
+                    State.GetVariable(preset.AfterFrameVariables, "q26"),
+                    State.GetVariable(preset.AfterFrameVariables, "q27"),
+                    State.GetVariable(preset.AfterFrameVariables, "q28")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("_qh", 
+            preset.WarpMaterial.SetVector("_qh", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q29"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q30"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q31"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q32")
+                    State.GetVariable(preset.AfterFrameVariables, "q29"),
+                    State.GetVariable(preset.AfterFrameVariables, "q30"),
+                    State.GetVariable(preset.AfterFrameVariables, "q31"),
+                    State.GetVariable(preset.AfterFrameVariables, "q32")
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("slow_roam_cos", 
+            preset.WarpMaterial.SetVector("slow_roam_cos", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
@@ -2214,7 +2214,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("roam_cos", 
+            preset.WarpMaterial.SetVector("roam_cos", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
@@ -2222,7 +2222,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("slow_roam_sin", 
+            preset.WarpMaterial.SetVector("slow_roam_sin", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
@@ -2230,7 +2230,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
                 )
             );
-            CurrentPreset.WarpMaterial.SetVector("roam_sin", 
+            preset.WarpMaterial.SetVector("roam_sin", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
@@ -2250,18 +2250,20 @@ namespace Milkstain
             float bias2 = blurMin2;
             float scale3 = blurMax3 - blurMin3;
             float bias3 = blurMin3;
-            CurrentPreset.WarpMaterial.SetFloat("blur1_min", blurMin1);
-            CurrentPreset.WarpMaterial.SetFloat("blur1_max", blurMax1);
-            CurrentPreset.WarpMaterial.SetFloat("blur2_min", blurMin2);
-            CurrentPreset.WarpMaterial.SetFloat("blur2_max", blurMax2);
-            CurrentPreset.WarpMaterial.SetFloat("blur3_min", blurMin3);
-            CurrentPreset.WarpMaterial.SetFloat("blur3_max", blurMax3);
-            CurrentPreset.WarpMaterial.SetFloat("scale1", scale1);
-            CurrentPreset.WarpMaterial.SetFloat("scale2", scale2);
-            CurrentPreset.WarpMaterial.SetFloat("scale3", scale3);
-            CurrentPreset.WarpMaterial.SetFloat("bias1", bias1);
-            CurrentPreset.WarpMaterial.SetFloat("bias2", bias2);
-            CurrentPreset.WarpMaterial.SetFloat("bias3", bias3);
+            preset.WarpMaterial.SetFloat("blur1_min", blurMin1);
+            preset.WarpMaterial.SetFloat("blur1_max", blurMax1);
+            preset.WarpMaterial.SetFloat("blur2_min", blurMin2);
+            preset.WarpMaterial.SetFloat("blur2_max", blurMax2);
+            preset.WarpMaterial.SetFloat("blur3_min", blurMin3);
+            preset.WarpMaterial.SetFloat("blur3_max", blurMax3);
+            preset.WarpMaterial.SetFloat("scale1", scale1);
+            preset.WarpMaterial.SetFloat("scale2", scale2);
+            preset.WarpMaterial.SetFloat("scale3", scale3);
+            preset.WarpMaterial.SetFloat("bias1", bias1);
+            preset.WarpMaterial.SetFloat("bias2", bias2);
+            preset.WarpMaterial.SetFloat("bias3", bias3);
+
+            // todo rotations
 
             TargetCamera.targetTexture = TempTexture;
             TargetCamera.Render();
@@ -3528,52 +3530,52 @@ namespace Milkstain
             Graphics.Blit(TempTexture, TempTexturePW);
             Graphics.Blit(TempTexture, TempTexturePC);
 
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
-            CurrentPreset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
+            preset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
+            preset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
+            preset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
+            preset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
 
-            CurrentPreset.CompMaterial.SetTexture("_MainTex6", Blur1Texture);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex7", Blur2Texture);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex8", Blur3Texture);
+            preset.CompMaterial.SetTexture("_MainTex6", Blur1Texture);
+            preset.CompMaterial.SetTexture("_MainTex7", Blur2Texture);
+            preset.CompMaterial.SetTexture("_MainTex8", Blur3Texture);
 
-            CurrentPreset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
-            CurrentPreset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
+            preset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
+            preset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
+            preset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
+            preset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
+            preset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
+            preset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
+            preset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
-            CurrentPreset.CompMaterial.SetFloat("time", CurrentTime);
-            CurrentPreset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-            CurrentPreset.CompMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
-            CurrentPreset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-            CurrentPreset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-            CurrentPreset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-            CurrentPreset.CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-            CurrentPreset.CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-            CurrentPreset.CompMaterial.SetFloat("bass", Bass);
-            CurrentPreset.CompMaterial.SetFloat("mid", Mid);
-            CurrentPreset.CompMaterial.SetFloat("treb", Treb);
-            CurrentPreset.CompMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-            CurrentPreset.CompMaterial.SetFloat("bass_att", BassAtt);
-            CurrentPreset.CompMaterial.SetFloat("mid_att", MidAtt);
-            CurrentPreset.CompMaterial.SetFloat("treb_att", TrebAtt);
-            CurrentPreset.CompMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-            CurrentPreset.CompMaterial.SetFloat("frame", CurrentFrame);
-            CurrentPreset.CompMaterial.SetFloat("fps", FPS);
-            CurrentPreset.CompMaterial.SetVector("rand_preset", 
+            preset.CompMaterial.SetFloat("time", CurrentTime);
+            preset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+            preset.CompMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
+            preset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+            preset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+            preset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+            preset.CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+            preset.CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+            preset.CompMaterial.SetFloat("bass", Bass);
+            preset.CompMaterial.SetFloat("mid", Mid);
+            preset.CompMaterial.SetFloat("treb", Treb);
+            preset.CompMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+            preset.CompMaterial.SetFloat("bass_att", BassAtt);
+            preset.CompMaterial.SetFloat("mid_att", MidAtt);
+            preset.CompMaterial.SetFloat("treb_att", TrebAtt);
+            preset.CompMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+            preset.CompMaterial.SetFloat("frame", CurrentFrame);
+            preset.CompMaterial.SetFloat("fps", FPS);
+            preset.CompMaterial.SetVector("rand_preset", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.x"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.y"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.z"),
-                    State.GetVariable(CurrentPreset.FrameVariables, "rand_preset.w")
+                    State.GetVariable(preset.FrameVariables, "rand_preset.x"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.y"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.z"),
+                    State.GetVariable(preset.FrameVariables, "rand_preset.w")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("rand_frame", 
+            preset.CompMaterial.SetVector("rand_frame", 
                 new Vector4(
                     UnityEngine.Random.Range(0f, 1f),
                     UnityEngine.Random.Range(0f, 1f),
@@ -3581,71 +3583,71 @@ namespace Milkstain
                     UnityEngine.Random.Range(0f, 1f)
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qa", 
+            preset.CompMaterial.SetVector("_qa", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q1"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q2"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q3"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q4")
+                    State.GetVariable(preset.AfterFrameVariables, "q1"),
+                    State.GetVariable(preset.AfterFrameVariables, "q2"),
+                    State.GetVariable(preset.AfterFrameVariables, "q3"),
+                    State.GetVariable(preset.AfterFrameVariables, "q4")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qb", 
+            preset.CompMaterial.SetVector("_qb", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q5"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q6"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q7"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q8")
+                    State.GetVariable(preset.AfterFrameVariables, "q5"),
+                    State.GetVariable(preset.AfterFrameVariables, "q6"),
+                    State.GetVariable(preset.AfterFrameVariables, "q7"),
+                    State.GetVariable(preset.AfterFrameVariables, "q8")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qc", 
+            preset.CompMaterial.SetVector("_qc", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q9"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q10"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q11"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q12")
+                    State.GetVariable(preset.AfterFrameVariables, "q9"),
+                    State.GetVariable(preset.AfterFrameVariables, "q10"),
+                    State.GetVariable(preset.AfterFrameVariables, "q11"),
+                    State.GetVariable(preset.AfterFrameVariables, "q12")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qd", 
+            preset.CompMaterial.SetVector("_qd", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q13"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q14"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q15"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q16")
+                    State.GetVariable(preset.AfterFrameVariables, "q13"),
+                    State.GetVariable(preset.AfterFrameVariables, "q14"),
+                    State.GetVariable(preset.AfterFrameVariables, "q15"),
+                    State.GetVariable(preset.AfterFrameVariables, "q16")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qe", 
+            preset.CompMaterial.SetVector("_qe", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q17"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q18"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q19"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q20")
+                    State.GetVariable(preset.AfterFrameVariables, "q17"),
+                    State.GetVariable(preset.AfterFrameVariables, "q18"),
+                    State.GetVariable(preset.AfterFrameVariables, "q19"),
+                    State.GetVariable(preset.AfterFrameVariables, "q20")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qf", 
+            preset.CompMaterial.SetVector("_qf", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q21"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q22"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q23"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q24")
+                    State.GetVariable(preset.AfterFrameVariables, "q21"),
+                    State.GetVariable(preset.AfterFrameVariables, "q22"),
+                    State.GetVariable(preset.AfterFrameVariables, "q23"),
+                    State.GetVariable(preset.AfterFrameVariables, "q24")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qg", 
+            preset.CompMaterial.SetVector("_qg", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q25"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q26"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q27"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q28")
+                    State.GetVariable(preset.AfterFrameVariables, "q25"),
+                    State.GetVariable(preset.AfterFrameVariables, "q26"),
+                    State.GetVariable(preset.AfterFrameVariables, "q27"),
+                    State.GetVariable(preset.AfterFrameVariables, "q28")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("_qh", 
+            preset.CompMaterial.SetVector("_qh", 
                 new Vector4(
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q29"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q30"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q31"),
-                    State.GetVariable(CurrentPreset.AfterFrameVariables, "q32")
+                    State.GetVariable(preset.AfterFrameVariables, "q29"),
+                    State.GetVariable(preset.AfterFrameVariables, "q30"),
+                    State.GetVariable(preset.AfterFrameVariables, "q31"),
+                    State.GetVariable(preset.AfterFrameVariables, "q32")
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("slow_roam_cos", 
+            preset.CompMaterial.SetVector("slow_roam_cos", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
@@ -3653,7 +3655,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("roam_cos", 
+            preset.CompMaterial.SetVector("roam_cos", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
@@ -3661,7 +3663,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("slow_roam_sin", 
+            preset.CompMaterial.SetVector("slow_roam_sin", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
@@ -3669,7 +3671,7 @@ namespace Milkstain
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
                 )
             );
-            CurrentPreset.CompMaterial.SetVector("roam_sin", 
+            preset.CompMaterial.SetVector("roam_sin", 
                 new Vector4(
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
                     0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
@@ -3689,18 +3691,20 @@ namespace Milkstain
             float bias2 = blurMin2;
             float scale3 = blurMax3 - blurMin3;
             float bias3 = blurMin3;
-            CurrentPreset.CompMaterial.SetFloat("blur1_min", blurMin1);
-            CurrentPreset.CompMaterial.SetFloat("blur1_max", blurMax1);
-            CurrentPreset.CompMaterial.SetFloat("blur2_min", blurMin2);
-            CurrentPreset.CompMaterial.SetFloat("blur2_max", blurMax2);
-            CurrentPreset.CompMaterial.SetFloat("blur3_min", blurMin3);
-            CurrentPreset.CompMaterial.SetFloat("blur3_max", blurMax3);
-            CurrentPreset.CompMaterial.SetFloat("scale1", scale1);
-            CurrentPreset.CompMaterial.SetFloat("scale2", scale2);
-            CurrentPreset.CompMaterial.SetFloat("scale3", scale3);
-            CurrentPreset.CompMaterial.SetFloat("bias1", bias1);
-            CurrentPreset.CompMaterial.SetFloat("bias2", bias2);
-            CurrentPreset.CompMaterial.SetFloat("bias3", bias3);
+            preset.CompMaterial.SetFloat("blur1_min", blurMin1);
+            preset.CompMaterial.SetFloat("blur1_max", blurMax1);
+            preset.CompMaterial.SetFloat("blur2_min", blurMin2);
+            preset.CompMaterial.SetFloat("blur2_max", blurMax2);
+            preset.CompMaterial.SetFloat("blur3_min", blurMin3);
+            preset.CompMaterial.SetFloat("blur3_max", blurMax3);
+            preset.CompMaterial.SetFloat("scale1", scale1);
+            preset.CompMaterial.SetFloat("scale2", scale2);
+            preset.CompMaterial.SetFloat("scale3", scale3);
+            preset.CompMaterial.SetFloat("bias1", bias1);
+            preset.CompMaterial.SetFloat("bias2", bias2);
+            preset.CompMaterial.SetFloat("bias3", bias3);
+
+            // todo rotations
 
             TargetCamera.targetTexture = FinalTexture;
             TargetCamera.Render();

@@ -67,6 +67,139 @@ namespace Milkstain
             return raw;
         }
 
+        static string CompileShader(string shaderName, string input, string template)
+        {
+            string properties = "";
+            string header = "";
+            string body = "";
+
+            string[] lines = input.Split('\n');
+
+            int state = 0;
+
+            int depth = 0;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string lineRaw = lines[i];
+                string line = lineRaw.Trim();
+
+                if (line.Contains("//"))
+                {
+                    line = line.Split(new string[] {"//"}, System.StringSplitOptions.None)[0];
+                }
+
+                switch (state)
+                {
+                    case 0:
+                        if (line.StartsWith("shader_body"))
+                        {
+                            if (line.Contains("{"))
+                            {
+                                depth += line.Count(f => (f == '{'));
+                                depth -= line.Count(f => (f == '}'));
+
+                                if (depth == 0)
+                                {
+                                    state = 3;
+                                }
+                                else
+                                {
+                                    state = 2;
+                                }
+                            }
+                            else
+                            {
+                                state = 1;
+                            }
+                        }
+                        else
+                        {
+                            header += lineRaw + "\n";
+                        }
+                        break;
+                    case 1:
+                        if (line.Contains("{"))
+                        {
+                            depth += line.Count(f => (f == '{'));
+                            depth -= line.Count(f => (f == '}'));
+
+                            state = 2;
+                            if (depth > 1)
+                            {
+                                body += lineRaw + "\n";
+                            }
+                        }
+                        break;
+                    case 2:
+                        depth += line.Count(f => (f == '{'));
+                        depth -= line.Count(f => (f == '}'));
+
+                        if (depth > 0)
+                        {
+                            body += lineRaw + "\n";
+                        }
+                        else
+                        {
+                            state = 3;
+                        }
+                        break;
+                }
+            }
+
+            header = ProcessShaderCode(header);
+            body = ProcessShaderCode(body);
+
+            var header_lines = header.Replace('\n', ' ').Split(';');
+
+            depth = 0;
+
+            for (int i = 0; i < header_lines.Length; i++)
+            {
+                string line = header_lines[i].Trim();
+
+                if (line.Contains("//"))
+                {
+                    line = line.Split(new string[] {"//"}, System.StringSplitOptions.None)[0];
+                }
+
+                depth += line.Count(f => (f == '{'));
+                depth -= line.Count(f => (f == '}'));
+
+                if (line.Contains('('))
+                {
+                    continue;
+                }
+
+                if (depth > 0)
+                {
+                    continue;
+                }
+
+                if (
+                    line.StartsWith("sampler2D ")
+                )
+                {
+                    string[] varNames = string.Join(" ", line.Replace(';', ' ').Split(new char[] {' '}, System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
+                    
+
+                    foreach (var varName in varNames)
+                    {
+                        string n = varName.Trim();
+
+                        if (n == "color")
+                        {
+                            continue;
+                        }
+
+                        properties += n + " (\"" + n + "\", 2D) = \"white\" {}\n";
+                    }
+                }
+            }
+
+            return template.Replace("{0}", shaderName).Replace("{1}", properties).Replace("{2}", header).Replace("{3}", body);
+        }
+
         void OnGUI()
         {
             GUILayout.Space(20f);
@@ -87,147 +220,8 @@ namespace Milkstain
                     if (!string.IsNullOrEmpty(presetData.Warp))
                     {
                         string shaderName = preset.name + " - Warp";
-                        string properties = "";
-                        string header = "";
-                        string body = "";
 
-                        string[] lines = presetData.Warp.Split('\n');
-
-                        int state = 0;
-
-                        int depth = 0;
-
-                        for (int i = 0; i < lines.Length; i++)
-                        {
-                            string lineRaw = lines[i];
-                            string line = lineRaw.Trim();
-
-                            switch (state)
-                            {
-                                case 0:
-                                    if (line.StartsWith("shader_body"))
-                                    {
-                                        if (line.Contains("{"))
-                                        {
-                                            if (line.Contains("}"))
-                                            {
-                                                state = 3;
-                                            }
-                                            else
-                                            {
-                                                depth++;
-                                                state = 2;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            state = 1;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        header += lineRaw + "\n";
-                                    }
-                                    break;
-                                case 1:
-                                    if (line.StartsWith("{"))
-                                    {
-                                        depth++;
-                                        state = 2;
-                                        if (depth > 1)
-                                        {
-                                            body += lineRaw + "\n";
-                                        }
-                                    }
-                                    break;
-                                case 2:
-                                    if (line.Contains("{"))
-                                    {
-                                        depth++;
-                                    }
-                                    if (line.StartsWith("}"))
-                                    {
-                                        depth--;
-                                        if (depth <= 0)
-                                        {
-                                            state = 3;
-                                        }
-                                        else
-                                        {
-                                            body += lineRaw + "\n";
-                                        }
-                                    }
-                                    else if (line.Contains("}"))
-                                    {
-                                        depth--;
-                                        body += lineRaw + "\n";
-                                    }
-                                    else
-                                    {
-                                        body += lineRaw + "\n";
-                                    }
-                                    break;
-                            }
-                        }
-
-                        header = ProcessShaderCode(header);
-                        body = ProcessShaderCode(body);
-
-                        var header_lines = header.Replace('\n', ' ').Split(';');
-
-                        depth = 0;
-
-                        for (int i = 0; i < header_lines.Length; i++)
-                        {
-                            string line = header_lines[i].Trim();
-
-                            if (line.Contains("//"))
-                            {
-                                line = line.Split(new string[] {"//"}, System.StringSplitOptions.RemoveEmptyEntries)[0];
-                            }
-
-                            if (line.Contains('{'))
-                            {
-                                depth++;
-                            }
-
-                            if (line.Contains('}'))
-                            {
-                                depth--;
-                            }
-
-                            if (line.Contains('('))
-                            {
-                                continue;
-                            }
-
-                            if (depth > 0)
-                            {
-                                continue;
-                            }
-
-                            if (
-                                line.StartsWith("sampler2D ")
-                            )
-                            {
-                                string[] varNames = string.Join(" ", line.Replace(';', ' ').Split(new char[] {' '}, System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-                                
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-
-                                    properties += n + " (\"" + n + "\", 2D) = \"white\" {}\n";
-                                }
-                            }
-                        }
-
-                        string result = warpTemplate.Replace("{0}", shaderName).Replace("{1}", properties).Replace("{2}", header).Replace("{3}", body);
+                        string result = CompileShader(shaderName, presetData.Warp, warpTemplate);
 
                         File.WriteAllText(Application.dataPath + "/Milkstain/Shaders/Warp/Custom/" + shaderName + ".shader", result);
                     }
@@ -235,146 +229,8 @@ namespace Milkstain
                     if (!string.IsNullOrEmpty(presetData.Comp))
                     {
                         string shaderName = preset.name + " - Comp";
-                        string properties = "";
-                        string header = "";
-                        string body = "";
-
-                        string[] lines = presetData.Comp.Split('\n');
-
-                        int state = 0;
-
-                        int depth = 0;
-
-                        for (int i = 0; i < lines.Length; i++)
-                        {
-                            string lineRaw = lines[i];
-                            string line = lineRaw.Trim();
-
-                            switch (state)
-                            {
-                                case 0:
-                                    if (line.StartsWith("shader_body"))
-                                    {
-                                        if (line.Contains("{"))
-                                        {
-                                            if (line.Contains("}"))
-                                            {
-                                                state = 3;
-                                            }
-                                            else
-                                            {
-                                                depth++;
-                                                state = 2;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            state = 1;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        header += lineRaw + "\n";
-                                    }
-                                    break;
-                                case 1:
-                                    if (line.StartsWith("{"))
-                                    {
-                                        depth++;
-                                        state = 2;
-                                        if (depth > 1)
-                                        {
-                                            body += lineRaw + "\n";
-                                        }
-                                    }
-                                    break;
-                                case 2:
-                                    if (line.Contains("{"))
-                                    {
-                                        depth++;
-                                    }
-                                    if (line.StartsWith("}"))
-                                    {
-                                        depth--;
-                                        if (depth <= 0)
-                                        {
-                                            state = 3;
-                                        }
-                                        else
-                                        {
-                                            body += lineRaw + "\n";
-                                        }
-                                    }
-                                    else if (line.Contains("}"))
-                                    {
-                                        depth--;
-                                        body += lineRaw + "\n";
-                                    }
-                                    else
-                                    {
-                                        body += lineRaw + "\n";
-                                    }
-                                    break;
-                            }
-                        }
-
-                        header = ProcessShaderCode(header);
-                        body = ProcessShaderCode(body);
-
-                        var header_lines = header.Split('\n');
-
-                        depth = 0;
-
-                        for (int i = 0; i < header_lines.Length; i++)
-                        {
-                            string line = header_lines[i].Trim();
-
-                            if (line.Contains("//"))
-                            {
-                                line = line.Split(new string[] {"//"}, System.StringSplitOptions.RemoveEmptyEntries)[0];
-                            }
-
-                            if (line.Contains('{'))
-                            {
-                                depth++;
-                            }
-
-                            if (line.Contains('}'))
-                            {
-                                depth--;
-                            }
-
-                            if (line.Contains('('))
-                            {
-                                continue;
-                            }
-
-                            if (depth > 0)
-                            {
-                                continue;
-                            }
-
-                            if (
-                                line.StartsWith("sampler2D ")
-                            )
-                            {
-                                string[] varNames = string.Join(" ", line.Replace(';', ' ').Split(new char[] {' '}, System.StringSplitOptions.RemoveEmptyEntries).Skip(1)).Split(',');
-
-                                foreach (var varName in varNames)
-                                {
-                                    string n = varName.Trim();
-
-                                    if (n == "color")
-                                    {
-                                        continue;
-                                    }
-
-                                    properties += n + " (\"" + n + "\", 2D) = \"white\" {}\n";
-                                }
-                            }
-                        }
-
-                        string result = compTemplate.Replace("{0}", shaderName).Replace("{1}", properties.Replace("\n", "\n\t\t")).Replace("{2}", header.Replace("\n", "\n\t\t\t")).Replace("{3}", body.Replace("\n", "\n\t\t\t\t"));
+                        
+                        string result = CompileShader(shaderName, presetData.Comp, compTemplate);
 
                         File.WriteAllText(Application.dataPath + "/Milkstain/Shaders/Comp/Custom/" + shaderName + ".shader", result);
                     }
