@@ -209,6 +209,37 @@ namespace Milkstain
         int varInd_dy;
         int varInd_sx;
         int varInd_sy;
+        int varInd_enabled;
+        int varInd_sep;
+        int varInd_scaling;
+        int varInd_spectrum;
+        int varInd_smoothing;
+        int varInd_usedots;
+        int varInd_r;
+        int varInd_g;
+        int varInd_b;
+        int varInd_a;
+        int varInd_r2;
+        int varInd_g2;
+        int varInd_b2;
+        int varInd_a2;
+        int varInd_border_r;
+        int varInd_border_g;
+        int varInd_border_b;
+        int varInd_border_a;
+        int varInd_wave_scale;
+        int varInd_sample;
+        int varInd_value1;
+        int varInd_value2;
+        int varInd_thick;
+        int varInd_num_inst;
+        int varInd_thickouline;
+        int varInd_textured;
+        int varInd_tex_zoom;
+        int varInd_tex_ang;
+        int varInd_additive;
+        int varInd_instance;
+        int varInd_sides;
 
         (float[], float[]) blurValues;
 
@@ -371,6 +402,37 @@ namespace Milkstain
             varInd_dy = State.RegisterVariable("dy");
             varInd_sx = State.RegisterVariable("sx");
             varInd_sy = State.RegisterVariable("sy");
+            varInd_enabled = State.RegisterVariable("enabled");
+            varInd_sep = State.RegisterVariable("sep");
+            varInd_scaling = State.RegisterVariable("scaling");
+            varInd_spectrum = State.RegisterVariable("spectrum");
+            varInd_smoothing = State.RegisterVariable("smoothing");
+            varInd_usedots = State.RegisterVariable("usedots");
+            varInd_r = State.RegisterVariable("r");
+            varInd_g = State.RegisterVariable("g");
+            varInd_b = State.RegisterVariable("b");
+            varInd_a = State.RegisterVariable("a");
+            varInd_wave_scale = State.RegisterVariable("wave_scale");
+            varInd_sample = State.RegisterVariable("sample");
+            varInd_value1 = State.RegisterVariable("value1");
+            varInd_value2 = State.RegisterVariable("value2");
+            varInd_thick = State.RegisterVariable("thick");
+            varInd_num_inst = State.RegisterVariable("num_inst");
+            varInd_r2 = State.RegisterVariable("r2");
+            varInd_g2 = State.RegisterVariable("g2");
+            varInd_b2 = State.RegisterVariable("b2");
+            varInd_a2 = State.RegisterVariable("a2");
+            varInd_border_r = State.RegisterVariable("border_r");
+            varInd_border_g = State.RegisterVariable("border_g");
+            varInd_border_b = State.RegisterVariable("border_b");
+            varInd_border_a = State.RegisterVariable("border_a");
+            varInd_thickouline = State.RegisterVariable("thickouline");
+            varInd_textured = State.RegisterVariable("textured");
+            varInd_tex_zoom = State.RegisterVariable("tex_zoom");
+            varInd_tex_ang = State.RegisterVariable("tex_ang");
+            varInd_additive = State.RegisterVariable("additive");
+            varInd_instance = State.RegisterVariable("instance");
+            varInd_sides = State.RegisterVariable("sides");
             
             UnloadPresets();
 
@@ -1507,7 +1569,7 @@ namespace Milkstain
 
             foreach (var CurrentShape in preset.Shapes)
             {
-                if (State.GetVariable(CurrentShape.BaseVariables, "enabled") == 0f)
+                if (State.GetVariable(CurrentShape.BaseVariables, varInd_enabled) == 0f)
                 {
                     continue;
                 }
@@ -1537,54 +1599,54 @@ namespace Milkstain
 
                 SetGlobalVars(CurrentShape.FrameVariables);
 
-                int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, "num_inst"), 1f, 1024f));
+                int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, varInd_num_inst), 1f, 1024f));
 
-                float baseX = State.GetVariable(CurrentShape.BaseVariables, "x");
-                float baseY = State.GetVariable(CurrentShape.BaseVariables, "y");
-                float baseRad = State.GetVariable(CurrentShape.BaseVariables, "rad");
-                float baseAng = State.GetVariable(CurrentShape.BaseVariables, "ang");
-                float baseR = State.GetVariable(CurrentShape.BaseVariables, "r");
-                float baseG = State.GetVariable(CurrentShape.BaseVariables, "g");
-                float baseB = State.GetVariable(CurrentShape.BaseVariables, "b");
-                float baseA = State.GetVariable(CurrentShape.BaseVariables, "a");
-                float baseR2 = State.GetVariable(CurrentShape.BaseVariables, "r2");
-                float baseG2 = State.GetVariable(CurrentShape.BaseVariables, "g2");
-                float baseB2 = State.GetVariable(CurrentShape.BaseVariables, "b2");
-                float baseA2 = State.GetVariable(CurrentShape.BaseVariables, "a2");
-                float baseBorderR = State.GetVariable(CurrentShape.BaseVariables, "border_r");
-                float baseBorderG = State.GetVariable(CurrentShape.BaseVariables, "border_g");
-                float baseBorderB = State.GetVariable(CurrentShape.BaseVariables, "border_b");
-                float baseBorderA = State.GetVariable(CurrentShape.BaseVariables, "border_a");
-                float baseThickOutline = State.GetVariable(CurrentShape.BaseVariables, "thickouline");
-                float baseTextured = State.GetVariable(CurrentShape.BaseVariables, "textured");
-                float baseTexZoom = State.GetVariable(CurrentShape.BaseVariables, "tex_zoom");
-                float baseTexAng = State.GetVariable(CurrentShape.BaseVariables, "tex_ang");
-                float baseAdditive = State.GetVariable(CurrentShape.BaseVariables, "additive");
+                float baseX = State.GetVariable(CurrentShape.BaseVariables, varInd_x);
+                float baseY = State.GetVariable(CurrentShape.BaseVariables, varInd_y);
+                float baseRad = State.GetVariable(CurrentShape.BaseVariables, varInd_rad);
+                float baseAng = State.GetVariable(CurrentShape.BaseVariables, varInd_ang);
+                float baseR = State.GetVariable(CurrentShape.BaseVariables, varInd_r);
+                float baseG = State.GetVariable(CurrentShape.BaseVariables, varInd_g);
+                float baseB = State.GetVariable(CurrentShape.BaseVariables, varInd_b);
+                float baseA = State.GetVariable(CurrentShape.BaseVariables, varInd_a);
+                float baseR2 = State.GetVariable(CurrentShape.BaseVariables, varInd_r2);
+                float baseG2 = State.GetVariable(CurrentShape.BaseVariables, varInd_g2);
+                float baseB2 = State.GetVariable(CurrentShape.BaseVariables, varInd_b2);
+                float baseA2 = State.GetVariable(CurrentShape.BaseVariables, varInd_a2);
+                float baseBorderR = State.GetVariable(CurrentShape.BaseVariables, varInd_border_r);
+                float baseBorderG = State.GetVariable(CurrentShape.BaseVariables, varInd_border_g);
+                float baseBorderB = State.GetVariable(CurrentShape.BaseVariables, varInd_border_b);
+                float baseBorderA = State.GetVariable(CurrentShape.BaseVariables, varInd_border_a);
+                float baseThickOutline = State.GetVariable(CurrentShape.BaseVariables, varInd_thickouline);
+                float baseTextured = State.GetVariable(CurrentShape.BaseVariables, varInd_textured);
+                float baseTexZoom = State.GetVariable(CurrentShape.BaseVariables, varInd_tex_zoom);
+                float baseTexAng = State.GetVariable(CurrentShape.BaseVariables, varInd_tex_ang);
+                float baseAdditive = State.GetVariable(CurrentShape.BaseVariables, varInd_additive);
 
                 for (int j = 0; j < numInst; j++)
                 {
-                    State.SetVariable(CurrentShape.FrameVariables, "instance", j);
-                    State.SetVariable(CurrentShape.FrameVariables, "x", baseX);
-                    State.SetVariable(CurrentShape.FrameVariables, "y", baseY);
-                    State.SetVariable(CurrentShape.FrameVariables, "rad", baseRad);
-                    State.SetVariable(CurrentShape.FrameVariables, "ang", baseAng);
-                    State.SetVariable(CurrentShape.FrameVariables, "r", baseR);
-                    State.SetVariable(CurrentShape.FrameVariables, "g", baseG);
-                    State.SetVariable(CurrentShape.FrameVariables, "b", baseB);
-                    State.SetVariable(CurrentShape.FrameVariables, "a", baseA);
-                    State.SetVariable(CurrentShape.FrameVariables, "r2", baseR2);
-                    State.SetVariable(CurrentShape.FrameVariables, "g2", baseG2);
-                    State.SetVariable(CurrentShape.FrameVariables, "b2", baseB2);
-                    State.SetVariable(CurrentShape.FrameVariables, "a2", baseA2);
-                    State.SetVariable(CurrentShape.FrameVariables, "border_r", baseBorderR);
-                    State.SetVariable(CurrentShape.FrameVariables, "border_g", baseBorderG);
-                    State.SetVariable(CurrentShape.FrameVariables, "border_b", baseBorderB);
-                    State.SetVariable(CurrentShape.FrameVariables, "border_a", baseBorderA);
-                    State.SetVariable(CurrentShape.FrameVariables, "thickouline", baseThickOutline);
-                    State.SetVariable(CurrentShape.FrameVariables, "textured", baseTextured);
-                    State.SetVariable(CurrentShape.FrameVariables, "tex_zoom", baseTexZoom);
-                    State.SetVariable(CurrentShape.FrameVariables, "tex_ang", baseTexAng);
-                    State.SetVariable(CurrentShape.FrameVariables, "additive", baseAdditive);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_instance, j);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_x, baseX);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_y, baseY);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_rad, baseRad);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_ang, baseAng);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_r, baseR);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_g, baseG);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_b, baseB);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_a, baseA);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_r2, baseR2);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_g2, baseG2);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_b2, baseB2);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_a2, baseA2);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_r, baseBorderR);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_g, baseBorderG);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_b, baseBorderB);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_a, baseBorderA);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_thickouline, baseThickOutline);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_textured, baseTextured);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_tex_zoom, baseTexZoom);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_tex_ang, baseTexAng);
+                    State.SetVariable(CurrentShape.FrameVariables, varInd_additive, baseAdditive);
 
                     if (!string.IsNullOrEmpty(CurrentShape.FrameEquationSource))
                     {
@@ -1601,27 +1663,27 @@ namespace Milkstain
                         CurrentShape.FrameEquationCompiled(CurrentShape.FrameVariables);
                     }
 
-                    int sides = Mathf.Clamp(Mathf.FloorToInt(State.GetVariable(CurrentShape.FrameVariables, "sides")), 3, 100);
+                    int sides = Mathf.Clamp(Mathf.FloorToInt(State.GetVariable(CurrentShape.FrameVariables, varInd_sides)), 3, 100);
 
-                    float rad = State.GetVariable(CurrentShape.FrameVariables, "rad");
-                    float ang = State.GetVariable(CurrentShape.FrameVariables, "ang");
+                    float rad = State.GetVariable(CurrentShape.FrameVariables, varInd_rad);
+                    float ang = State.GetVariable(CurrentShape.FrameVariables, varInd_ang);
 
-                    float x = State.GetVariable(CurrentShape.FrameVariables, "x") * 2f - 1f;
-                    float y = State.GetVariable(CurrentShape.FrameVariables, "y") * 2f - 1f;
+                    float x = State.GetVariable(CurrentShape.FrameVariables, varInd_x) * 2f - 1f;
+                    float y = State.GetVariable(CurrentShape.FrameVariables, varInd_y) * 2f - 1f;
 
-                    float r = State.GetVariable(CurrentShape.FrameVariables, "r");
-                    float g = State.GetVariable(CurrentShape.FrameVariables, "g");
-                    float b = State.GetVariable(CurrentShape.FrameVariables, "b");
-                    float a = State.GetVariable(CurrentShape.FrameVariables, "a");
-                    float r2 = State.GetVariable(CurrentShape.FrameVariables, "r2");
-                    float g2 = State.GetVariable(CurrentShape.FrameVariables, "g2");
-                    float b2 = State.GetVariable(CurrentShape.FrameVariables, "b2");
-                    float a2 = State.GetVariable(CurrentShape.FrameVariables, "a2");
+                    float r = State.GetVariable(CurrentShape.FrameVariables, varInd_r);
+                    float g = State.GetVariable(CurrentShape.FrameVariables, varInd_g);
+                    float b = State.GetVariable(CurrentShape.FrameVariables, varInd_b);
+                    float a = State.GetVariable(CurrentShape.FrameVariables, varInd_a);
+                    float r2 = State.GetVariable(CurrentShape.FrameVariables, varInd_r2);
+                    float g2 = State.GetVariable(CurrentShape.FrameVariables, varInd_g2);
+                    float b2 = State.GetVariable(CurrentShape.FrameVariables, varInd_b2);
+                    float a2 = State.GetVariable(CurrentShape.FrameVariables, varInd_a2);
 
-                    float borderR = State.GetVariable(CurrentShape.FrameVariables, "border_r");
-                    float borderG = State.GetVariable(CurrentShape.FrameVariables, "border_g");
-                    float borderB = State.GetVariable(CurrentShape.FrameVariables, "border_b");
-                    float borderA = State.GetVariable(CurrentShape.FrameVariables, "border_a");
+                    float borderR = State.GetVariable(CurrentShape.FrameVariables, varInd_border_r);
+                    float borderG = State.GetVariable(CurrentShape.FrameVariables, varInd_border_g);
+                    float borderB = State.GetVariable(CurrentShape.FrameVariables, varInd_border_b);
+                    float borderA = State.GetVariable(CurrentShape.FrameVariables, varInd_border_a);
 
                     Color borderColor = new Color
                     (
@@ -1631,13 +1693,13 @@ namespace Milkstain
                         borderA * blendProgress
                     );
 
-                    float thickoutline = State.GetVariable(CurrentShape.FrameVariables, "thickouline");
+                    float thickoutline = State.GetVariable(CurrentShape.FrameVariables, varInd_thickouline);
                     
-                    float textured = State.GetVariable(CurrentShape.FrameVariables, "textured");
-                    float texZoom = State.GetVariable(CurrentShape.FrameVariables, "tex_zoom");
-                    float texAng = State.GetVariable(CurrentShape.FrameVariables, "tex_ang");
+                    float textured = State.GetVariable(CurrentShape.FrameVariables, varInd_textured);
+                    float texZoom = State.GetVariable(CurrentShape.FrameVariables, varInd_tex_zoom);
+                    float texAng = State.GetVariable(CurrentShape.FrameVariables, varInd_tex_ang);
 
-                    float additive = State.GetVariable(CurrentShape.FrameVariables, "additive");
+                    float additive = State.GetVariable(CurrentShape.FrameVariables, varInd_additive);
 
                     bool hasBorder = borderColor.a > 0f;
                     bool isTextured = Mathf.Abs(textured) >= 1f;
@@ -1782,7 +1844,7 @@ namespace Milkstain
 
             foreach (var CurrentWave in preset.Waves)
             {
-                if (State.GetVariable(CurrentWave.BaseVariables, "enabled") == 0f)
+                if (State.GetVariable(CurrentWave.BaseVariables, varInd_enabled) == 0f)
                 {
                     continue;
                 }
@@ -1814,18 +1876,18 @@ namespace Milkstain
                 int maxSamples = 512;
                 int samples = Mathf.FloorToInt(Mathf.Min(State.GetVariable(CurrentWave.FrameVariables, "samples", maxSamples), maxSamples));
 
-                int sep = Mathf.FloorToInt(State.GetVariable(CurrentWave.FrameVariables, "sep"));
-                float scaling = State.GetVariable(CurrentWave.FrameVariables, "scaling");
-                float spectrum = State.GetVariable(CurrentWave.FrameVariables, "spectrum");
-                float smoothing = State.GetVariable(CurrentWave.FrameVariables, "smoothing");
-                float usedots = State.GetVariable(CurrentWave.BaseVariables, "usedots");
+                int sep = Mathf.FloorToInt(State.GetVariable(CurrentWave.FrameVariables, varInd_sep));
+                float scaling = State.GetVariable(CurrentWave.FrameVariables, varInd_scaling);
+                float spectrum = State.GetVariable(CurrentWave.FrameVariables, varInd_spectrum);
+                float smoothing = State.GetVariable(CurrentWave.FrameVariables, varInd_smoothing);
+                float usedots = State.GetVariable(CurrentWave.BaseVariables, varInd_usedots);
 
-                float frameR = State.GetVariable(CurrentWave.FrameVariables, "r");
-                float frameG = State.GetVariable(CurrentWave.FrameVariables, "g");
-                float frameB = State.GetVariable(CurrentWave.FrameVariables, "b");
-                float frameA = State.GetVariable(CurrentWave.FrameVariables, "a");
+                float frameR = State.GetVariable(CurrentWave.FrameVariables, varInd_r);
+                float frameG = State.GetVariable(CurrentWave.FrameVariables, varInd_g);
+                float frameB = State.GetVariable(CurrentWave.FrameVariables, varInd_b);
+                float frameA = State.GetVariable(CurrentWave.FrameVariables, varInd_a);
 
-                float waveScale = State.GetVariable(CurrentPreset.BaseVariables, "wave_scale");
+                float waveScale = State.GetVariable(CurrentPreset.BaseVariables, varInd_wave_scale);
 
                 samples -= sep;
 
@@ -1876,38 +1938,38 @@ namespace Milkstain
                     float value1 = CurrentWave.PointsDataL[j];
                     float value2 = CurrentWave.PointsDataR[j];
 
-                    State.SetVariable(CurrentWave.FrameVariables, "sample", j / (samples - 1f));
-                    State.SetVariable(CurrentWave.FrameVariables, "value1", value1);
-                    State.SetVariable(CurrentWave.FrameVariables, "value2", value2);
-                    State.SetVariable(CurrentWave.FrameVariables, "x", 0.5f + value1);
-                    State.SetVariable(CurrentWave.FrameVariables, "y", 0.5f + value2);
-                    State.SetVariable(CurrentWave.FrameVariables, "r", frameR);
-                    State.SetVariable(CurrentWave.FrameVariables, "g", frameG);
-                    State.SetVariable(CurrentWave.FrameVariables, "b", frameB);
-                    State.SetVariable(CurrentWave.FrameVariables, "a", frameA);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_sample, j / (samples - 1f));
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_value1, value1);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_value2, value2);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_x, 0.5f + value1);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_y, 0.5f + value2);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_r, frameR);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_g, frameG);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_b, frameB);
+                    State.SetVariable(CurrentWave.FrameVariables, varInd_a, frameA);
 
                     if (!string.IsNullOrEmpty(CurrentWave.PointEquationSource))
                     {
                         CurrentWave.PointEquationCompiled(CurrentWave.FrameVariables);
                     }
 
-                    float x = (State.GetVariable(CurrentWave.FrameVariables, "x") * 2f - 1f) * (1f / AspectRatio.x);
-                    float y = (State.GetVariable(CurrentWave.FrameVariables, "y") * 2f - 1f) * (1f / AspectRatio.y);
+                    float x = (State.GetVariable(CurrentWave.FrameVariables, varInd_x) * 2f - 1f) * (1f / AspectRatio.x);
+                    float y = (State.GetVariable(CurrentWave.FrameVariables, varInd_y) * 2f - 1f) * (1f / AspectRatio.y);
 
-                    float r = State.GetVariable(CurrentWave.FrameVariables, "r");
-                    float g = State.GetVariable(CurrentWave.FrameVariables, "g");
-                    float b = State.GetVariable(CurrentWave.FrameVariables, "b");
-                    float a = State.GetVariable(CurrentWave.FrameVariables, "a");
+                    float r = State.GetVariable(CurrentWave.FrameVariables, varInd_r);
+                    float g = State.GetVariable(CurrentWave.FrameVariables, varInd_g);
+                    float b = State.GetVariable(CurrentWave.FrameVariables, varInd_b);
+                    float a = State.GetVariable(CurrentWave.FrameVariables, varInd_a);
 
                     CurrentWave.Positions[j] = new Vector3(x, y, 0f);
                     CurrentWave.Colors[j] = new Color(r, g, b, a * blendProgress);
                 }
 
-                bool thick = State.GetVariable(CurrentWave.FrameVariables, "thick") != 0f;
+                bool thick = State.GetVariable(CurrentWave.FrameVariables, varInd_thick) != 0f;
 
                 if (usedots != 0f)
                 {
-                    DotParent.gameObject.SetActive(true);
+                    DotParent.localPosition = new Vector3(0f, 0f, -0.5f);
 
                     Vector3 outOfBounds = new Vector3(0f, 0f, -10f);
 
@@ -1935,7 +1997,7 @@ namespace Milkstain
                     TargetCamera.targetTexture = TempTexture;
                     TargetCamera.Render();
 
-                    DotParent.gameObject.SetActive(false);
+                    DotParent.localPosition = new Vector3(0f, 0f, -10f);
                 }
                 else
                 {
@@ -1966,7 +2028,7 @@ namespace Milkstain
 
                     WaveformRenderer.sharedMaterial.mainTexture = TempTexture;
                     WaveformRenderer.sharedMaterial.SetColor("waveColor", Color.white);
-                    WaveformRenderer.sharedMaterial.SetFloat("additivewave", State.GetVariable(CurrentWave.FrameVariables, "additive"));
+                    WaveformRenderer.sharedMaterial.SetFloat("additivewave", State.GetVariable(CurrentWave.FrameVariables, varInd_additive));
                     WaveformRenderer.sharedMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
                     TargetMeshFilter.sharedMesh = TargetMeshWarp;
@@ -3147,7 +3209,7 @@ namespace Milkstain
 
             if (State.GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
             {
-                DotParent.gameObject.SetActive(true);
+                DotParent.localPosition = new Vector3(0f, 0f, -0.5f);
 
                 Vector3 outOfBounds = new Vector3(0f, 0f, -10f);
 
@@ -3194,7 +3256,7 @@ namespace Milkstain
                 TargetCamera.targetTexture = TempTexture;
                 TargetCamera.Render();
 
-                DotParent.gameObject.SetActive(false);
+                DotParent.localPosition = new Vector3(0f, 0f, -10f);
             }
             else
             {
@@ -3399,13 +3461,21 @@ namespace Milkstain
             {
                 pos.x = 0f;
             }
+            else
+            {
+                pos.x = Mathf.Clamp(pos.x, -10f, 10f);
+            }
 
             if (float.IsNaN(pos.y))
             {
                 pos.y = 0f;
             }
+            else
+            {
+                pos.y = Mathf.Clamp(pos.y, -10f, 10f);
+            }
 
-            return new Vector3(Mathf.Clamp(pos.x, -10f, 10f), Mathf.Clamp(pos.y, -10f, 10f), 0f);
+            return pos;
         }
 
         void DrawComp(Preset preset, bool blending)
@@ -4264,7 +4334,7 @@ namespace Milkstain
                     CurrentWave.SmoothedPositions = new Vector3[MaxSamples * 2 - 1];
                     CurrentWave.SmoothedColors = new Color[MaxSamples * 2 - 1];
 
-                    if (State.GetVariable(CurrentWave.BaseVariables, "enabled") != 0f)
+                    if (State.GetVariable(CurrentWave.BaseVariables, varInd_enabled) != 0f)
                     {
                         foreach (var v in CurrentWave.BaseVariables.Keys)
                         {
@@ -4323,7 +4393,7 @@ namespace Milkstain
                     CurrentShape.UVs = new Vector2[MaxShapeSides + 2];
                     CurrentShape.BorderPositions = new Vector3[MaxShapeSides + 1];
 
-                    if (State.GetVariable(CurrentShape.BaseVariables, "enabled") != 0f)
+                    if (State.GetVariable(CurrentShape.BaseVariables, varInd_enabled) != 0f)
                     {
                         foreach (var v in CurrentShape.BaseVariables.Keys)
                         {
