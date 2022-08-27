@@ -2281,14 +2281,11 @@ MonoBehaviour:
   DefaultWarpShader: {fileID: 4800000, guid: cd82fc570590c4e2d92765825614a240, type: 3}
   DefaultCompShader: {fileID: 4800000, guid: 315b6a4d15a2749af9832897a3d7d844, type: 3}
   DoNothingMaterial: {fileID: 2100000, guid: 3f9651530f32b423aad8f1dc97067131, type: 2}
-  BlurMaterialHorizontal: {fileID: 2100000, guid: 37ccef21325854ca484edcd9ed26adf1,
-    type: 2}
-  BlurMaterialVertical: {fileID: 2100000, guid: d803aa173b28e423093c0d5b2f331629,
-    type: 2}
+  BlurMaterialHorizontal: {fileID: 2100000, guid: 37ccef21325854ca484edcd9ed26adf1, type: 2}
+  BlurMaterialVertical: {fileID: 2100000, guid: d803aa173b28e423093c0d5b2f331629, type: 2}
   BorderMaterial: {fileID: 2100000, guid: 4f67ca6eb8d164f959379848d65602c2, type: 2}
   ShapeMaterial: {fileID: 2100000, guid: 51c1410d1af374417b8d1356896430b6, type: 2}
-  DarkenCenterMaterial: {fileID: 2100000, guid: 712dc150dc0d9464bac45986c7284a32,
-    type: 2}
+  DarkenCenterMaterial: {fileID: 2100000, guid: 712dc150dc0d9464bac45986c7284a32, type: 2}
   BorderSideLeft: {fileID: 1654534779783331365}
   BorderSideRight: {fileID: 1654534779293009037}
   BorderSideTop: {fileID: 1654534779142031204}
@@ -2301,11 +2298,9 @@ MonoBehaviour:
   FPS: 0
   PresetName: 
   DotParent: {fileID: 7286231199207542358}
-  DotPrefab: {fileID: 966847834411240390, guid: e02abe68be02d459e8a98529b2568790,
-    type: 3}
+  DotPrefab: {fileID: 966847834411240390, guid: e02abe68be02d459e8a98529b2568790, type: 3}
   MotionVectorParent: {fileID: 7136918807277406604}
-  MotionVectorPrefab: {fileID: 7979772709230439729, guid: 69cc46a8cde7448628049744fff4b8a8,
-    type: 3}
+  MotionVectorPrefab: {fileID: 7979772709230439729, guid: 69cc46a8cde7448628049744fff4b8a8, type: 3}
 --- !u!1 &1654534779293009036
 GameObject:
   m_ObjectHideFlags: 0
@@ -3552,7 +3547,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7286231199207542358
 Transform:
   m_ObjectHideFlags: 0
@@ -3561,7 +3556,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6037653285560393901}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.5}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
