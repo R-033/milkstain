@@ -11,7 +11,7 @@ Milkstain can be driven from any ```AudioSource``` as long as ```AudioClip``` is
 Milkstain requires it's own layer for isolated rendering. It's set up by default to use the last layer slot.
 
 ### Playing presets
-For visualizer to work, first you need to instantiate the prefab ```Assets/Milkstain/Resources/Milkdrop.prefab```. It has everything already set up.
+For visualizer to work, first you need to instantiate the prefab ```Milkdrop.prefab```. It has everything already set up.
 
 Next, pass your ```AudioSource``` to ```TargetAudio``` field. To use external audio you can use microphone capture provided by Unity: <a href="https://docs.unity3d.com/ScriptReference/Microphone.Start.html">Microphone.Start</a>
 
@@ -28,7 +28,7 @@ Unity requires shaders to be precompiled in editor so presets for Milkdrop 2.0 w
 
 - Open Window -> Milkdrop Shader Compiler and press "Compile All Shaders" button.
 
-- Open ```Assets/Milkstain/Resources/Milkdrop.prefab``` and assign created shaders from ```/Custom/``` folders to "Preset Warp Shaders" and "Preset Comp Shaders".
+- Open ```Milkdrop.prefab``` and assign created shaders from ```/Custom/``` folders to "Preset Warp Shaders" and "Preset Comp Shaders".
 
 - Untick "Skip Custom Shaded" at the bottom.
 
