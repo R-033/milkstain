@@ -39,5 +39,7 @@ namespace Milkstain
         public Color[] Colors;
         public Vector3[] SmoothedPositions;
         public Color[] SmoothedColors;
+
+        public Material LineMaterial;
     }
 }

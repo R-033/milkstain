@@ -103,10 +103,14 @@ namespace Milkstain
             return value < 0.0f ? comparison : comparison + 1;
         }
 
-        static float Func_InvSqrt(float x)
+        static unsafe float Func_InvSqrt(float x)
         {
-            // todo fast
-            return 1f / Mathf.Sqrt(x);
+            float xhalf = 0.5f*x;
+            int i = *(int*)&x;
+            i = 0x5f3759df - (i>>1);
+            x = *(float*)&i;
+            x = x*(1.5f - xhalf*x*x);
+            return x;
         }
 
         static float Func_Abs(float x)
@@ -174,7 +178,7 @@ namespace Milkstain
 
         static float Func_Rand(float x)
         {
-            return UnityEngine.Random.Range(0, (int)x);
+            return UnityEngine.Random.Range(0, ((int)x + 1));
         }
 
         static float Func_Bor(float x, float y)
@@ -2054,12 +2058,21 @@ namespace Milkstain
                                     });
                                     break;
                                 case 1:
-                                    actionsList.Add((State Variables) =>
+                                    if (nextTypeValue == 0f)
                                     {
-                                        float div = nextTypeValue;
-                                        if (div == 0f) stack[funcIndex] = 0f;
-                                        else stack[funcIndex] = stack[prevTypeIndex] / div;
-                                    });
+                                        actionsList.Add((State Variables) =>
+                                        {
+                                            stack[funcIndex] = 0f;
+                                        });
+                                    }
+                                    else
+                                    {
+                                        float invNextTypeValue = 1f / nextTypeValue;
+                                        actionsList.Add((State Variables) =>
+                                        {
+                                            stack[funcIndex] = stack[prevTypeIndex] * invNextTypeValue;
+                                        });
+                                    }
                                     break;
                                 case 2:
                                     actionsList.Add((State Variables) =>
@@ -2120,9 +2133,10 @@ namespace Milkstain
                                     }
                                     else
                                     {
+                                        float invNextTypeValue = 1f / nextTypeValue;
                                         actionsList.Add((State Variables) =>
                                         {
-                                            stack[funcIndex] = Variables.Heap[prevTypeIndex] / nextTypeValue;
+                                            stack[funcIndex] = Variables.Heap[prevTypeIndex] * invNextTypeValue;
                                         });
                                     }
                                     break;

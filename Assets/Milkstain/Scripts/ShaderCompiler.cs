@@ -34,8 +34,15 @@ namespace Milkstain
             raw = raw.Replace("sampler2D sampler_noise_mq", "");
             raw = raw.Replace("sampler2D sampler_noise_hq", "");
             raw = raw.Replace("sampler2D sampler_pw_noise_lq", "");
-            raw = raw.Replace("sampler3D sampler_noisevol_lq", "");
-            raw = raw.Replace("sampler3D sampler_noisevol_hq", "");
+            
+            raw = raw.Replace("sampler2D sampler_noisevol_lq", "");
+            raw = raw.Replace("sampler2D sampler_noisevol_hq", "");
+
+            // todo
+            raw = raw.Replace("sampler2D sampler_fw_noisevol_hq", "");
+            raw = raw.Replace("sampler2D sampler_fc_noisevol_hq", "");
+            raw = raw.Replace("sampler2D sampler_pw_noisevol_hq", "");
+            raw = raw.Replace("sampler2D sampler_pc_noisevol_hq", "");
 
             raw = raw.Replace("sampler_main", "_MainTexPrev");
             raw = raw.Replace("sampler_fw_main", "_MainTex2");
@@ -52,6 +59,13 @@ namespace Milkstain
             raw = raw.Replace("sampler_pw_noise_lq", "_MainTex13");
             raw = raw.Replace("sampler_noisevol_lq", "_MainTex14");
             raw = raw.Replace("sampler_noisevol_hq", "_MainTex15");
+
+            // todo
+            raw = raw.Replace("sampler_fw_noisevol_hq", "_MainTex15");
+            raw = raw.Replace("sampler_fc_noisevol_hq", "_MainTex15");
+            raw = raw.Replace("sampler_pw_noisevol_hq", "_MainTex15");
+            raw = raw.Replace("sampler_pc_noisevol_hq", "_MainTex15");
+
             raw = raw.Replace("lum(", "lum__(");
             raw = raw.Replace("lum (", "lum__ (");
             raw = raw.Replace("tex2d", "tex2D");

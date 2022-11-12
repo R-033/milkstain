@@ -34,7 +34,9 @@ namespace Milkstain
         public Vector2[] UVs;
         public Vector3[] BorderPositions;
 
-        public Mesh ShapeMesh;
+        public Mesh[] ShapeMeshes;
+        public Material[] ShapeMaterials;
+        public Material[] BorderMaterials;
 
         public string TextureName;
         public Texture Texture;
