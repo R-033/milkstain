@@ -13,7 +13,7 @@ Milkstain requires it's own unique layer for isolated rendering. It's set up by 
 ### Playing presets
 For visualizer to work, first you need to instantiate the prefab ```Assets/Milkstain/Resources/Milkdrop.prefab```. It has everything already set up.
 
-Next, pass your ```AudioSource``` to ```TargetAudio``` field.
+Next, pass your ```AudioSource``` to ```TargetAudio``` field. To use external audio you can use microphone capture provided by Unity: <a href="https://docs.unity3d.com/ScriptReference/Microphone.Start.html">Microphone.Start</a>
 
 Then call ```Initialize()```.
 
