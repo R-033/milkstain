@@ -32,6 +32,4 @@ Unity requires shaders to be precompiled in editor so presets for Milkdrop 2.0 w
 
 - Untick "Skip Custom Shaded" at the bottom.
 
-Some complex presets can have big performance impact despite optimization efforts.
-
 I wrote this port for a small throwaway easter egg in my own project, so it might be inaccurate or contain bugs!
