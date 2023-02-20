@@ -2245,7 +2245,7 @@ MonoBehaviour:
   Scale: 1
   MaxShapeSides: 101
   MaxSamples: 512
-  MaxFPS: 30
+  MaxFPS: 60
   ChangePresetIn: 5
   TransitionTime: 5.7
   presetChangeTimer: 0
