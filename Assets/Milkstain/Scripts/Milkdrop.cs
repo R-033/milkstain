@@ -305,8 +305,31 @@ namespace Milkstain
             waveScale = new Vector3(Resolution.x / (float)Resolution.y, 1f, 1f);
         }
 
+        void Awake()
+        {
+            DoNothingMaterial = new Material(DoNothingMaterial);
+            BlurMaterialHorizontal = new Material(BlurMaterialHorizontal);
+            BlurMaterialVertical = new Material(BlurMaterialVertical);
+            BorderMaterial = new Material(BorderMaterial);
+            ShapeMaterial = new Material(ShapeMaterial);
+            LineMaterial = new Material(LineMaterial);
+            DarkenCenterMaterial = new Material(DarkenCenterMaterial);
+
+            BorderSideLeft.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
+            BorderSideRight.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
+            BorderSideTop.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
+            BorderSideBottom.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
+        }
+
         void OnDestroy()
         {
+            Destroy(DoNothingMaterial);
+            Destroy(BlurMaterialHorizontal);
+            Destroy(BlurMaterialVertical);
+            Destroy(BorderMaterial);
+            Destroy(ShapeMaterial);
+            Destroy(LineMaterial);
+            Destroy(DarkenCenterMaterial);
             Destroy(TempTexture);
             Destroy(PrevTempTexture);
             Destroy(TempTextureFW);
