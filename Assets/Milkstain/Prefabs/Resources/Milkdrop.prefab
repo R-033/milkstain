@@ -2644,7 +2644,7 @@ Transform:
   m_GameObject: {fileID: 4754186679095152593}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.7, z: -0.5}
-  m_LocalScale: {x: 0.01, y: -0.01, z: 0.01}
+  m_LocalScale: {x: 0.001, y: -0.001, z: 0.001}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1654534779277176288}
@@ -2707,7 +2707,7 @@ TextMesh:
   m_Anchor: 1
   m_Alignment: 1
   m_TabSize: 4
-  m_FontSize: 0
+  m_FontSize: 160
   m_FontStyle: 0
   m_RichText: 0
   m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
