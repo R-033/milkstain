@@ -91,6 +91,7 @@ namespace Milkstain
         public TextMesh SuperText;
 
         public bool RandomOrder = true;
+        public bool ConsiderRating = true;
 
         public bool SkipCustomShaded = true;
 
@@ -188,69 +189,72 @@ namespace Milkstain
         private float[] blendingVertInfoA;
         private float[] blendingVertInfoC;
 
-        int[] mixedVariables;
-        int[] snappedVariables;
+        private int[] mixedVariables;
+        private int[] snappedVariables;
 
-        float[] imm = new float[3];
-        float[] avg = new float[3];
-        float[] longAvg = new float[3];
-        float[] val = new float[3];
-        float[] att = new float[3];
+        private float[] imm = new float[3];
+        private float[] avg = new float[3];
+        private float[] longAvg = new float[3];
+        private float[] val = new float[3];
+        private float[] att = new float[3];
 
-        int index = 0;
+        private int index = 0;
 
-        int varInd_x;
-        int varInd_y;
-        int varInd_rad;
-        int varInd_ang;
-        int varInd_zoom;
-        int varInd_zoomexp;
-        int varInd_rot;
-        int varInd_warp;
-        int varInd_cx;
-        int varInd_cy;
-        int varInd_dx;
-        int varInd_dy;
-        int varInd_sx;
-        int varInd_sy;
-        int varInd_enabled;
-        int varInd_sep;
-        int varInd_scaling;
-        int varInd_spectrum;
-        int varInd_smoothing;
-        int varInd_usedots;
-        int varInd_r;
-        int varInd_g;
-        int varInd_b;
-        int varInd_a;
-        int varInd_r2;
-        int varInd_g2;
-        int varInd_b2;
-        int varInd_a2;
-        int varInd_border_r;
-        int varInd_border_g;
-        int varInd_border_b;
-        int varInd_border_a;
-        int varInd_wave_scale;
-        int varInd_sample;
-        int varInd_value1;
-        int varInd_value2;
-        int varInd_thick;
-        int varInd_num_inst;
-        int varInd_thickouline;
-        int varInd_textured;
-        int varInd_tex_zoom;
-        int varInd_tex_ang;
-        int varInd_additive;
-        int varInd_instance;
-        int varInd_sides;
+        // optimization
+        private int varInd_x;
+        private int varInd_y;
+        private int varInd_rad;
+        private int varInd_ang;
+        private int varInd_zoom;
+        private int varInd_zoomexp;
+        private int varInd_rot;
+        private int varInd_warp;
+        private int varInd_cx;
+        private int varInd_cy;
+        private int varInd_dx;
+        private int varInd_dy;
+        private int varInd_sx;
+        private int varInd_sy;
+        private int varInd_enabled;
+        private int varInd_sep;
+        private int varInd_scaling;
+        private int varInd_spectrum;
+        private int varInd_smoothing;
+        private int varInd_usedots;
+        private int varInd_r;
+        private int varInd_g;
+        private int varInd_b;
+        private int varInd_a;
+        private int varInd_r2;
+        private int varInd_g2;
+        private int varInd_b2;
+        private int varInd_a2;
+        private int varInd_border_r;
+        private int varInd_border_g;
+        private int varInd_border_b;
+        private int varInd_border_a;
+        private int varInd_wave_scale;
+        private int varInd_sample;
+        private int varInd_value1;
+        private int varInd_value2;
+        private int varInd_thick;
+        private int varInd_num_inst;
+        private int varInd_thickouline;
+        private int varInd_textured;
+        private int varInd_tex_zoom;
+        private int varInd_tex_ang;
+        private int varInd_additive;
+        private int varInd_instance;
+        private int varInd_sides;
 
-        (float[], float[]) blurValues;
+        private (float[], float[]) blurValues;
 
-        Vector2 AspectRatio;
+        private Vector2 AspectRatio;
 
-        Vector3 shapeScale;
-        Vector3 waveScale;
+        private Vector3 shapeScale;
+        private Vector3 waveScale;
+
+        private List<int> weightedPresetSelection;
 
         public void UpdateResolution(Vector2Int res)
         {
@@ -927,7 +931,29 @@ namespace Milkstain
                 int ind;
                 if (RandomOrder)
                 {
-                    ind = UnityEngine.Random.Range(0, PresetFiles.Length);
+                    if (ConsiderRating)
+                    {
+                        if (weightedPresetSelection == null)
+                        {
+                            weightedPresetSelection = new List<int>();
+
+                            for (int i = 0; i < PresetFiles.Length; i++)
+                            {
+                                var rating = Mathf.RoundToInt(GetRating(PresetFiles[i].text));
+
+                                for (int j = 0; j < rating; j++)
+                                {
+                                    weightedPresetSelection.Add(i);
+                                }
+                            }
+                        }
+
+                        ind = weightedPresetSelection[UnityEngine.Random.Range(0, weightedPresetSelection.Count)];
+                    }
+                    else
+                    {
+                        ind = UnityEngine.Random.Range(0, PresetFiles.Length);
+                    }
                 }
                 else
                 {
@@ -3814,6 +3840,49 @@ namespace Milkstain
             }
         }
 
+        public static float GetRating(string file)
+        {
+            string[] lines = file.Split('\n');
+
+            bool acceptValues = false;
+
+            foreach (string line in lines)
+            {
+                if (line.StartsWith("["))
+                {
+                    acceptValues = !acceptValues;
+                    continue;
+                }
+
+                if (!acceptValues)
+                {
+                    continue;
+                }
+
+                if (line.StartsWith("fRating="))
+                {
+                    var val = line.Substring(8);
+
+                    float result = 0f;
+
+                    if (val == "." || val == "-")
+                    {
+                        val = "0";
+                    }
+
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+                    {
+                        //Debug.LogError("Invalid number " + val + ": " + line);
+                        continue;
+                    }
+
+                    return result;
+                }
+            }
+
+            return 0f;
+        }
+
         public static Preset LoadPreset(string file)
         {
             var preset = new Preset();
@@ -3917,7 +3986,7 @@ namespace Milkstain
 
                     if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                     {
-                        Debug.LogError("Invalid number " + val + ": " + line);
+                        //Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
                     }
 
@@ -3985,7 +4054,7 @@ namespace Milkstain
 
                         if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
                         {
-                            Debug.LogError("Invalid number " + val + ": " + line);
+                            //Debug.LogError("Invalid number " + val + ": " + line);
                             continue;
                         }
 

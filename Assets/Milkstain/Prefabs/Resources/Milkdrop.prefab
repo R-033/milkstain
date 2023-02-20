@@ -2275,6 +2275,7 @@ MonoBehaviour:
   BorderParent: {fileID: 1654534779114536300}
   SuperText: {fileID: 9218397685660751165}
   RandomOrder: 1
+  ConsiderRating: 1
   SkipCustomShaded: 1
   SuperTextString: Hello world
   RenderSuperText: 0
