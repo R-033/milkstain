@@ -94,6 +94,9 @@ namespace Milkstain
 
         public bool SkipCustomShaded = true;
 
+        public string SuperTextString;
+        public bool RenderSuperText;
+
         private ulong CurrentFrame = 0;
         private float CurrentTime = 0f;
 
@@ -1505,7 +1508,7 @@ namespace Milkstain
 
             DrawInnerBorder();
 
-            //DrawSuperText();
+            DrawSuperText();
 
             if (!blending)
             {
@@ -1602,9 +1605,19 @@ namespace Milkstain
 
         void DrawSuperText()
         {
+            if (!RenderSuperText)
+            {
+                return;
+            }
+
             UnityEngine.Profiling.Profiler.BeginSample("DrawSuperText");
 
             SuperText.gameObject.SetActive(true);
+
+            if (SuperText.text != SuperTextString)
+            {
+                SuperText.text = SuperTextString;
+            }
 
             TargetMeshFilter.sharedMesh = TargetMeshWarp;
             TargetMeshRenderer.sharedMaterial = DoNothingMaterial;

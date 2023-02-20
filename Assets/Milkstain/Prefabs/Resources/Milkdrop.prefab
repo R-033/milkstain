@@ -2276,6 +2276,8 @@ MonoBehaviour:
   SuperText: {fileID: 9218397685660751165}
   RandomOrder: 1
   SkipCustomShaded: 1
+  SuperTextString: Hello world
+  RenderSuperText: 0
   FinalTexture: {fileID: 0}
   FPS: 0
   PresetName: 
@@ -2698,7 +2700,7 @@ TextMesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4754186679095152593}
-  m_Text: Hello world!
+  m_Text: 
   m_OffsetZ: 0
   m_CharacterSize: 10
   m_LineSpacing: 1
