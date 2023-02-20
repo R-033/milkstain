@@ -2246,7 +2246,7 @@ MonoBehaviour:
   MaxShapeSides: 101
   MaxSamples: 512
   MaxFPS: 60
-  ChangePresetIn: 5
+  ChangePresetIn: 15
   TransitionTime: 5.7
   presetChangeTimer: 0
   Bass: 0
