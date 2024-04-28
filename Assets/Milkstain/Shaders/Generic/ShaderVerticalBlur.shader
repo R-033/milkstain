@@ -8,7 +8,7 @@ Shader "Milkdrop/VertBlur"
         ed2 ("ed2", Float) = 0
         ed3 ("ed3", Float) = 0
         wds ("wds", Vector) = (1,1,1,1)
-        wdiv ("wdiv", Vector) = (1,1,1,1)
+        wdiv ("wdiv", Float) = 0
     }
     SubShader
     {

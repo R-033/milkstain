@@ -8,7 +8,7 @@ Shader "Milkdrop/HorBlur"
         bias ("bias", Float) = 0
         ws ("ws", Vector) = (1,1,1,1)
         ds ("ds", Vector) = (1,1,1,1)
-        wdiv ("wdiv", Vector) = (1,1,1,1)
+        wdiv ("wdiv", Float) = 0
     }
     SubShader
     {
