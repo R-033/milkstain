@@ -602,9 +602,7 @@ namespace Milkstain
                             int finalValueCountInt = (int)finalValueCount;
                             actionsList.Add((State Variables) =>
                             {
-                                int count = finalValueCountInt;
-
-                                for (int i = 0; i < count; i++)
+                                for (int i = 0; i < finalValueCountInt; i++)
                                 {
                                     body(Variables);
                                 }
@@ -906,46 +904,223 @@ namespace Milkstain
                     }
 
                     List<string> expression = Equation.GetRange(i + 2, comma - i - 2);
+                    List<string> expression2 = Equation.GetRange(comma + 1, end - comma - 1);
 
-                    string varName = Equation[comma + 1];
-
-                    Var varNameEnum;
-                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
+                    if (expression[0] == "megabuf" || expression[0] == "gmegabuf")
                     {
-                        if (!State.CustomVariables.ContainsKey(varName))
+                        List<string> indexExpression = Equation.GetRange(i + 4, comma - i - 5);
+                        List<string> bodyExpression = expression2;
+
+                        int stackIndex = 0;
+                        string finalTokenIndex = CompileExpression(indexExpression, actionsList, ref stackIndex);
+                        stackIndex = 0;
+                        string finalTokenBody = CompileExpression(bodyExpression, actionsList, ref stackIndex);
+
+                        int finalTypeIndex = ParseVariable(finalTokenIndex, out int finalIndexIndex, out float finalValueIndex);
+                        int finalTypeBody = ParseVariable(finalTokenBody, out int finalIndexBody, out float finalValueBody);
+
+                        if (expression[0] == "megabuf")
                         {
-                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                            switch (finalTypeIndex)
+                            {
+                                case 0:
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)stack[finalIndexIndex]] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)stack[finalIndexIndex]] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)stack[finalIndexIndex]] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                                case 1:
+                                    int index = (int)finalValueIndex;
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[index] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[index] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[index] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                                case 2:
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)Variables.Heap[finalIndexIndex]] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)Variables.Heap[finalIndexIndex]] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.MegaBuf[(int)Variables.Heap[finalIndexIndex]] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                            }
                         }
-                        varNameEnum = State.CustomVariables[varName];
+                        else
+                        {
+                            switch (finalTypeIndex)
+                            {
+                                case 0:
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)stack[finalIndexIndex]] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)stack[finalIndexIndex]] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)stack[finalIndexIndex]] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                                case 1:
+                                    int index = (int)finalValueIndex;
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[index] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[index] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[index] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                                case 2:
+                                    switch (finalTypeIndex)
+                                    {
+                                        case 0:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)Variables.Heap[finalIndexIndex]] = stack[finalIndexBody];
+                                            });
+                                            break;
+                                        case 1:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)Variables.Heap[finalIndexIndex]] = finalValueBody;
+                                            });
+                                            break;
+                                        case 2:
+                                            actionsList.Add((State Variables) =>
+                                            {
+                                                Variables.SourcePreset.GMegaBuf[(int)Variables.Heap[finalIndexIndex]] = Variables.Heap[finalIndexBody];
+                                            });
+                                            break;
+                                    }
+                                    break;
+                            }
+                        }
                     }
-                    int varIndex = (int)varNameEnum;
-
-                    int stackIndex = 0;
-
-                    string finalToken = CompileExpression(expression, actionsList, ref stackIndex);
-
-                    int finalType = ParseVariable(finalToken, out int finalIndex, out float finalValue);
-
-                    switch (finalType)
+                    else
                     {
-                        case 0:
-                            actionsList.Add((State Variables) =>
+                        if (expression.Count == 1)
+                        {
+                            string varName = expression[0];
+
+                            Var varNameEnum;
+                            if (!Enum.TryParse<Var>(varName, out varNameEnum))
                             {
-                                Variables.Heap[varIndex] = stack[finalIndex];
-                            });
-                            break;
-                        case 1:
-                            actionsList.Add((State Variables) =>
+                                if (!State.CustomVariables.ContainsKey(varName))
+                                {
+                                    State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                                }
+                                varNameEnum = State.CustomVariables[varName];
+                            }
+                            int varIndex = (int)varNameEnum;
+
+                            int stackIndex = 0;
+
+                            string finalToken = CompileExpression(expression2, actionsList, ref stackIndex);
+
+                            int finalType = ParseVariable(finalToken, out int finalIndex, out float finalValue);
+
+                            switch (finalType)
                             {
-                                Variables.Heap[varIndex] = finalValue;
-                            });
-                            break;
-                        case 2:
-                            actionsList.Add((State Variables) =>
-                            {
-                                Variables.Heap[varIndex] = Variables.Heap[finalIndex];
-                            });
-                            break;
+                                case 0:
+                                    actionsList.Add((State Variables) =>
+                                    {
+                                        Variables.Heap[varIndex] = stack[finalIndex];
+                                    });
+                                    break;
+                                case 1:
+                                    actionsList.Add((State Variables) =>
+                                    {
+                                        Variables.Heap[varIndex] = finalValue;
+                                    });
+                                    break;
+                                case 2:
+                                    actionsList.Add((State Variables) =>
+                                    {
+                                        Variables.Heap[varIndex] = Variables.Heap[finalIndex];
+                                    });
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError("unknown assign target");
+                        }
                     }
 
                     i = end;
