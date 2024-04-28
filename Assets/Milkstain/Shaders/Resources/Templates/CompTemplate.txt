@@ -229,35 +229,35 @@ Shader "Milkdrop/{0}"
             float4 rand_preset;
             float fShader;
 
-            float4x3 rot_s1;
-            float4x3 rot_s2;
-            float4x3 rot_s3;
-            float4x3 rot_s4;
+            float4x4 rot_s1;
+            float4x4 rot_s2;
+            float4x4 rot_s3;
+            float4x4 rot_s4;
 
-            float4x3 rot_d1;
-            float4x3 rot_d2;  
-            float4x3 rot_d3;
-            float4x3 rot_d4;
+            float4x4 rot_d1;
+            float4x4 rot_d2;  
+            float4x4 rot_d3;
+            float4x4 rot_d4;
 
-            float4x3 rot_f1;
-            float4x3 rot_f2;
-            float4x3 rot_f3;
-            float4x3 rot_f4;
+            float4x4 rot_f1;
+            float4x4 rot_f2;
+            float4x4 rot_f3;
+            float4x4 rot_f4;
 
-            float4x3 rot_vf1;
-            float4x3 rot_vf2;
-            float4x3 rot_vf3;
-            float4x3 rot_vf4;
+            float4x4 rot_vf1;
+            float4x4 rot_vf2;
+            float4x4 rot_vf3;
+            float4x4 rot_vf4;
 
-            float4x3 rot_uf1;
-            float4x3 rot_uf2;
-            float4x3 rot_uf3;
-            float4x3 rot_uf4;
+            float4x4 rot_uf1;
+            float4x4 rot_uf2;
+            float4x4 rot_uf3;
+            float4x4 rot_uf4;
 
-            float4x3 rot_rand1;
-            float4x3 rot_rand2;
-            float4x3 rot_rand3;
-            float4x3 rot_rand4;
+            float4x4 rot_rand1;
+            float4x4 rot_rand2;
+            float4x4 rot_rand3;
+            float4x4 rot_rand4;
 
             float PI = 3.14159265359;
             float M_PI = 3.14159265359;

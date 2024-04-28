@@ -49,5 +49,12 @@ namespace Milkstain
 
         public float[] MegaBuf = new float[1048576];
         public float[] GMegaBuf = new float[1048576];
+
+        public Vector4 RandomStart;
+        public Vector4 RandomPreset;
+        public Matrix4x4 StaticRotation1;
+        public Matrix4x4 StaticRotation2;
+        public Matrix4x4 StaticRotation3;
+        public Matrix4x4 StaticRotation4;
     }
 }

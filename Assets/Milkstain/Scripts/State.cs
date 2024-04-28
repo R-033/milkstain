@@ -75,8 +75,6 @@ namespace Milkstain
         pixelsx, pixelsy,
         motionvectorson,
         shader,
-        rand_preset_x, rand_preset_y, rand_preset_z, rand_preset_w,
-        rand_start_x, rand_start_y, rand_start_z, rand_start_w,
         q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16,
         q17, q18, q19, q20, q21, q22, q23, q24, q25, q26, q27, q28, q29, q30, q31, q32,
         t1, t2, t3, t4, t5, t6, t7, t8,
@@ -238,14 +236,6 @@ namespace Milkstain
             {"bspectrum", Var.spectrum},
             {"bdrawthick", Var.thick},
             {"bmotionvectorson", Var.motionvectorson},
-            {"rand_preset.x", Var.rand_preset_x},
-            {"rand_preset.y", Var.rand_preset_y},
-            {"rand_preset.z", Var.rand_preset_z},
-            {"rand_preset.w", Var.rand_preset_w},
-            {"rand_start.x", Var.rand_start_x},
-            {"rand_start.y", Var.rand_start_y},
-            {"rand_start.z", Var.rand_start_z},
-            {"rand_start.w", Var.rand_start_w},
             {"fshader", Var.shader}
         };
 

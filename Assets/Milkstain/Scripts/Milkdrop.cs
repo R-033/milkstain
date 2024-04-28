@@ -94,6 +94,10 @@ namespace Milkstain
         public bool ConsiderRating = true;
 
         public bool SkipCustomShaded = true;
+        public bool SkipDefaultShaded = false;
+
+        public bool IgnoreCustomWarp = false;
+        public bool IgnoreCustomComp = false;
 
         public string SuperTextString;
         public bool RenderSuperText;
@@ -202,6 +206,9 @@ namespace Milkstain
 
         private List<int> weightedPresetSelection;
 
+        private Material defaultWarpMaterial;
+        private Material defaultCompMaterial;
+
         public void UpdateResolution(Vector2Int res)
         {
             Destroy(TempTexture);
@@ -269,6 +276,9 @@ namespace Milkstain
             BorderSideRight.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
             BorderSideTop.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
             BorderSideBottom.GetComponent<MeshRenderer>().sharedMaterial = BorderMaterial;
+
+            defaultWarpMaterial = new Material(DefaultWarpShader);
+            defaultCompMaterial = new Material(DefaultCompShader);
         }
 
         void OnDestroy()
@@ -1027,6 +1037,11 @@ namespace Milkstain
             State.SetVariable(state, Var.aspecty, AspectRatio.y);
             State.SetVariable(state, Var.pixelsx, Resolution.x);
             State.SetVariable(state, Var.pixelsy, Resolution.y);
+
+            foreach (var v in CurrentPreset.RegVariables.Keys)
+            {
+                State.SetVariable(state, v, CurrentPreset.RegVariables.Heap[(int)v]);
+            }
         }
 
         void RunFrameEquations(Preset preset)
@@ -1298,8 +1313,6 @@ namespace Milkstain
             {
                 State.SetVariable(CurrentPreset.RegVariables, v, pick.Heap[(int)v]);
             }
-
-            // assign regs to global
 
             if (blending)
             {
@@ -1957,18 +1970,20 @@ namespace Milkstain
 
             UnityEngine.Profiling.Profiler.BeginSample("DrawWarp");
 
+            var mat = IgnoreCustomWarp ? defaultWarpMaterial : preset.WarpMaterial;
+
             TargetMeshFilter.sharedMesh = TargetMeshWarp;
             TargetMeshWarp.SetUVs(0, WarpUVs);
             TargetMeshWarp.SetColors(WarpColor);
 
-            TargetMeshRenderer.sharedMaterial = preset.WarpMaterial;
+            TargetMeshRenderer.sharedMaterial = mat;
 
-            preset.WarpMaterial.mainTexture = TempTexture;
+            mat.mainTexture = TempTexture;
 
-            preset.WarpMaterial.SetTexture("_MainTexPrev", PrevTempTexture);
+            mat.SetTexture("_MainTexPrev", PrevTempTexture);
 
-            preset.WarpMaterial.SetFloat("decay", State.GetVariable(preset.FrameVariables, Var.decay));
-            preset.WarpMaterial.SetFloat("blending", blending ? 1f : 0f);
+            mat.SetFloat("decay", State.GetVariable(preset.FrameVariables, Var.decay));
+            mat.SetFloat("blending", blending ? 1f : 0f);
 
             if (!SkipCustomShaded)
             {
@@ -1977,53 +1992,46 @@ namespace Milkstain
                 Graphics.Blit(PrevTempTexture, TempTexturePW);
                 Graphics.Blit(PrevTempTexture, TempTexturePC);
 
-                preset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
-                preset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
-                preset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
-                preset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
+                mat.SetTexture("_MainTex2", TempTextureFW);
+                mat.SetTexture("_MainTex3", TempTextureFC);
+                mat.SetTexture("_MainTex4", TempTexturePW);
+                mat.SetTexture("_MainTex5", TempTexturePC);
 
-                preset.WarpMaterial.SetTexture("_MainTex6", Blur1Texture);
-                preset.WarpMaterial.SetTexture("_MainTex7", Blur2Texture);
-                preset.WarpMaterial.SetTexture("_MainTex8", Blur3Texture);
+                mat.SetTexture("_MainTex6", Blur1Texture);
+                mat.SetTexture("_MainTex7", Blur2Texture);
+                mat.SetTexture("_MainTex8", Blur3Texture);
 
-                preset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
-                preset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
-                preset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
-                preset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
-                preset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
-                preset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
-                preset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
+                mat.SetTexture("_MainTex9", TextureNoiseLQ);
+                mat.SetTexture("_MainTex10", TextureNoiseLQLite);
+                mat.SetTexture("_MainTex11", TextureNoiseMQ);
+                mat.SetTexture("_MainTex12", TextureNoiseHQ);
+                mat.SetTexture("_MainTex13", TexturePWNoiseLQ);
+                mat.SetTexture("_MainTex14", TextureNoiseVolLQ);
+                mat.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
-                preset.WarpMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-                preset.WarpMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
-                preset.WarpMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-                preset.WarpMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-                preset.WarpMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-                preset.WarpMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-                preset.WarpMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-                preset.WarpMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-                preset.WarpMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+                mat.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
+                mat.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+                mat.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+                mat.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+                mat.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+                mat.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
 
-                preset.WarpMaterial.SetFloat("bass", Bass);
-                preset.WarpMaterial.SetFloat("mid", Mid);
-                preset.WarpMaterial.SetFloat("treb", Treb);
-                preset.WarpMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-                preset.WarpMaterial.SetFloat("bass_att", BassAtt);
-                preset.WarpMaterial.SetFloat("mid_att", MidAtt);
-                preset.WarpMaterial.SetFloat("treb_att", TrebAtt);
-                preset.WarpMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-                preset.WarpMaterial.SetFloat("time", CurrentTime);
-                preset.WarpMaterial.SetFloat("frame", CurrentFrame);
-                preset.WarpMaterial.SetFloat("fps", FPS);
-                preset.WarpMaterial.SetVector("rand_preset", 
-                    new Vector4(
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_x),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_y),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_z),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_w)
-                    )
-                );
-                preset.WarpMaterial.SetVector("rand_frame", 
+                mat.SetFloat("bass", Bass);
+                mat.SetFloat("mid", Mid);
+                mat.SetFloat("treb", Treb);
+                mat.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+                mat.SetFloat("bass_att", BassAtt);
+                mat.SetFloat("mid_att", MidAtt);
+                mat.SetFloat("treb_att", TrebAtt);
+                mat.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+                mat.SetFloat("time", CurrentTime);
+                mat.SetFloat("frame", CurrentFrame);
+                mat.SetFloat("fps", FPS);
+                mat.SetVector("rand_preset", preset.RandomPreset);
+                mat.SetVector("rand_frame", 
                     new Vector4(
                         UnityEngine.Random.Range(0f, 1f),
                         UnityEngine.Random.Range(0f, 1f),
@@ -2031,7 +2039,7 @@ namespace Milkstain
                         UnityEngine.Random.Range(0f, 1f)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qa", 
+                mat.SetVector("_qa", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q1),
                         State.GetVariable(preset.AfterFrameVariables, Var.q2),
@@ -2039,7 +2047,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q4)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qb", 
+                mat.SetVector("_qb", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q5),
                         State.GetVariable(preset.AfterFrameVariables, Var.q6),
@@ -2047,7 +2055,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q8)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qc", 
+                mat.SetVector("_qc", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q9),
                         State.GetVariable(preset.AfterFrameVariables, Var.q10),
@@ -2055,7 +2063,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q12)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qd", 
+                mat.SetVector("_qd", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q13),
                         State.GetVariable(preset.AfterFrameVariables, Var.q14),
@@ -2063,7 +2071,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q16)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qe", 
+                mat.SetVector("_qe", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q17),
                         State.GetVariable(preset.AfterFrameVariables, Var.q18),
@@ -2071,7 +2079,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q20)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qf", 
+                mat.SetVector("_qf", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q21),
                         State.GetVariable(preset.AfterFrameVariables, Var.q22),
@@ -2079,7 +2087,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q24)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qg", 
+                mat.SetVector("_qg", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q25),
                         State.GetVariable(preset.AfterFrameVariables, Var.q26),
@@ -2087,7 +2095,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q28)
                     )
                 );
-                preset.WarpMaterial.SetVector("_qh", 
+                mat.SetVector("_qh", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q29),
                         State.GetVariable(preset.AfterFrameVariables, Var.q30),
@@ -2095,7 +2103,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q32)
                     )
                 );
-                preset.WarpMaterial.SetVector("slow_roam_cos", 
+                mat.SetVector("slow_roam_cos", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
@@ -2103,7 +2111,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
                     )
                 );
-                preset.WarpMaterial.SetVector("roam_cos", 
+                mat.SetVector("roam_cos", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
@@ -2111,7 +2119,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
                     )
                 );
-                preset.WarpMaterial.SetVector("slow_roam_sin", 
+                mat.SetVector("slow_roam_sin", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
@@ -2119,7 +2127,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
                     )
                 );
-                preset.WarpMaterial.SetVector("roam_sin", 
+                mat.SetVector("roam_sin", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
@@ -2139,20 +2147,48 @@ namespace Milkstain
                 float bias2 = blurMin2;
                 float scale3 = blurMax3 - blurMin3;
                 float bias3 = blurMin3;
-                preset.WarpMaterial.SetFloat("blur1_min", blurMin1);
-                preset.WarpMaterial.SetFloat("blur1_max", blurMax1);
-                preset.WarpMaterial.SetFloat("blur2_min", blurMin2);
-                preset.WarpMaterial.SetFloat("blur2_max", blurMax2);
-                preset.WarpMaterial.SetFloat("blur3_min", blurMin3);
-                preset.WarpMaterial.SetFloat("blur3_max", blurMax3);
-                preset.WarpMaterial.SetFloat("scale1", scale1);
-                preset.WarpMaterial.SetFloat("scale2", scale2);
-                preset.WarpMaterial.SetFloat("scale3", scale3);
-                preset.WarpMaterial.SetFloat("bias1", bias1);
-                preset.WarpMaterial.SetFloat("bias2", bias2);
-                preset.WarpMaterial.SetFloat("bias3", bias3);
+                mat.SetFloat("blur1_min", blurMin1);
+                mat.SetFloat("blur1_max", blurMax1);
+                mat.SetFloat("blur2_min", blurMin2);
+                mat.SetFloat("blur2_max", blurMax2);
+                mat.SetFloat("blur3_min", blurMin3);
+                mat.SetFloat("blur3_max", blurMax3);
+                mat.SetFloat("scale1", scale1);
+                mat.SetFloat("scale2", scale2);
+                mat.SetFloat("scale3", scale3);
+                mat.SetFloat("bias1", bias1);
+                mat.SetFloat("bias2", bias2);
+                mat.SetFloat("bias3", bias3);
 
-                // todo rotations
+                mat.SetMatrix("rot_s1", preset.StaticRotation1);
+                mat.SetMatrix("rot_s2", preset.StaticRotation2);
+                mat.SetMatrix("rot_s3", preset.StaticRotation3);
+                mat.SetMatrix("rot_s4", preset.StaticRotation4);
+
+                mat.SetMatrix("rot_d1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                
+                mat.SetMatrix("rot_f1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_vf1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_uf1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_rand1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
             }
 
             TargetCamera.targetTexture = TempTexture;
@@ -3348,7 +3384,9 @@ namespace Milkstain
 
             UnityEngine.Profiling.Profiler.BeginSample("DrawComp");
 
-            TargetMeshRenderer.sharedMaterial = preset.CompMaterial;
+            var mat = IgnoreCustomComp ? defaultCompMaterial : preset.CompMaterial;
+
+            TargetMeshRenderer.sharedMaterial = mat;
 
             float[] hueBase = new float[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
@@ -3361,7 +3399,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0143f +
                         3f +
                         i * 21f +
-                        State.GetVariable(preset.FrameVariables, Var.rand_start_w)
+                        preset.RandomStart.w
                     );
                 hueBase[i * 3 + 1] =
                     0.6f +
@@ -3370,7 +3408,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0107f +
                         1f +
                         i * 13f +
-                        State.GetVariable(preset.FrameVariables, Var.rand_start_y)
+                        preset.RandomStart.y
                     );
                 hueBase[i * 3 + 2] =
                     0.6f +
@@ -3379,7 +3417,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0129f +
                         6f +
                         i * 9f +
-                        State.GetVariable(preset.FrameVariables, Var.rand_start_z)
+                        preset.RandomStart.z
                     );
                 float maxShade = Mathf.Max(hueBase[i * 3], hueBase[i * 3 + 1], hueBase[i * 3 + 2]);
                 for (int k = 0; k < 3; k++)
@@ -3440,21 +3478,21 @@ namespace Milkstain
             TargetMeshFilter.sharedMesh = TargetMeshComp;
             TargetMeshComp.SetColors(CompColor);
 
-            preset.CompMaterial.mainTexture = FinalTexture;
+            mat.mainTexture = FinalTexture;
 
-            preset.CompMaterial.SetTexture("_MainTexPrev", TempTexture);
+            mat.SetTexture("_MainTexPrev", TempTexture);
 
-            preset.CompMaterial.SetFloat("blending", blending ? 1f : 0f);
+            mat.SetFloat("blending", blending ? 1f : 0f);
 
-            preset.CompMaterial.SetFloat("gammaAdj", State.GetVariable(preset.FrameVariables, Var.gammaadj));
-            preset.CompMaterial.SetFloat("echo_zoom", State.GetVariable(preset.FrameVariables, Var.echo_zoom));
-            preset.CompMaterial.SetFloat("echo_alpha", State.GetVariable(preset.FrameVariables, Var.echo_alpha));
-            preset.CompMaterial.SetFloat("echo_orientation", State.GetVariable(preset.FrameVariables, Var.echo_orient));
-            preset.CompMaterial.SetFloat("invert", State.GetVariable(preset.FrameVariables, Var.invert));
-            preset.CompMaterial.SetFloat("brighten", State.GetVariable(preset.FrameVariables, Var.brighten));
-            preset.CompMaterial.SetFloat("_darken", State.GetVariable(preset.FrameVariables, Var.darken));
-            preset.CompMaterial.SetFloat("solarize", State.GetVariable(preset.FrameVariables, Var.solarize));
-            preset.CompMaterial.SetFloat("fShader", State.GetVariable(preset.FrameVariables, Var.shader));
+            mat.SetFloat("gammaAdj", State.GetVariable(preset.FrameVariables, Var.gammaadj));
+            mat.SetFloat("echo_zoom", State.GetVariable(preset.FrameVariables, Var.echo_zoom));
+            mat.SetFloat("echo_alpha", State.GetVariable(preset.FrameVariables, Var.echo_alpha));
+            mat.SetFloat("echo_orientation", State.GetVariable(preset.FrameVariables, Var.echo_orient));
+            mat.SetFloat("invert", State.GetVariable(preset.FrameVariables, Var.invert));
+            mat.SetFloat("brighten", State.GetVariable(preset.FrameVariables, Var.brighten));
+            mat.SetFloat("_darken", State.GetVariable(preset.FrameVariables, Var.darken));
+            mat.SetFloat("solarize", State.GetVariable(preset.FrameVariables, Var.solarize));
+            mat.SetFloat("fShader", State.GetVariable(preset.FrameVariables, Var.shader));
 
             if (!SkipCustomShaded)
             {
@@ -3463,52 +3501,45 @@ namespace Milkstain
                 Graphics.Blit(TempTexture, TempTexturePW);
                 Graphics.Blit(TempTexture, TempTexturePC);
 
-                preset.WarpMaterial.SetTexture("_MainTex2", TempTextureFW);
-                preset.WarpMaterial.SetTexture("_MainTex3", TempTextureFC);
-                preset.WarpMaterial.SetTexture("_MainTex4", TempTexturePW);
-                preset.WarpMaterial.SetTexture("_MainTex5", TempTexturePC);
+                mat.SetTexture("_MainTex2", TempTextureFW);
+                mat.SetTexture("_MainTex3", TempTextureFC);
+                mat.SetTexture("_MainTex4", TempTexturePW);
+                mat.SetTexture("_MainTex5", TempTexturePC);
 
-                preset.CompMaterial.SetTexture("_MainTex6", Blur1Texture);
-                preset.CompMaterial.SetTexture("_MainTex7", Blur2Texture);
-                preset.CompMaterial.SetTexture("_MainTex8", Blur3Texture);
+                mat.SetTexture("_MainTex6", Blur1Texture);
+                mat.SetTexture("_MainTex7", Blur2Texture);
+                mat.SetTexture("_MainTex8", Blur3Texture);
 
-                preset.CompMaterial.SetTexture("_MainTex9", TextureNoiseLQ);
-                preset.CompMaterial.SetTexture("_MainTex10", TextureNoiseLQLite);
-                preset.CompMaterial.SetTexture("_MainTex11", TextureNoiseMQ);
-                preset.CompMaterial.SetTexture("_MainTex12", TextureNoiseHQ);
-                preset.CompMaterial.SetTexture("_MainTex13", TexturePWNoiseLQ);
-                preset.CompMaterial.SetTexture("_MainTex14", TextureNoiseVolLQ);
-                preset.CompMaterial.SetTexture("_MainTex15", TextureNoiseVolHQ);
+                mat.SetTexture("_MainTex9", TextureNoiseLQ);
+                mat.SetTexture("_MainTex10", TextureNoiseLQLite);
+                mat.SetTexture("_MainTex11", TextureNoiseMQ);
+                mat.SetTexture("_MainTex12", TextureNoiseHQ);
+                mat.SetTexture("_MainTex13", TexturePWNoiseLQ);
+                mat.SetTexture("_MainTex14", TextureNoiseVolLQ);
+                mat.SetTexture("_MainTex15", TextureNoiseVolHQ);
 
-                preset.CompMaterial.SetFloat("time", CurrentTime);
-                preset.CompMaterial.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
-                preset.CompMaterial.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
-                preset.CompMaterial.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
-                preset.CompMaterial.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-                preset.CompMaterial.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
-                preset.CompMaterial.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
-                preset.CompMaterial.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-                preset.CompMaterial.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-                preset.CompMaterial.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
-                preset.CompMaterial.SetFloat("bass", Bass);
-                preset.CompMaterial.SetFloat("mid", Mid);
-                preset.CompMaterial.SetFloat("treb", Treb);
-                preset.CompMaterial.SetFloat("vol", (Bass + Mid + Treb) / 3f);
-                preset.CompMaterial.SetFloat("bass_att", BassAtt);
-                preset.CompMaterial.SetFloat("mid_att", MidAtt);
-                preset.CompMaterial.SetFloat("treb_att", TrebAtt);
-                preset.CompMaterial.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
-                preset.CompMaterial.SetFloat("frame", CurrentFrame);
-                preset.CompMaterial.SetFloat("fps", FPS);
-                preset.CompMaterial.SetVector("rand_preset", 
-                    new Vector4(
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_x),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_y),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_z),
-                        State.GetVariable(preset.FrameVariables, Var.rand_preset_w)
-                    )
-                );
-                preset.CompMaterial.SetVector("rand_frame", 
+                mat.SetFloat("time", CurrentTime);
+                mat.SetVector("resolution", new Vector2(Resolution.x, Resolution.y));
+                mat.SetVector("aspect", new Vector4(AspectRatio.x, AspectRatio.y, 1f / AspectRatio.x, 1f / AspectRatio.y));
+                mat.SetVector("texsize", new Vector4(Resolution.x, Resolution.y, 1f / Resolution.x, 1f / Resolution.y));
+                mat.SetVector("texsize_noise_lq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+                mat.SetVector("texsize_noise_mq", new Vector4(256, 256, 1f / 256f, 1f / 256));
+                mat.SetVector("texsize_noise_hq", new Vector4(256, 256, 1f / 256f, 1f / 256f));
+                mat.SetVector("texsize_noise_lq_lite", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetVector("texsize_noisevol_lq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetVector("texsize_noisevol_hq", new Vector4(32, 32, 1f / 32f, 1f / 32f));
+                mat.SetFloat("bass", Bass);
+                mat.SetFloat("mid", Mid);
+                mat.SetFloat("treb", Treb);
+                mat.SetFloat("vol", (Bass + Mid + Treb) / 3f);
+                mat.SetFloat("bass_att", BassAtt);
+                mat.SetFloat("mid_att", MidAtt);
+                mat.SetFloat("treb_att", TrebAtt);
+                mat.SetFloat("vol_att", (BassAtt + MidAtt + TrebAtt) / 3f);
+                mat.SetFloat("frame", CurrentFrame);
+                mat.SetFloat("fps", FPS);
+                mat.SetVector("rand_preset", preset.RandomPreset);
+                mat.SetVector("rand_frame", 
                     new Vector4(
                         UnityEngine.Random.Range(0f, 1f),
                         UnityEngine.Random.Range(0f, 1f),
@@ -3516,7 +3547,7 @@ namespace Milkstain
                         UnityEngine.Random.Range(0f, 1f)
                     )
                 );
-                preset.CompMaterial.SetVector("_qa", 
+                mat.SetVector("_qa", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q1),
                         State.GetVariable(preset.AfterFrameVariables, Var.q2),
@@ -3524,7 +3555,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q4)
                     )
                 );
-                preset.CompMaterial.SetVector("_qb", 
+                mat.SetVector("_qb", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q5),
                         State.GetVariable(preset.AfterFrameVariables, Var.q6),
@@ -3532,7 +3563,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q8)
                     )
                 );
-                preset.CompMaterial.SetVector("_qc", 
+                mat.SetVector("_qc", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q9),
                         State.GetVariable(preset.AfterFrameVariables, Var.q10),
@@ -3540,7 +3571,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q12)
                     )
                 );
-                preset.CompMaterial.SetVector("_qd", 
+                mat.SetVector("_qd", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q13),
                         State.GetVariable(preset.AfterFrameVariables, Var.q14),
@@ -3548,7 +3579,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q16)
                     )
                 );
-                preset.CompMaterial.SetVector("_qe", 
+                mat.SetVector("_qe", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q17),
                         State.GetVariable(preset.AfterFrameVariables, Var.q18),
@@ -3556,7 +3587,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q20)
                     )
                 );
-                preset.CompMaterial.SetVector("_qf", 
+                mat.SetVector("_qf", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q21),
                         State.GetVariable(preset.AfterFrameVariables, Var.q22),
@@ -3564,7 +3595,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q24)
                     )
                 );
-                preset.CompMaterial.SetVector("_qg", 
+                mat.SetVector("_qg", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q25),
                         State.GetVariable(preset.AfterFrameVariables, Var.q26),
@@ -3572,7 +3603,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q28)
                     )
                 );
-                preset.CompMaterial.SetVector("_qh", 
+                mat.SetVector("_qh", 
                     new Vector4(
                         State.GetVariable(preset.AfterFrameVariables, Var.q29),
                         State.GetVariable(preset.AfterFrameVariables, Var.q30),
@@ -3580,7 +3611,7 @@ namespace Milkstain
                         State.GetVariable(preset.AfterFrameVariables, Var.q32)
                     )
                 );
-                preset.CompMaterial.SetVector("slow_roam_cos", 
+                mat.SetVector("slow_roam_cos", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.005f),
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.008f),
@@ -3588,7 +3619,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.022f)
                     )
                 );
-                preset.CompMaterial.SetVector("roam_cos", 
+                mat.SetVector("roam_cos", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 0.3f),
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 1.3f),
@@ -3596,7 +3627,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Cos(CurrentTime * 20.0f)
                     )
                 );
-                preset.CompMaterial.SetVector("slow_roam_sin", 
+                mat.SetVector("slow_roam_sin", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.005f),
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.008f),
@@ -3604,7 +3635,7 @@ namespace Milkstain
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.022f)
                     )
                 );
-                preset.CompMaterial.SetVector("roam_sin", 
+                mat.SetVector("roam_sin", 
                     new Vector4(
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 0.3f),
                         0.5f + 0.5f * Mathf.Sin(CurrentTime * 1.3f),
@@ -3624,20 +3655,48 @@ namespace Milkstain
                 float bias2 = blurMin2;
                 float scale3 = blurMax3 - blurMin3;
                 float bias3 = blurMin3;
-                preset.CompMaterial.SetFloat("blur1_min", blurMin1);
-                preset.CompMaterial.SetFloat("blur1_max", blurMax1);
-                preset.CompMaterial.SetFloat("blur2_min", blurMin2);
-                preset.CompMaterial.SetFloat("blur2_max", blurMax2);
-                preset.CompMaterial.SetFloat("blur3_min", blurMin3);
-                preset.CompMaterial.SetFloat("blur3_max", blurMax3);
-                preset.CompMaterial.SetFloat("scale1", scale1);
-                preset.CompMaterial.SetFloat("scale2", scale2);
-                preset.CompMaterial.SetFloat("scale3", scale3);
-                preset.CompMaterial.SetFloat("bias1", bias1);
-                preset.CompMaterial.SetFloat("bias2", bias2);
-                preset.CompMaterial.SetFloat("bias3", bias3);
+                mat.SetFloat("blur1_min", blurMin1);
+                mat.SetFloat("blur1_max", blurMax1);
+                mat.SetFloat("blur2_min", blurMin2);
+                mat.SetFloat("blur2_max", blurMax2);
+                mat.SetFloat("blur3_min", blurMin3);
+                mat.SetFloat("blur3_max", blurMax3);
+                mat.SetFloat("scale1", scale1);
+                mat.SetFloat("scale2", scale2);
+                mat.SetFloat("scale3", scale3);
+                mat.SetFloat("bias1", bias1);
+                mat.SetFloat("bias2", bias2);
+                mat.SetFloat("bias3", bias3);
 
-                // todo rotations
+                mat.SetMatrix("rot_s1", preset.StaticRotation1);
+                mat.SetMatrix("rot_s2", preset.StaticRotation2);
+                mat.SetMatrix("rot_s3", preset.StaticRotation3);
+                mat.SetMatrix("rot_s4", preset.StaticRotation4);
+
+                mat.SetMatrix("rot_d1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_d4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                
+                mat.SetMatrix("rot_f1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_f4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_vf1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_vf4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_uf1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_uf4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+
+                mat.SetMatrix("rot_rand1", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand2", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand3", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
+                mat.SetMatrix("rot_rand4", Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one));
             }
 
             TargetCamera.targetTexture = FinalTexture;
@@ -4206,7 +4265,14 @@ namespace Milkstain
             if (SkipCustomShaded)
             {
                 if (!string.IsNullOrEmpty(newPreset.Warp) || !string.IsNullOrEmpty(newPreset.Comp))
-                //if (string.IsNullOrEmpty(newPreset.Warp) && string.IsNullOrEmpty(newPreset.Comp))
+                {
+                    blending = false;
+                    return false;
+                }
+            }
+            else if (SkipDefaultShaded)
+            {
+                if (string.IsNullOrEmpty(newPreset.Warp) && string.IsNullOrEmpty(newPreset.Comp))
                 {
                     blending = false;
                     return false;
@@ -4252,14 +4318,26 @@ namespace Milkstain
 
             SetGlobalVars(CurrentPreset.Variables);
 
-            State.SetVariable(CurrentPreset.Variables, Var.rand_start_x, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_start_y, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_start_z, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_start_w, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_x, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_y, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_z, UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_w, UnityEngine.Random.Range(0f, 1f));
+            CurrentPreset.RandomStart = new Vector4
+            (
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f)
+            );
+
+            CurrentPreset.RandomPreset = new Vector4
+            (
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f)
+            );
+
+            CurrentPreset.StaticRotation1 = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one);
+            CurrentPreset.StaticRotation2 = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one);
+            CurrentPreset.StaticRotation3 = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one);
+            CurrentPreset.StaticRotation4 = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f), UnityEngine.Random.Range(0f, 360f)), Vector3.one);
 
             List<Var> nonUserKeys = new List<Var>(CurrentPreset.Variables.Keys);
             for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
@@ -4316,15 +4394,6 @@ namespace Milkstain
 
                         SetGlobalVars(CurrentWave.Variables);
 
-                        State.SetVariable(CurrentWave.Variables, Var.rand_start_x, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_x));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_start_y, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_y));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_start_z, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_z));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_start_w, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_w));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_x, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_x));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_y, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_y));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_z, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_z));
-                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_w, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_w));
-
                         List<Var> nonUserWaveKeys = new List<Var>(CurrentWave.Variables.Keys);
                         for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
                         {
@@ -4380,15 +4449,6 @@ namespace Milkstain
                         }
 
                         SetGlobalVars(CurrentShape.Variables);
-
-                        State.SetVariable(CurrentShape.Variables, Var.rand_start_x, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_x));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_start_y, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_y));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_start_z, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_z));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_start_w, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_w));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_x, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_x));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_y, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_y));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_z, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_z));
-                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_w, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_w));
 
                         List<Var> nonUserShapeKeys = new List<Var>(CurrentShape.Variables.Keys);
                         for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
