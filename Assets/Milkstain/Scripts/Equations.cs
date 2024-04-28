@@ -278,8 +278,6 @@ namespace Milkstain
             var stack = Stack;
 
             List<Action<State>> actionsList = new List<Action<State>>();
-
-            List<int> modifiedVariables = new List<int>();
             
             for (int i = 0; i < Equation.Count - 1; i++)
             {
@@ -291,15 +289,17 @@ namespace Milkstain
                 if (Equation[i + 1] == "=")
                 {
                     string varName = Equation[i];
-                    
-                    State.RegisterVariable(varName);
 
-                    int varIndex = State.VariableNameTable[varName];
-
-                    if (!modifiedVariables.Contains(varIndex))
+                    Var varNameEnum;
+                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
                     {
-                        modifiedVariables.Add(varIndex);
+                        if (!State.CustomVariables.ContainsKey(varName))
+                        {
+                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                        }
+                        varNameEnum = State.CustomVariables[varName];
                     }
+                    int varIndex = (int)varNameEnum;
 
                     int end = Equation.Count;
 
@@ -348,14 +348,16 @@ namespace Milkstain
                 {
                     string varName = Equation[i];
                     
-                    State.RegisterVariable(varName);
-
-                    int varIndex = State.VariableNameTable[varName];
-
-                    if (!modifiedVariables.Contains(varIndex))
+                    Var varNameEnum;
+                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
                     {
-                        modifiedVariables.Add(varIndex);
+                        if (!State.CustomVariables.ContainsKey(varName))
+                        {
+                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                        }
+                        varNameEnum = State.CustomVariables[varName];
                     }
+                    int varIndex = (int)varNameEnum;
 
                     int end = Equation.Count;
 
@@ -404,14 +406,16 @@ namespace Milkstain
                 {
                     string varName = Equation[i];
                     
-                    State.RegisterVariable(varName);
-
-                    int varIndex = State.VariableNameTable[varName];
-
-                    if (!modifiedVariables.Contains(varIndex))
+                    Var varNameEnum;
+                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
                     {
-                        modifiedVariables.Add(varIndex);
+                        if (!State.CustomVariables.ContainsKey(varName))
+                        {
+                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                        }
+                        varNameEnum = State.CustomVariables[varName];
                     }
+                    int varIndex = (int)varNameEnum;
 
                     int end = Equation.Count;
 
@@ -460,14 +464,16 @@ namespace Milkstain
                 {
                     string varName = Equation[i];
                     
-                    State.RegisterVariable(varName);
-
-                    int varIndex = State.VariableNameTable[varName];
-
-                    if (!modifiedVariables.Contains(varIndex))
+                    Var varNameEnum;
+                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
                     {
-                        modifiedVariables.Add(varIndex);
+                        if (!State.CustomVariables.ContainsKey(varName))
+                        {
+                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                        }
+                        varNameEnum = State.CustomVariables[varName];
                     }
+                    int varIndex = (int)varNameEnum;
 
                     int end = Equation.Count;
 
@@ -576,8 +582,7 @@ namespace Milkstain
                     int stackIndex = 0;
                     string finalTokenCount = CompileExpression(countExpression, actionsList, ref stackIndex);
                     int finalTypeCount = ParseVariable(finalTokenCount, out int finalIndexCount, out float finalValueCount);
-
-                    bool x = false;
+                    
                     Action<State> body = CompileEquation(bodyExpression, x => {});
 
                     switch (finalTypeCount)
@@ -904,14 +909,16 @@ namespace Milkstain
 
                     string varName = Equation[comma + 1];
 
-                    State.RegisterVariable(varName);
-
-                    int varIndex = State.VariableNameTable[varName];
-
-                    if (!modifiedVariables.Contains(varIndex))
+                    Var varNameEnum;
+                    if (!Enum.TryParse<Var>(varName, out varNameEnum))
                     {
-                        modifiedVariables.Add(varIndex);
+                        if (!State.CustomVariables.ContainsKey(varName))
+                        {
+                            State.CustomVariables.Add(varName, Var.VariableCount + State.CustomVariables.Count);
+                        }
+                        varNameEnum = State.CustomVariables[varName];
                     }
+                    int varIndex = (int)varNameEnum;
 
                     int stackIndex = 0;
 
@@ -1218,26 +1225,6 @@ namespace Milkstain
                 }
             }
 
-            List<State> processedStates = new List<State>();
-
-            actionsList.Insert(0, (State Variables) =>
-            {
-                if (processedStates.Contains(Variables))
-                {
-                    return;
-                }
-
-                processedStates.Add(Variables);
-
-                foreach (int varIndex in modifiedVariables)
-                {
-                    if (!Variables.Keys.Contains(varIndex))
-                    {
-                        Variables.Keys.Add(varIndex);
-                    }
-                }
-            });
-
             var actionArray = actionsList.ToArray();
 
             return (State Variables) =>
@@ -1276,8 +1263,17 @@ namespace Milkstain
                 return 1;
             }
 
-            State.RegisterVariable(token);
-            index = State.VariableNameTable[token];
+            Var varNameEnum;
+            if (!Enum.TryParse<Var>(token, out varNameEnum))
+            {
+                if (!State.CustomVariables.ContainsKey(token))
+                {
+                    State.CustomVariables.Add(token, Var.VariableCount + State.CustomVariables.Count);
+                }
+                varNameEnum = State.CustomVariables[token];
+            }
+            index = (int)varNameEnum;
+
             value = 0f;
 
             return 2;

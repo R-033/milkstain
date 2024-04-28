@@ -29,7 +29,7 @@ namespace Milkstain
         public State InitVariables;
         public State FrameVariables;
         public State PointVariables;
-        public int[] UserKeys = new int[0];
+        public Var[] UserKeys = new Var[0];
         public State FrameMap;
         public State Inits;
 

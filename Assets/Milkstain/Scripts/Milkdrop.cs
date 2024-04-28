@@ -98,17 +98,13 @@ namespace Milkstain
         public string SuperTextString;
         public bool RenderSuperText;
 
+        public bool OscilloscopeMode = false;
+
         private ulong CurrentFrame = 0;
         private float CurrentTime = 0f;
 
         private Vector3 baseDotScale;
         private Vector3 baseSquareScale;
-
-        private int[] qs;
-
-        private int[] ts;
-
-        private int[] regs;
 
         private Vector2[] WarpUVs;
         private Color[] WarpColor;
@@ -189,9 +185,6 @@ namespace Milkstain
         private float[] blendingVertInfoA;
         private float[] blendingVertInfoC;
 
-        private int[] mixedVariables;
-        private int[] snappedVariables;
-
         private float[] imm = new float[3];
         private float[] avg = new float[3];
         private float[] longAvg = new float[3];
@@ -199,53 +192,6 @@ namespace Milkstain
         private float[] att = new float[3];
 
         private int index = 0;
-
-        // optimization
-        private int varInd_x;
-        private int varInd_y;
-        private int varInd_rad;
-        private int varInd_ang;
-        private int varInd_zoom;
-        private int varInd_zoomexp;
-        private int varInd_rot;
-        private int varInd_warp;
-        private int varInd_cx;
-        private int varInd_cy;
-        private int varInd_dx;
-        private int varInd_dy;
-        private int varInd_sx;
-        private int varInd_sy;
-        private int varInd_enabled;
-        private int varInd_sep;
-        private int varInd_scaling;
-        private int varInd_spectrum;
-        private int varInd_smoothing;
-        private int varInd_usedots;
-        private int varInd_r;
-        private int varInd_g;
-        private int varInd_b;
-        private int varInd_a;
-        private int varInd_r2;
-        private int varInd_g2;
-        private int varInd_b2;
-        private int varInd_a2;
-        private int varInd_border_r;
-        private int varInd_border_g;
-        private int varInd_border_b;
-        private int varInd_border_a;
-        private int varInd_wave_scale;
-        private int varInd_sample;
-        private int varInd_value1;
-        private int varInd_value2;
-        private int varInd_thick;
-        private int varInd_num_inst;
-        private int varInd_thickouline;
-        private int varInd_textured;
-        private int varInd_tex_zoom;
-        private int varInd_tex_ang;
-        private int varInd_additive;
-        private int varInd_instance;
-        private int varInd_sides;
 
         private (float[], float[]) blurValues;
 
@@ -360,153 +306,10 @@ namespace Milkstain
 
         public void Initialize()
         {
-            string[] _qs = new string[]
-            {
-                "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8",
-                "q9", "q10", "q11","q12", "q13", "q14", "q15", "q16",
-                "q17", "q18", "q19", "q20", "q21", "q22", "q23", "q24",
-                "q25", "q26", "q27", "q28", "q29", "q30", "q31", "q32",
-            };
-
-            string[] _ts = new string[]
-            {
-                "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"
-            };
-
-            string[] _regs = new string[99];
-
-            for (int i = 0; i < _regs.Length; i++)
-            {
-                _regs[i] = i < 10 ? "reg0" + i : "reg" + i;
-            }
-
-            foreach (var v in _qs)
-            {
-                State.RegisterVariable(v);
-            }
-
-            foreach (var v in _ts)
-            {
-                State.RegisterVariable(v);
-            }
-
-            foreach (var v in _regs)
-            {
-                State.RegisterVariable(v);
-            }
-
-            qs = new int[_qs.Length];
-
-            for (int i = 0; i < qs.Length; i++)
-            {
-                qs[i] = State.VariableNameTable[_qs[i]];
-            }
-
-            ts = new int[_ts.Length];
-
-            for (int i = 0; i < ts.Length; i++)
-            {
-                ts[i] = State.VariableNameTable[_ts[i]];
-            }
-
-            regs = new int[_regs.Length];
-
-            for (int i = 0; i < regs.Length; i++)
-            {
-                regs[i] = State.VariableNameTable[_regs[i]];
-            }
-
-            varInd_x = State.RegisterVariable("x");
-            varInd_y = State.RegisterVariable("y");
-            varInd_rad = State.RegisterVariable("rad");
-            varInd_ang = State.RegisterVariable("ang");
-            varInd_zoom = State.RegisterVariable("zoom");
-            varInd_zoomexp = State.RegisterVariable("zoomexp");
-            varInd_rot = State.RegisterVariable("rot");
-            varInd_warp = State.RegisterVariable("warp");
-            varInd_cx = State.RegisterVariable("cx");
-            varInd_cy = State.RegisterVariable("cy");
-            varInd_dx = State.RegisterVariable("dx");
-            varInd_dy = State.RegisterVariable("dy");
-            varInd_sx = State.RegisterVariable("sx");
-            varInd_sy = State.RegisterVariable("sy");
-            varInd_enabled = State.RegisterVariable("enabled");
-            varInd_sep = State.RegisterVariable("sep");
-            varInd_scaling = State.RegisterVariable("scaling");
-            varInd_spectrum = State.RegisterVariable("spectrum");
-            varInd_smoothing = State.RegisterVariable("smoothing");
-            varInd_usedots = State.RegisterVariable("usedots");
-            varInd_r = State.RegisterVariable("r");
-            varInd_g = State.RegisterVariable("g");
-            varInd_b = State.RegisterVariable("b");
-            varInd_a = State.RegisterVariable("a");
-            varInd_wave_scale = State.RegisterVariable("wave_scale");
-            varInd_sample = State.RegisterVariable("sample");
-            varInd_value1 = State.RegisterVariable("value1");
-            varInd_value2 = State.RegisterVariable("value2");
-            varInd_thick = State.RegisterVariable("thick");
-            varInd_num_inst = State.RegisterVariable("num_inst");
-            varInd_r2 = State.RegisterVariable("r2");
-            varInd_g2 = State.RegisterVariable("g2");
-            varInd_b2 = State.RegisterVariable("b2");
-            varInd_a2 = State.RegisterVariable("a2");
-            varInd_border_r = State.RegisterVariable("border_r");
-            varInd_border_g = State.RegisterVariable("border_g");
-            varInd_border_b = State.RegisterVariable("border_b");
-            varInd_border_a = State.RegisterVariable("border_a");
-            varInd_thickouline = State.RegisterVariable("thickouline");
-            varInd_textured = State.RegisterVariable("textured");
-            varInd_tex_zoom = State.RegisterVariable("tex_zoom");
-            varInd_tex_ang = State.RegisterVariable("tex_ang");
-            varInd_additive = State.RegisterVariable("additive");
-            varInd_instance = State.RegisterVariable("instance");
-            varInd_sides = State.RegisterVariable("sides");
-            
             UnloadPresets();
 
             blendingVertInfoA = new float[(MeshSize.x + 1) * (MeshSize.y + 1)];
             blendingVertInfoC = new float[(MeshSize.x + 1) * (MeshSize.y + 1)];
-
-            string[] _mixedVariables = new string[]
-            {
-                "wave_a", "wave_r", "wave_g", "wave_b", "wave_x", "wave_y", "wave_mystery",
-                "ob_size", "ob_r", "ob_g", "ob_b", "ob_a",
-                "ib_size", "ib_r", "ib_g", "ib_b", "ib_a",
-                "mv_x", "mv_y", "mv_dx", "mv_dy", "mv_l", "mv_r", "mv_g", "mv_b", "mv_a",
-                "echo_zoom", "echo_alpha", "echo_orient",
-                "b1n", "b2n", "b3n",
-                "b1x", "b2x", "b3x",
-                "b1ed", "b2ed", "b3ed"
-            };
-
-            string[] _snappedVariables = new string[]
-            {
-                "wave_dots", "wave_thick", "additivewave", "wave_brighten", "darken_center", "gammaadj", "wrap", "invert", "brighten", "darken", "solarize"
-            };
-
-            foreach (var v in _mixedVariables)
-            {
-                State.RegisterVariable(v);
-            }
-
-            foreach (var v in _snappedVariables)
-            {
-                State.RegisterVariable(v);
-            }
-
-            mixedVariables = new int[_mixedVariables.Length];
-
-            for (int i = 0; i < mixedVariables.Length; i++)
-            {
-                mixedVariables[i] = State.VariableNameTable[_mixedVariables[i]];
-            }
-
-            snappedVariables = new int[_snappedVariables.Length];
-
-            for (int i = 0; i < snappedVariables.Length; i++)
-            {
-                snappedVariables[i] = State.VariableNameTable[_snappedVariables[i]];
-            }
 
             WarpUVs = new Vector2[(MeshSize.x + 1) * (MeshSize.y + 1)];
             WarpColor = new Color[(MeshSize.x + 1) * (MeshSize.y + 1)];
@@ -1093,16 +896,16 @@ namespace Milkstain
             float mix2 = 1f - mix;
             float snapPoint = 0.5f;
             
-            for (int i = 0; i < mixedVariables.Length; i++)
+            for (int i = 0; i < State.MixedVariables.Length; i++)
             {
-                var v = mixedVariables[i];
-                State.SetVariable(CurrentPreset.FrameVariables, v, mix * CurrentPreset.FrameVariables.Heap[v] + mix2 * PrevPreset.FrameVariables.Heap[v]);
+                var v = State.MixedVariables[i];
+                State.SetVariable(CurrentPreset.FrameVariables, v, mix * CurrentPreset.FrameVariables.Heap[(int)v] + mix2 * PrevPreset.FrameVariables.Heap[(int)v]);
             }
 
-            for (int i = 0; i < mixedVariables.Length; i++)
+            for (int i = 0; i < State.MixedVariables.Length; i++)
             {
-                var v = mixedVariables[i];
-                State.SetVariable(CurrentPreset.FrameVariables, v, mix < snapPoint ? PrevPreset.FrameVariables.Heap[v] : CurrentPreset.FrameVariables.Heap[v]);
+                var v = State.MixedVariables[i];
+                State.SetVariable(CurrentPreset.FrameVariables, v, mix < snapPoint ? PrevPreset.FrameVariables.Heap[(int)v] : CurrentPreset.FrameVariables.Heap[(int)v]);
             }
         }
 
@@ -1208,22 +1011,22 @@ namespace Milkstain
 
         void SetGlobalVars(State state)
         {
-            State.SetVariable(state, "frame", CurrentFrame);
-            State.SetVariable(state, "time", CurrentTime);
-            State.SetVariable(state, "fps", FPS == 0f ? 30f : FPS);
-            State.SetVariable(state, "progress", Mathf.Clamp01((CurrentTime - presetStartTime) / ChangePresetIn));
-            State.SetVariable(state, "bass", Bass);
-            State.SetVariable(state, "bass_att", BassAtt);
-            State.SetVariable(state, "mid", Mid);
-            State.SetVariable(state, "mid_att", MidAtt);
-            State.SetVariable(state, "treb", Treb);
-            State.SetVariable(state, "treb_att", TrebAtt);
-            State.SetVariable(state, "meshx", MeshSize.x);
-            State.SetVariable(state, "meshy", MeshSize.y);
-            State.SetVariable(state, "aspectx", AspectRatio.x);
-            State.SetVariable(state, "aspecty", AspectRatio.y);
-            State.SetVariable(state, "pixelsx", Resolution.x);
-            State.SetVariable(state, "pixelsy", Resolution.y);
+            State.SetVariable(state, Var.frame, CurrentFrame);
+            State.SetVariable(state, Var.time, CurrentTime);
+            State.SetVariable(state, Var.fps, FPS == 0f ? 30f : FPS);
+            State.SetVariable(state, Var.progress, Mathf.Clamp01((CurrentTime - presetStartTime) / ChangePresetIn));
+            State.SetVariable(state, Var.bass, Bass);
+            State.SetVariable(state, Var.bass_att, BassAtt);
+            State.SetVariable(state, Var.mid, Mid);
+            State.SetVariable(state, Var.mid_att, MidAtt);
+            State.SetVariable(state, Var.treb, Treb);
+            State.SetVariable(state, Var.treb_att, TrebAtt);
+            State.SetVariable(state, Var.meshx, MeshSize.x);
+            State.SetVariable(state, Var.meshy, MeshSize.y);
+            State.SetVariable(state, Var.aspectx, AspectRatio.x);
+            State.SetVariable(state, Var.aspecty, AspectRatio.y);
+            State.SetVariable(state, Var.pixelsx, Resolution.x);
+            State.SetVariable(state, Var.pixelsy, Resolution.y);
         }
 
         void RunFrameEquations(Preset preset)
@@ -1232,24 +1035,24 @@ namespace Milkstain
 
             foreach (var v in preset.Variables.Keys)
             {
-                State.SetVariable(preset.FrameVariables, v, preset.Variables.Heap[v]);
+                State.SetVariable(preset.FrameVariables, v, preset.Variables.Heap[(int)v]);
             }
 
             foreach (var v in preset.InitVariables.Keys)
             {
-                State.SetVariable(preset.FrameVariables, v, preset.InitVariables.Heap[v]);
+                State.SetVariable(preset.FrameVariables, v, preset.InitVariables.Heap[(int)v]);
             }
 
             foreach (var v in preset.FrameMap.Keys)
             {
-                State.SetVariable(preset.FrameVariables, v, preset.FrameMap.Heap[v]);
+                State.SetVariable(preset.FrameVariables, v, preset.FrameMap.Heap[(int)v]);
             }
 
             SetGlobalVars(preset.FrameVariables);
 
             preset.FrameEquationCompiled(preset.FrameVariables);
 
-            CurrentPreset.AfterFrameVariables = State.Pick(CurrentPreset.FrameVariables, qs);
+            CurrentPreset.AfterFrameVariables = State.PickQs(CurrentPreset.FrameVariables);
 
             UnityEngine.Profiling.Profiler.EndSample();
         }
@@ -1264,8 +1067,8 @@ namespace Milkstain
             int gridX1 = gridX + 1;
             int gridZ1 = gridZ + 1;
 
-            float warpTimeV = CurrentTime * State.GetVariable(preset.FrameVariables, "warpanimspeed");
-            float warpScaleInv = 1f / State.GetVariable(preset.FrameVariables, "warpscale");
+            float warpTimeV = CurrentTime * State.GetVariable(preset.FrameVariables, Var.warpanimspeed);
+            float warpScaleInv = 1f / State.GetVariable(preset.FrameVariables, Var.warpscale);
 
             float warpf0 = 11.68f + 4f * Mathf.Cos(warpTimeV * 1.413f + 1f);
             float warpf1 = 8.77f + 3f * Mathf.Cos(warpTimeV * 1.113f + 7f);
@@ -1285,19 +1088,19 @@ namespace Milkstain
 
             foreach (var vv in preset.FrameVariables.Keys)
             {
-                State.SetVariable(pixelVariables, vv, preset.FrameVariables.Heap[vv]);
+                State.SetVariable(pixelVariables, vv, preset.FrameVariables.Heap[(int)vv]);
             }
 
-            float warp = State.GetVariable(pixelVariables, varInd_warp);
-            float zoom = State.GetVariable(pixelVariables, varInd_zoom);
-            float zoomExp = State.GetVariable(pixelVariables, varInd_zoomexp);
-            float cx = State.GetVariable(pixelVariables, varInd_cx);
-            float cy = State.GetVariable(pixelVariables, varInd_cy);
-            float sx = State.GetVariable(pixelVariables, varInd_sx);
-            float sy = State.GetVariable(pixelVariables, varInd_sy);
-            float dx = State.GetVariable(pixelVariables, varInd_dx);
-            float dy = State.GetVariable(pixelVariables, varInd_dy);
-            float rot = State.GetVariable(pixelVariables, varInd_rot);
+            float warp = State.GetVariable(pixelVariables, Var.warp);
+            float zoom = State.GetVariable(pixelVariables, Var.zoom);
+            float zoomExp = State.GetVariable(pixelVariables, Var.zoomexp);
+            float cx = State.GetVariable(pixelVariables, Var.cx);
+            float cy = State.GetVariable(pixelVariables, Var.cy);
+            float sx = State.GetVariable(pixelVariables, Var.sx);
+            float sy = State.GetVariable(pixelVariables, Var.sy);
+            float dx = State.GetVariable(pixelVariables, Var.dx);
+            float dy = State.GetVariable(pixelVariables, Var.dy);
+            float rot = State.GetVariable(pixelVariables, Var.rot);
 
             float frameZoom = zoom;
             float frameZoomExp = zoomExp;
@@ -1340,34 +1143,34 @@ namespace Milkstain
                         }
                     }
 
-                    State.SetVariable(pixelVariables, varInd_x, x * 0.5f * aspectx + 0.5f);
-                    State.SetVariable(pixelVariables, varInd_y, y * -0.5f * aspecty + 0.5f);
-                    State.SetVariable(pixelVariables, varInd_rad, rad);
-                    State.SetVariable(pixelVariables, varInd_ang, ang);
+                    State.SetVariable(pixelVariables, Var.x, x * 0.5f * aspectx + 0.5f);
+                    State.SetVariable(pixelVariables, Var.y, y * -0.5f * aspecty + 0.5f);
+                    State.SetVariable(pixelVariables, Var.rad, rad);
+                    State.SetVariable(pixelVariables, Var.ang, ang);
 
-                    State.SetVariable(pixelVariables, varInd_zoom, frameZoom);
-                    State.SetVariable(pixelVariables, varInd_zoomexp, frameZoomExp);
-                    State.SetVariable(pixelVariables, varInd_rot, frameRot);
-                    State.SetVariable(pixelVariables, varInd_warp, frameWarp);
-                    State.SetVariable(pixelVariables, varInd_cx, framecx);
-                    State.SetVariable(pixelVariables, varInd_cy, framecy);
-                    State.SetVariable(pixelVariables, varInd_dx, framedx);
-                    State.SetVariable(pixelVariables, varInd_dy, framedy);
-                    State.SetVariable(pixelVariables, varInd_sx, framesx);
-                    State.SetVariable(pixelVariables, varInd_sy, framesy);
+                    State.SetVariable(pixelVariables, Var.zoom, frameZoom);
+                    State.SetVariable(pixelVariables, Var.zoomexp, frameZoomExp);
+                    State.SetVariable(pixelVariables, Var.rot, frameRot);
+                    State.SetVariable(pixelVariables, Var.warp, frameWarp);
+                    State.SetVariable(pixelVariables, Var.cx, framecx);
+                    State.SetVariable(pixelVariables, Var.cy, framecy);
+                    State.SetVariable(pixelVariables, Var.dx, framedx);
+                    State.SetVariable(pixelVariables, Var.dy, framedy);
+                    State.SetVariable(pixelVariables, Var.sx, framesx);
+                    State.SetVariable(pixelVariables, Var.sy, framesy);
 
                     preset.PixelEquationCompiled(pixelVariables);
 
-                    warp = State.GetVariable(pixelVariables, varInd_warp);
-                    zoom = State.GetVariable(pixelVariables, varInd_zoom);
-                    zoomExp = State.GetVariable(pixelVariables, varInd_zoomexp);
-                    cx = State.GetVariable(pixelVariables, varInd_cx);
-                    cy = State.GetVariable(pixelVariables, varInd_cy);
-                    sx = State.GetVariable(pixelVariables, varInd_sx);
-                    sy = State.GetVariable(pixelVariables, varInd_sy);
-                    dx = State.GetVariable(pixelVariables, varInd_dx);
-                    dy = State.GetVariable(pixelVariables, varInd_dy);
-                    rot = State.GetVariable(pixelVariables, varInd_rot);
+                    warp = State.GetVariable(pixelVariables, Var.warp);
+                    zoom = State.GetVariable(pixelVariables, Var.zoom);
+                    zoomExp = State.GetVariable(pixelVariables, Var.zoomexp);
+                    cx = State.GetVariable(pixelVariables, Var.cx);
+                    cy = State.GetVariable(pixelVariables, Var.cy);
+                    sx = State.GetVariable(pixelVariables, Var.sx);
+                    sy = State.GetVariable(pixelVariables, Var.sy);
+                    dx = State.GetVariable(pixelVariables, Var.dx);
+                    dy = State.GetVariable(pixelVariables, Var.dy);
+                    rot = State.GetVariable(pixelVariables, Var.rot);
 
                     zoom2V = Mathf.Pow(zoom, Mathf.Pow(zoomExp, (rad * 2f - 1f)));
                     zoom2Inv = 1f / zoom2V;
@@ -1447,12 +1250,12 @@ namespace Milkstain
 
         (float[], float[]) GetBlurValues(State variables)
         {
-            float blurMin1 = State.GetVariable(variables, "b1n");
-            float blurMin2 = State.GetVariable(variables, "b2n");
-            float blurMin3 = State.GetVariable(variables, "b3n");
-            float blurMax1 = State.GetVariable(variables, "b1x");
-            float blurMax2 = State.GetVariable(variables, "b2x");
-            float blurMax3 = State.GetVariable(variables, "b3x");
+            float blurMin1 = State.GetVariable(variables, Var.b1n);
+            float blurMin2 = State.GetVariable(variables, Var.b2n);
+            float blurMin3 = State.GetVariable(variables, Var.b3n);
+            float blurMax1 = State.GetVariable(variables, Var.b1x);
+            float blurMax2 = State.GetVariable(variables, Var.b2x);
+            float blurMax3 = State.GetVariable(variables, Var.b3x);
 
             float fMinDist = 0.1f;
             if (blurMax1 - blurMin1 < fMinDist)
@@ -1489,14 +1292,14 @@ namespace Milkstain
             RunFrameEquations(CurrentPreset);
             RunPixelEquations(CurrentPreset, false);
 
-            var pick = State.Pick(CurrentPreset.PixelVariables, regs);
+            var pick = State.PickRegs(CurrentPreset.PixelVariables);
 
             foreach (var v in pick.Keys)
             {
-                State.SetVariable(CurrentPreset.RegVariables, v, pick.Heap[v]);
+                State.SetVariable(CurrentPreset.RegVariables, v, pick.Heap[(int)v]);
             }
 
-            // assing regs to global
+            // assign regs to global
 
             if (blending)
             {
@@ -1515,7 +1318,7 @@ namespace Milkstain
             TempTexture = PrevTempTexture;
             PrevTempTexture = swapTexture;
 
-            TempTexture.wrapMode = State.GetVariable(CurrentPreset.FrameVariables, "wrap") == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+            TempTexture.wrapMode = State.GetVariable(CurrentPreset.FrameVariables, Var.wrap) == 0f ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
 
             Blur1Texture.wrapMode = TempTexture.wrapMode;
             Blur2Texture.wrapMode = TempTexture.wrapMode;
@@ -1625,7 +1428,7 @@ namespace Milkstain
             BlurMaterialHorizontal.SetVector("ds", new Vector4(0f + (2f * 3.8f) / (4f + 3.8f), 2f + (2f * 2.9f) / (3.5f + 2.9f), 4f + (2f * 1.2f) / (1.9f + 1.2f), 6f + (2f * 0.3f) / (0.7f + 0.3f)));
             BlurMaterialHorizontal.SetFloat("wdiv", 0.5f / (4f + 3.8f + 3.5f + 2.9f + 1.9f + 1.2f + 0.7f + 0.3f));
 
-            float b1ed = blurLevel == 0 ? State.GetVariable(CurrentPreset.FrameVariables, "b1ed") : 0f;
+            float b1ed = blurLevel == 0 ? State.GetVariable(CurrentPreset.FrameVariables, Var.b1ed) : 0f;
 
             BlurMaterialVertical.SetVector("texsize", new Vector4(target.width, target.height, 1f / target.width, 1f / target.height));
             BlurMaterialVertical.SetFloat("ed1", 1f - b1ed);
@@ -1695,121 +1498,121 @@ namespace Milkstain
 
             foreach (var CurrentShape in preset.Shapes)
             {
-                if (State.GetVariable(CurrentShape.BaseVariables, varInd_enabled) == 0f)
+                if (State.GetVariable(CurrentShape.BaseVariables, Var.enabled) == 0f)
                 {
                     continue;
                 }
 
                 foreach (var v in CurrentShape.Variables.Keys)
                 {
-                    State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Variables.Heap[v]);
+                    State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Variables.Heap[(int)v]);
                 }
 
                 foreach (var v in CurrentShape.FrameMap.Keys)
                 {
-                    State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.FrameMap.Heap[v]);
+                    State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.FrameMap.Heap[(int)v]);
                 }
 
                 if (string.IsNullOrEmpty(CurrentShape.FrameEquationSource))
                 {
                     foreach (var v in preset.AfterFrameVariables.Keys)
                     {
-                        State.SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
+                        State.SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[(int)v]);
                     }
 
                     foreach (var v in CurrentShape.Inits.Keys)
                     {
-                        State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[v]);
+                        State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[(int)v]);
                     }
                 }
 
                 SetGlobalVars(CurrentShape.FrameVariables);
 
-                int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, varInd_num_inst), 1f, 1024f));
+                int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, Var.num_inst), 1f, 1024f));
 
-                float baseX = State.GetVariable(CurrentShape.BaseVariables, varInd_x);
-                float baseY = State.GetVariable(CurrentShape.BaseVariables, varInd_y);
-                float baseRad = State.GetVariable(CurrentShape.BaseVariables, varInd_rad);
-                float baseAng = State.GetVariable(CurrentShape.BaseVariables, varInd_ang);
-                float baseR = State.GetVariable(CurrentShape.BaseVariables, varInd_r);
-                float baseG = State.GetVariable(CurrentShape.BaseVariables, varInd_g);
-                float baseB = State.GetVariable(CurrentShape.BaseVariables, varInd_b);
-                float baseA = State.GetVariable(CurrentShape.BaseVariables, varInd_a);
-                float baseR2 = State.GetVariable(CurrentShape.BaseVariables, varInd_r2);
-                float baseG2 = State.GetVariable(CurrentShape.BaseVariables, varInd_g2);
-                float baseB2 = State.GetVariable(CurrentShape.BaseVariables, varInd_b2);
-                float baseA2 = State.GetVariable(CurrentShape.BaseVariables, varInd_a2);
-                float baseBorderR = State.GetVariable(CurrentShape.BaseVariables, varInd_border_r);
-                float baseBorderG = State.GetVariable(CurrentShape.BaseVariables, varInd_border_g);
-                float baseBorderB = State.GetVariable(CurrentShape.BaseVariables, varInd_border_b);
-                float baseBorderA = State.GetVariable(CurrentShape.BaseVariables, varInd_border_a);
-                float baseThickOutline = State.GetVariable(CurrentShape.BaseVariables, varInd_thickouline);
-                float baseTextured = State.GetVariable(CurrentShape.BaseVariables, varInd_textured);
-                float baseTexZoom = State.GetVariable(CurrentShape.BaseVariables, varInd_tex_zoom);
-                float baseTexAng = State.GetVariable(CurrentShape.BaseVariables, varInd_tex_ang);
-                float baseAdditive = State.GetVariable(CurrentShape.BaseVariables, varInd_additive);
+                float baseX = State.GetVariable(CurrentShape.BaseVariables, Var.x);
+                float baseY = State.GetVariable(CurrentShape.BaseVariables, Var.y);
+                float baseRad = State.GetVariable(CurrentShape.BaseVariables, Var.rad);
+                float baseAng = State.GetVariable(CurrentShape.BaseVariables, Var.ang);
+                float baseR = State.GetVariable(CurrentShape.BaseVariables, Var.r);
+                float baseG = State.GetVariable(CurrentShape.BaseVariables, Var.g);
+                float baseB = State.GetVariable(CurrentShape.BaseVariables, Var.b);
+                float baseA = State.GetVariable(CurrentShape.BaseVariables, Var.a);
+                float baseR2 = State.GetVariable(CurrentShape.BaseVariables, Var.r2);
+                float baseG2 = State.GetVariable(CurrentShape.BaseVariables, Var.g2);
+                float baseB2 = State.GetVariable(CurrentShape.BaseVariables, Var.b2);
+                float baseA2 = State.GetVariable(CurrentShape.BaseVariables, Var.a2);
+                float baseBorderR = State.GetVariable(CurrentShape.BaseVariables, Var.border_r);
+                float baseBorderG = State.GetVariable(CurrentShape.BaseVariables, Var.border_g);
+                float baseBorderB = State.GetVariable(CurrentShape.BaseVariables, Var.border_b);
+                float baseBorderA = State.GetVariable(CurrentShape.BaseVariables, Var.border_a);
+                float baseThickOutline = State.GetVariable(CurrentShape.BaseVariables, Var.thickoutline);
+                float baseTextured = State.GetVariable(CurrentShape.BaseVariables, Var.textured);
+                float baseTexZoom = State.GetVariable(CurrentShape.BaseVariables, Var.tex_zoom);
+                float baseTexAng = State.GetVariable(CurrentShape.BaseVariables, Var.tex_ang);
+                float baseAdditive = State.GetVariable(CurrentShape.BaseVariables, Var.additive);
 
                 for (int j = 0; j < numInst; j++)
                 {
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_instance, j);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_x, baseX);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_y, baseY);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_rad, baseRad);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_ang, baseAng);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_r, baseR);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_g, baseG);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_b, baseB);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_a, baseA);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_r2, baseR2);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_g2, baseG2);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_b2, baseB2);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_a2, baseA2);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_r, baseBorderR);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_g, baseBorderG);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_b, baseBorderB);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_border_a, baseBorderA);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_thickouline, baseThickOutline);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_textured, baseTextured);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_tex_zoom, baseTexZoom);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_tex_ang, baseTexAng);
-                    State.SetVariable(CurrentShape.FrameVariables, varInd_additive, baseAdditive);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.instance, j);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.x, baseX);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.y, baseY);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.rad, baseRad);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.ang, baseAng);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.r, baseR);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.g, baseG);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.b, baseB);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.a, baseA);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.r2, baseR2);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.g2, baseG2);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.b2, baseB2);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.a2, baseA2);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.border_r, baseBorderR);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.border_g, baseBorderG);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.border_b, baseBorderB);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.border_a, baseBorderA);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.thickoutline, baseThickOutline);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.textured, baseTextured);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.tex_zoom, baseTexZoom);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.tex_ang, baseTexAng);
+                    State.SetVariable(CurrentShape.FrameVariables, Var.additive, baseAdditive);
 
                     if (!string.IsNullOrEmpty(CurrentShape.FrameEquationSource))
                     {
                         foreach (var v in preset.AfterFrameVariables.Keys)
                         {
-                            State.SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
+                            State.SetVariable(CurrentShape.FrameVariables, v, preset.AfterFrameVariables.Heap[(int)v]);
                         }
 
                         foreach (var v in CurrentShape.Inits.Keys)
                         {
-                            State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[v]);
+                            State.SetVariable(CurrentShape.FrameVariables, v, CurrentShape.Inits.Heap[(int)v]);
                         }
 
                         CurrentShape.FrameEquationCompiled(CurrentShape.FrameVariables);
                     }
 
-                    int sides = Mathf.Clamp(Mathf.FloorToInt(State.GetVariable(CurrentShape.FrameVariables, varInd_sides)), 3, 100);
+                    int sides = Mathf.Clamp(Mathf.FloorToInt(State.GetVariable(CurrentShape.FrameVariables, Var.sides)), 3, 100);
 
-                    float rad = State.GetVariable(CurrentShape.FrameVariables, varInd_rad);
-                    float ang = State.GetVariable(CurrentShape.FrameVariables, varInd_ang);
+                    float rad = State.GetVariable(CurrentShape.FrameVariables, Var.rad);
+                    float ang = State.GetVariable(CurrentShape.FrameVariables, Var.ang);
 
-                    float x = State.GetVariable(CurrentShape.FrameVariables, varInd_x) * 2f - 1f;
-                    float y = State.GetVariable(CurrentShape.FrameVariables, varInd_y) * 2f - 1f;
+                    float x = State.GetVariable(CurrentShape.FrameVariables, Var.x) * 2f - 1f;
+                    float y = State.GetVariable(CurrentShape.FrameVariables, Var.y) * 2f - 1f;
 
-                    float r = State.GetVariable(CurrentShape.FrameVariables, varInd_r);
-                    float g = State.GetVariable(CurrentShape.FrameVariables, varInd_g);
-                    float b = State.GetVariable(CurrentShape.FrameVariables, varInd_b);
-                    float a = State.GetVariable(CurrentShape.FrameVariables, varInd_a);
-                    float r2 = State.GetVariable(CurrentShape.FrameVariables, varInd_r2);
-                    float g2 = State.GetVariable(CurrentShape.FrameVariables, varInd_g2);
-                    float b2 = State.GetVariable(CurrentShape.FrameVariables, varInd_b2);
-                    float a2 = State.GetVariable(CurrentShape.FrameVariables, varInd_a2);
+                    float r = State.GetVariable(CurrentShape.FrameVariables, Var.r);
+                    float g = State.GetVariable(CurrentShape.FrameVariables, Var.g);
+                    float b = State.GetVariable(CurrentShape.FrameVariables, Var.b);
+                    float a = State.GetVariable(CurrentShape.FrameVariables, Var.a);
+                    float r2 = State.GetVariable(CurrentShape.FrameVariables, Var.r2);
+                    float g2 = State.GetVariable(CurrentShape.FrameVariables, Var.g2);
+                    float b2 = State.GetVariable(CurrentShape.FrameVariables, Var.b2);
+                    float a2 = State.GetVariable(CurrentShape.FrameVariables, Var.a2);
 
-                    float borderR = State.GetVariable(CurrentShape.FrameVariables, varInd_border_r);
-                    float borderG = State.GetVariable(CurrentShape.FrameVariables, varInd_border_g);
-                    float borderB = State.GetVariable(CurrentShape.FrameVariables, varInd_border_b);
-                    float borderA = State.GetVariable(CurrentShape.FrameVariables, varInd_border_a);
+                    float borderR = State.GetVariable(CurrentShape.FrameVariables, Var.border_r);
+                    float borderG = State.GetVariable(CurrentShape.FrameVariables, Var.border_g);
+                    float borderB = State.GetVariable(CurrentShape.FrameVariables, Var.border_b);
+                    float borderA = State.GetVariable(CurrentShape.FrameVariables, Var.border_a);
 
                     Color borderColor = new Color
                     (
@@ -1819,13 +1622,13 @@ namespace Milkstain
                         borderA * blendProgress
                     );
 
-                    float thickoutline = State.GetVariable(CurrentShape.FrameVariables, varInd_thickouline);
+                    float thickoutline = State.GetVariable(CurrentShape.FrameVariables, Var.thickoutline);
 
-                    float textured = State.GetVariable(CurrentShape.FrameVariables, varInd_textured);
-                    float texZoom = State.GetVariable(CurrentShape.FrameVariables, varInd_tex_zoom);
-                    float texAng = State.GetVariable(CurrentShape.FrameVariables, varInd_tex_ang);
+                    float textured = State.GetVariable(CurrentShape.FrameVariables, Var.textured);
+                    float texZoom = State.GetVariable(CurrentShape.FrameVariables, Var.tex_zoom);
+                    float texAng = State.GetVariable(CurrentShape.FrameVariables, Var.tex_ang);
 
-                    float additive = State.GetVariable(CurrentShape.FrameVariables, varInd_additive);
+                    float additive = State.GetVariable(CurrentShape.FrameVariables, Var.additive);
 
                     bool hasBorder = borderColor.a > 0f;
                     bool isTextured = Mathf.Abs(textured) >= 1f;
@@ -1948,50 +1751,54 @@ namespace Milkstain
 
             foreach (var CurrentWave in preset.Waves)
             {
-                if (State.GetVariable(CurrentWave.BaseVariables, varInd_enabled) == 0f)
+                if (State.GetVariable(CurrentWave.BaseVariables, Var.enabled) == 0f)
                 {
                     continue;
                 }
 
                 foreach (var v in CurrentWave.Variables.Keys)
                 {
-                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Variables.Heap[v]);
+                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Variables.Heap[(int)v]);
                 }
 
                 foreach (var v in CurrentWave.FrameMap.Keys)
                 {
-                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.FrameMap.Heap[v]);
+                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.FrameMap.Heap[(int)v]);
                 }
 
                 foreach (var v in preset.AfterFrameVariables.Keys)
                 {
-                    State.SetVariable(CurrentWave.FrameVariables, v, preset.AfterFrameVariables.Heap[v]);
+                    State.SetVariable(CurrentWave.FrameVariables, v, preset.AfterFrameVariables.Heap[(int)v]);
                 }
 
                 foreach (var v in CurrentWave.Inits.Keys)
                 {
-                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits.Heap[v]);
+                    State.SetVariable(CurrentWave.FrameVariables, v, CurrentWave.Inits.Heap[(int)v]);
                 }
 
                 SetGlobalVars(CurrentWave.FrameVariables);
 
                 CurrentWave.FrameEquationCompiled(CurrentWave.FrameVariables);
 
-                int maxSamples = 512;
-                int samples = Mathf.FloorToInt(Mathf.Min(State.GetVariable(CurrentWave.FrameVariables, "samples", maxSamples), maxSamples));
+                int samples = Mathf.FloorToInt(Mathf.Min(State.GetVariable(CurrentWave.FrameVariables, Var.samples), MaxSamples));
 
-                int sep = Mathf.FloorToInt(State.GetVariable(CurrentWave.FrameVariables, varInd_sep));
-                float scaling = State.GetVariable(CurrentWave.FrameVariables, varInd_scaling);
-                float spectrum = State.GetVariable(CurrentWave.FrameVariables, varInd_spectrum);
-                float smoothing = State.GetVariable(CurrentWave.FrameVariables, varInd_smoothing);
-                float usedots = State.GetVariable(CurrentWave.BaseVariables, varInd_usedots);
+                if (samples == 0)
+                {
+                    samples = MaxSamples;
+                }
 
-                float frameR = State.GetVariable(CurrentWave.FrameVariables, varInd_r);
-                float frameG = State.GetVariable(CurrentWave.FrameVariables, varInd_g);
-                float frameB = State.GetVariable(CurrentWave.FrameVariables, varInd_b);
-                float frameA = State.GetVariable(CurrentWave.FrameVariables, varInd_a);
+                int sep = Mathf.FloorToInt(State.GetVariable(CurrentWave.FrameVariables, Var.sep));
+                float scaling = State.GetVariable(CurrentWave.FrameVariables, Var.scaling);
+                float spectrum = State.GetVariable(CurrentWave.FrameVariables, Var.spectrum);
+                float smoothing = State.GetVariable(CurrentWave.FrameVariables, Var.smoothing);
+                float usedots = State.GetVariable(CurrentWave.BaseVariables, Var.usedots);
 
-                float waveScale = State.GetVariable(CurrentPreset.BaseVariables, varInd_wave_scale);
+                float frameR = State.GetVariable(CurrentWave.FrameVariables, Var.r);
+                float frameG = State.GetVariable(CurrentWave.FrameVariables, Var.g);
+                float frameB = State.GetVariable(CurrentWave.FrameVariables, Var.b);
+                float frameA = State.GetVariable(CurrentWave.FrameVariables, Var.a);
+
+                float waveScale = State.GetVariable(CurrentPreset.BaseVariables, Var.wave_scale);
 
                 samples -= sep;
 
@@ -2006,9 +1813,9 @@ namespace Milkstain
                 float[] pointsLeft = useSpectrum ? freqArrayL : timeArrayL;
                 float[] pointsRight = useSpectrum ? freqArrayR : timeArrayR;
 
-                int j0 = useSpectrum ? 0 : Mathf.FloorToInt((maxSamples - samples) / 2f - sep / 2f);
-                int j1 = useSpectrum ? 0 : Mathf.FloorToInt((maxSamples - samples) / 2f + sep / 2f);
-                float t = useSpectrum ? (maxSamples - sep) / (float)samples : 1f;
+                int j0 = useSpectrum ? 0 : Mathf.FloorToInt((MaxSamples - samples) / 2f - sep / 2f);
+                int j1 = useSpectrum ? 0 : Mathf.FloorToInt((MaxSamples - samples) / 2f + sep / 2f);
+                float t = useSpectrum ? (MaxSamples - sep) / (float)samples : 1f;
 
                 float mix1 = Mathf.Pow(smoothing * 0.98f, 0.5f);
                 float mix2 = 1f - mix1;
@@ -2042,34 +1849,34 @@ namespace Milkstain
                     float value1 = CurrentWave.PointsDataL[j];
                     float value2 = CurrentWave.PointsDataR[j];
 
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_sample, j / (samples - 1f));
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_value1, value1);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_value2, value2);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_x, 0.5f + value1);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_y, 0.5f + value2);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_r, frameR);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_g, frameG);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_b, frameB);
-                    State.SetVariable(CurrentWave.FrameVariables, varInd_a, frameA);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.sample, j / (samples - 1f));
+                    State.SetVariable(CurrentWave.FrameVariables, Var.value1, value1);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.value2, value2);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.x, 0.5f + value1);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.y, 0.5f + value2);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.r, frameR);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.g, frameG);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.b, frameB);
+                    State.SetVariable(CurrentWave.FrameVariables, Var.a, frameA);
 
                     if (!string.IsNullOrEmpty(CurrentWave.PointEquationSource))
                     {
                         CurrentWave.PointEquationCompiled(CurrentWave.FrameVariables);
                     }
 
-                    float x = (State.GetVariable(CurrentWave.FrameVariables, varInd_x) * 2f - 1f) * (1f / AspectRatio.x);
-                    float y = (State.GetVariable(CurrentWave.FrameVariables, varInd_y) * 2f - 1f) * (1f / AspectRatio.y);
+                    float x = (State.GetVariable(CurrentWave.FrameVariables, Var.x) * 2f - 1f) * (1f / AspectRatio.x);
+                    float y = (State.GetVariable(CurrentWave.FrameVariables, Var.y) * 2f - 1f) * (1f / AspectRatio.y);
 
-                    float r = State.GetVariable(CurrentWave.FrameVariables, varInd_r);
-                    float g = State.GetVariable(CurrentWave.FrameVariables, varInd_g);
-                    float b = State.GetVariable(CurrentWave.FrameVariables, varInd_b);
-                    float a = State.GetVariable(CurrentWave.FrameVariables, varInd_a);
+                    float r = State.GetVariable(CurrentWave.FrameVariables, Var.r);
+                    float g = State.GetVariable(CurrentWave.FrameVariables, Var.g);
+                    float b = State.GetVariable(CurrentWave.FrameVariables, Var.b);
+                    float a = State.GetVariable(CurrentWave.FrameVariables, Var.a);
 
                     CurrentWave.Positions[j] = new Vector3(x, y, 0f);
                     CurrentWave.Colors[j] = new Color(r, g, b, a * blendProgress);
                 }
 
-                bool thick = State.GetVariable(CurrentWave.FrameVariables, varInd_thick) != 0f;
+                bool thick = State.GetVariable(CurrentWave.FrameVariables, Var.thick) != 0f;
 
                 if (usedots != 0f)
                 {
@@ -2111,7 +1918,7 @@ namespace Milkstain
 
                     CurrentWave.LineMaterial.mainTexture = TempTexture;
                     CurrentWave.LineMaterial.SetColor("waveColor", Color.white);
-                    CurrentWave.LineMaterial.SetFloat("additivewave", State.GetVariable(CurrentWave.FrameVariables, varInd_additive));
+                    CurrentWave.LineMaterial.SetFloat("additivewave", State.GetVariable(CurrentWave.FrameVariables, Var.additive));
                     CurrentWave.LineMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
                     var line = new LineQueue();
@@ -2160,7 +1967,7 @@ namespace Milkstain
 
             preset.WarpMaterial.SetTexture("_MainTexPrev", PrevTempTexture);
 
-            preset.WarpMaterial.SetFloat("decay", State.GetVariable(preset.FrameVariables, "decay"));
+            preset.WarpMaterial.SetFloat("decay", State.GetVariable(preset.FrameVariables, Var.decay));
             preset.WarpMaterial.SetFloat("blending", blending ? 1f : 0f);
 
             if (!SkipCustomShaded)
@@ -2210,10 +2017,10 @@ namespace Milkstain
                 preset.WarpMaterial.SetFloat("fps", FPS);
                 preset.WarpMaterial.SetVector("rand_preset", 
                     new Vector4(
-                        State.GetVariable(preset.FrameVariables, "rand_preset.x"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.y"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.z"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.w")
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_x),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_y),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_z),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_w)
                     )
                 );
                 preset.WarpMaterial.SetVector("rand_frame", 
@@ -2226,66 +2033,66 @@ namespace Milkstain
                 );
                 preset.WarpMaterial.SetVector("_qa", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q1"),
-                        State.GetVariable(preset.AfterFrameVariables, "q2"),
-                        State.GetVariable(preset.AfterFrameVariables, "q3"),
-                        State.GetVariable(preset.AfterFrameVariables, "q4")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q1),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q2),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q3),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q4)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qb", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q5"),
-                        State.GetVariable(preset.AfterFrameVariables, "q6"),
-                        State.GetVariable(preset.AfterFrameVariables, "q7"),
-                        State.GetVariable(preset.AfterFrameVariables, "q8")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q5),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q6),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q7),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q8)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qc", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q9"),
-                        State.GetVariable(preset.AfterFrameVariables, "q10"),
-                        State.GetVariable(preset.AfterFrameVariables, "q11"),
-                        State.GetVariable(preset.AfterFrameVariables, "q12")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q9),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q10),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q11),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q12)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qd", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q13"),
-                        State.GetVariable(preset.AfterFrameVariables, "q14"),
-                        State.GetVariable(preset.AfterFrameVariables, "q15"),
-                        State.GetVariable(preset.AfterFrameVariables, "q16")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q13),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q14),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q15),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q16)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qe", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q17"),
-                        State.GetVariable(preset.AfterFrameVariables, "q18"),
-                        State.GetVariable(preset.AfterFrameVariables, "q19"),
-                        State.GetVariable(preset.AfterFrameVariables, "q20")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q17),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q18),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q19),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q20)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qf", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q21"),
-                        State.GetVariable(preset.AfterFrameVariables, "q22"),
-                        State.GetVariable(preset.AfterFrameVariables, "q23"),
-                        State.GetVariable(preset.AfterFrameVariables, "q24")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q21),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q22),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q23),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q24)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qg", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q25"),
-                        State.GetVariable(preset.AfterFrameVariables, "q26"),
-                        State.GetVariable(preset.AfterFrameVariables, "q27"),
-                        State.GetVariable(preset.AfterFrameVariables, "q28")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q25),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q26),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q27),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q28)
                     )
                 );
                 preset.WarpMaterial.SetVector("_qh", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q29"),
-                        State.GetVariable(preset.AfterFrameVariables, "q30"),
-                        State.GetVariable(preset.AfterFrameVariables, "q31"),
-                        State.GetVariable(preset.AfterFrameVariables, "q32")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q29),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q30),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q31),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q32)
                     )
                 );
                 preset.WarpMaterial.SetVector("slow_roam_cos", 
@@ -2356,7 +2163,7 @@ namespace Milkstain
 
         void DrawDarkenCenter()
         {
-            if (State.GetVariable(CurrentPreset.FrameVariables, "darken_center") == 0f)
+            if (State.GetVariable(CurrentPreset.FrameVariables, Var.darken_center) == 0f)
             {
                 return;
             }
@@ -2381,13 +2188,13 @@ namespace Milkstain
 
             Color outerColor = new Color
             (
-                State.GetVariable(CurrentPreset.FrameVariables, "ob_r"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ob_g"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ob_b"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ob_a")
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ob_r),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ob_g),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ob_b),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ob_a)
             );
 
-            float borderSize = State.GetVariable(CurrentPreset.FrameVariables, "ob_size");
+            float borderSize = State.GetVariable(CurrentPreset.FrameVariables, Var.ob_size);
 
             DrawBorder(outerColor, borderSize, 0f);
 
@@ -2400,14 +2207,14 @@ namespace Milkstain
 
             Color innerColor = new Color
             (
-                State.GetVariable(CurrentPreset.FrameVariables, "ib_r"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ib_g"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ib_b"),
-                State.GetVariable(CurrentPreset.FrameVariables, "ib_a")
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ib_r),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ib_g),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ib_b),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.ib_a)
             );
 
-            float borderSize = State.GetVariable(CurrentPreset.FrameVariables, "ib_size");
-            float prevBorderSize = State.GetVariable(CurrentPreset.FrameVariables, "ob_size");
+            float borderSize = State.GetVariable(CurrentPreset.FrameVariables, Var.ib_size);
+            float prevBorderSize = State.GetVariable(CurrentPreset.FrameVariables, Var.ob_size);
 
             DrawBorder(innerColor, borderSize, prevBorderSize);
 
@@ -2481,11 +2288,11 @@ namespace Milkstain
 
         void DrawMotionVectors()
         {
-            float mvOn = State.GetVariable(CurrentPreset.FrameVariables, "bmotionvectorson");
-            float mvA = mvOn == 0f ? 0f : State.GetVariable(CurrentPreset.FrameVariables, "mv_a");
+            float mvOn = State.GetVariable(CurrentPreset.FrameVariables, Var.motionvectorson);
+            float mvA = mvOn == 0f ? 0f : State.GetVariable(CurrentPreset.FrameVariables, Var.mv_a);
 
-            float mv_x = State.GetVariable(CurrentPreset.FrameVariables, "mv_x");
-            float mv_y = State.GetVariable(CurrentPreset.FrameVariables, "mv_y");
+            float mv_x = State.GetVariable(CurrentPreset.FrameVariables, Var.mv_x);
+            float mv_y = State.GetVariable(CurrentPreset.FrameVariables, Var.mv_y);
 
             int nX = Mathf.FloorToInt(mv_x);
             int nY = Mathf.FloorToInt(mv_y);
@@ -2512,10 +2319,10 @@ namespace Milkstain
                 dy = 0f;
             }
 
-            float dx2 = State.GetVariable(CurrentPreset.FrameVariables, "mv_dx");
-            float dy2 = State.GetVariable(CurrentPreset.FrameVariables, "mv_dy");
+            float dx2 = State.GetVariable(CurrentPreset.FrameVariables, Var.mv_dx);
+            float dy2 = State.GetVariable(CurrentPreset.FrameVariables, Var.mv_dy);
 
-            float lenMult = State.GetVariable(CurrentPreset.FrameVariables, "mv_l");
+            float lenMult = State.GetVariable(CurrentPreset.FrameVariables, Var.mv_l);
 
             float minLen = 1f / Resolution.x;
 
@@ -2582,9 +2389,9 @@ namespace Milkstain
 
             Color color = new Color
             (
-                State.GetVariable(CurrentPreset.FrameVariables, "mv_r"),
-                State.GetVariable(CurrentPreset.FrameVariables, "mv_g"), 
-                State.GetVariable(CurrentPreset.FrameVariables, "mv_b"),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.mv_r),
+                State.GetVariable(CurrentPreset.FrameVariables, Var.mv_g), 
+                State.GetVariable(CurrentPreset.FrameVariables, Var.mv_b),
                 mvA
             );
 
@@ -2629,7 +2436,7 @@ namespace Milkstain
 
         void DrawBasicWaveform()
         {
-            float alpha = State.GetVariable(CurrentPreset.FrameVariables, "wave_a");
+            float alpha = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_a);
 
             float vol = (Bass + Mid + Treb) / 3f;
 
@@ -2640,8 +2447,8 @@ namespace Milkstain
 
             UnityEngine.Profiling.Profiler.BeginSample("DrawBasicWaveform");
 
-            float scale = State.GetVariable(CurrentPreset.FrameVariables, "wave_scale") / 128f;
-            float smooth = State.GetVariable(CurrentPreset.FrameVariables, "wave_smoothing");
+            float scale = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_scale) / 128f;
+            float smooth = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_smoothing);
             float smooth2 = scale * (1f - smooth);
 
             List<float> waveL = new List<float>();
@@ -2662,11 +2469,19 @@ namespace Milkstain
                 waveR.Add(timeArrayR[i] * smooth2 + waveR[i - 1] * smooth);
             }
 
-            int newWaveMode = Mathf.FloorToInt(State.GetVariable(CurrentPreset.FrameVariables, "wave_mode")) % 8;
-            int oldWaveMode = PrevPreset == null ? 0 : Mathf.FloorToInt(State.GetVariable(PrevPreset.FrameVariables, "wave_mode")) % 8;
+            int newWaveMode = Mathf.FloorToInt(State.GetVariable(CurrentPreset.FrameVariables, Var.wave_mode)) % 8;
+            int oldWaveMode = PrevPreset == null ? 0 : Mathf.FloorToInt(State.GetVariable(PrevPreset.FrameVariables, Var.wave_mode)) % 8;
 
-            float wavePosX = State.GetVariable(CurrentPreset.FrameVariables, "wave_x") * 2f - 1f;
-            float wavePosY = State.GetVariable(CurrentPreset.FrameVariables, "wave_y") * 2f - 1f;
+            float wavePosX = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_x) * 2f - 1f;
+            float wavePosY = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_y) * 2f - 1f;
+
+            if (OscilloscopeMode)
+            {
+                newWaveMode = 8;
+                oldWaveMode = 8;
+                wavePosX = 0f;
+                wavePosY = 0f;
+            }
 
             int numVert = 0;
             int oldNumVert = 0;
@@ -2680,7 +2495,7 @@ namespace Milkstain
             {
                 int waveMode = (it == 0) ? newWaveMode : oldWaveMode;
 
-                float fWaveParam2 = State.GetVariable(CurrentPreset.FrameVariables, "wave_mystery");
+                float fWaveParam2 = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_mystery);
 
                 if (
                     (waveMode == 0 || waveMode == 1 || waveMode == 4) &&
@@ -2693,7 +2508,7 @@ namespace Milkstain
                     fWaveParam2 = fWaveParam2 * 2f - 1f;
                 }
 
-                int localNumVert = 0;
+                int localNumVert;
 
                 Vector3[] positions;
                 Vector3[] positions2;
@@ -2709,362 +2524,401 @@ namespace Milkstain
                     positions2 = BasicWaveFormPositions2Old;
                 }
                 
-                alpha = State.GetVariable(CurrentPreset.FrameVariables, "wave_a");
+                alpha = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_a);
 
-                if (waveMode == 0)
+                float ang;
+                int sampleOffset;
+                float numVertInv;
+
+                switch (waveMode)
                 {
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
+                    case 0:
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+                        
+                        localNumVert = Mathf.FloorToInt(waveL.Count / 2f) + 1;
+                        numVertInv = 1f / (localNumVert - 1f);
+                        sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+
+                        for (int i = 0; i < localNumVert - 1; i++)
+                        {
+                            float rad = 0.5f + 0.4f * waveR[i + sampleOffset] + fWaveParam2;
+                            ang = i * numVertInv * 2f * Mathf.PI + CurrentTime * 0.2f;
+
+                            if (i < localNumVert / 10f)
+                            {
+                                float mix = i / (localNumVert * 0.1f);
+                                mix = 0.5f - 0.5f * Mathf.Cos(mix * Mathf.PI);
+                                float rad2 = 0.5f + 0.4f * waveR[i + localNumVert + sampleOffset] + fWaveParam2;
+                                rad = (1f - mix) * rad2 + rad * mix;
+                            }
+
+                            positions[i] = new Vector3
+                            (
+                                rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
+                                rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
+                                0f
+                            );
+                        }
+
+                        positions[localNumVert - 1] = positions[0];
+                        break;
                     
-                    localNumVert = Mathf.FloorToInt(waveL.Count / 2f) + 1;
-                    float numVertInv = 1f / (localNumVert - 1f);
-                    int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
-
-                    for (int i = 0; i < localNumVert - 1; i++)
-                    {
-                        float rad = 0.5f + 0.4f * waveR[i + sampleOffset] + fWaveParam2;
-                        float ang = i * numVertInv * 2f * Mathf.PI + CurrentTime * 0.2f;
-
-                        if (i < localNumVert / 10f)
+                    case 1:
+                        alpha *= 1.25f;
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
                         {
-                            float mix = i / (localNumVert * 0.1f);
-                            mix = 0.5f - 0.5f * Mathf.Cos(mix * Mathf.PI);
-                            float rad2 = 0.5f + 0.4f * waveR[i + localNumVert + sampleOffset] + fWaveParam2;
-                            rad = (1f - mix) * rad2 + rad * mix;
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
                         }
+                        alpha = Mathf.Clamp01(alpha);
 
-                        positions[i] = new Vector3
-                        (
-                            rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
-                            rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
-                            0f
-                        );
-                    }
+                        localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
 
-                    positions[localNumVert - 1] = positions[0];
-                }
-                else if (waveMode == 1)
-                {
-                    alpha *= 1.25f;
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
-
-                    for (int i = 0; i < localNumVert - 1; i++)
-                    {
-                        float rad = 0.53f + 0.43f * waveR[i] + fWaveParam2;
-                        float ang = waveL[i + 32] * 0.5f * Mathf.PI + CurrentTime * 2.3f;
-
-                        positions[i] = new Vector3
-                        (
-                            rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
-                            rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
-                            0f
-                        );
-                    }
-                }
-                else if (waveMode == 2)
-                {
-                    if (Resolution.x < 1024)
-                    {
-                        alpha *= 0.09f;
-                    }
-                    else if (Resolution.x >= 1024 && Resolution.x < 2048)
-                    {
-                        alpha *= 0.11f;
-                    }
-                    else
-                    {
-                        alpha *= 0.13f;
-                    }
-
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    localNumVert = waveL.Count;
-
-                    for (int i = 0; i < waveL.Count; i++)
-                    {
-                        positions[i] = new Vector3
-                        (
-                            waveR[i] * AspectRatio.y + wavePosX,
-                            waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
-                            0f
-                        );
-                    }
-                }
-                else if (waveMode == 3)
-                {
-                    if (Resolution.x < 1024)
-                    {
-                        alpha *= 0.15f;
-                    }
-                    else if (Resolution.x >= 1024 && Resolution.x < 2048)
-                    {
-                        alpha *= 0.22f;
-                    }
-                    else
-                    {
-                        alpha *= 0.33f;
-                    }
-
-                    alpha *= 1.3f;
-                    alpha *= Treb * Treb;
-
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    localNumVert = waveL.Count;
-
-                    for (int i = 0; i < waveL.Count; i++)
-                    {
-                        positions[i] = new Vector3
-                        (
-                            waveR[i] * AspectRatio.y + wavePosX,
-                            waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
-                            0f
-                        );
-                    }
-                }
-                else if (waveMode == 4)
-                {
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    localNumVert = waveL.Count;
-
-                    if (localNumVert > Resolution.x / 3f)
-                    {
-                        localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
-                    }
-
-                    float numVertInv = 1f / localNumVert;
-                    int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
-
-                    float w1 = 0.45f + 0.5f * (fWaveParam2 * 0.5f + 0.5f);
-                    float w2 = 1.0f - w1;
-
-                    for (int i = 0; i < localNumVert; i++)
-                    {
-                        float x =
-                            2.0f * i * numVertInv +
-                            (wavePosX - 1) +
-                            waveR[(i + 25 + sampleOffset) % waveL.Count] * 0.44f;
-                        float y = waveL[i + sampleOffset] * 0.47f + wavePosY;
-
-                        if (i > 1)
+                        for (int i = 0; i < localNumVert - 1; i++)
                         {
-                            x =
-                                x * w2 +
-                                w1 *
-                                    (positions[i - 1].x * 2f -
-                                    positions[i - 2].x);
-                            y =
-                                y * w2 +
-                                w1 *
-                                    (positions[i - 1].y * 2f -
-                                    positions[i - 2].y);
-                        }
+                            float rad = 0.53f + 0.43f * waveR[i] + fWaveParam2;
+                            ang = waveL[i + 32] * 0.5f * Mathf.PI + CurrentTime * 2.3f;
 
-                        positions[i] = new Vector3(x, y, 0f);
-                    }
-                }
-                else if (waveMode == 5)
-                {
-                    if (Resolution.x < 1024)
-                    {
-                        alpha *= 0.09f;
-                    }
-                    else if (Resolution.x >= 1024 && Resolution.x < 2048)
-                    {
-                        alpha *= 0.11f;
-                    }
-                    else
-                    {
-                        alpha *= 0.13f;
-                    }
-
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    float cosRot = Mathf.Cos(CurrentTime * 0.3f);
-                    float sinRot = Mathf.Sin(CurrentTime * 0.3f);
-
-                    localNumVert = waveL.Count;
-
-                    for (int i = 0; i < waveL.Count; i++)
-                    {
-                        int ioff = (i + 32) % waveL.Count;
-                        float x0 = waveR[i] * waveL[ioff] + waveL[i] * waveR[ioff];
-                        float y0 = waveR[i] * waveR[i] - waveL[ioff] * waveL[ioff];
-
-                        positions[i] = new Vector3
-                        (
-                            (x0 * cosRot - y0 * sinRot) * (AspectRatio.y + wavePosX),
-                            (x0 * sinRot + y0 * cosRot) * (AspectRatio.x + wavePosY),
-                            0f
-                        );
-                    }
-                }
-                else if (waveMode == 6 || waveMode == 7)
-                {
-                    if (State.GetVariable(CurrentPreset.FrameVariables, "modwavealphabyvolume") > 0f)
-                    {
-                        float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, "modwavealphaend") - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart");
-                        alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, "modwavealphastart")) / alphaDiff;
-                    }
-                    alpha = Mathf.Clamp01(alpha);
-
-                    localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
-
-                    if (localNumVert > Resolution.x / 3f)
-                    {
-                        localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
-                    }
-
-                    int sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
-                    float ang = Mathf.PI * 0.5f * fWaveParam2;
-                    float dx = Mathf.Cos(ang);
-                    float dy = Mathf.Sin(ang);
-
-                    float[] edgex = new float[]
-                    {
-                        wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) - dx * 3.0f,
-                        wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) + dx * 3.0f
-                    };
-
-                    float[] edgey = new float[]
-                    {
-                        wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) - dy * 3.0f,
-                        wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) + dy * 3.0f
-                    };
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        for (int j = 0; j < 4; j++)
-                        {
-                            float t = 0f;
-                            bool bClip = false;
-
-                            switch (j)
-                            {
-                                case 0:
-                                    if (edgex[i] > 1.1f)
-                                    {
-                                        t = (1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
-                                        bClip = true;
-                                    }
-                                    break;
-                                case 1:
-                                    if (edgex[i] < -1.1f)
-                                    {
-                                        t = (-1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
-                                        bClip = true;
-                                    }
-                                    break;
-                                case 2:
-                                    if (edgey[i] > 1.1f)
-                                    {
-                                        t = (1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
-                                        bClip = true;
-                                    }
-                                    break;
-                                case 3:
-                                    if (edgey[i] < -1.1f)
-                                    {
-                                        t = (-1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
-                                        bClip = true;
-                                    }
-                                    break;
-                            }
-
-                            if (bClip)
-                            {
-                                float dxi = edgex[i] - edgex[1 - i];
-                                float dyi = edgey[i] - edgey[1 - i];
-                                edgex[i] = edgex[1 - i] + dxi * t;
-                                edgey[i] = edgey[1 - i] + dyi * t;
-                            }
-                        }
-                    }
-
-                    dx = (edgex[1] - edgex[0]) / localNumVert;
-                    dy = (edgey[1] - edgey[0]) / localNumVert;
-
-                    float ang2 = Mathf.Atan2(dy, dx);
-                    float perpDx = Mathf.Cos(ang2 + Mathf.PI * 0.5f);
-                    float perpDy = Mathf.Sin(ang2 + Mathf.PI * 0.5f);
-
-                    if (waveMode == 6)
-                    {
-                        for (int i = 0; i < localNumVert; i++)
-                        {
-                            float sample = waveL[i + sampleOffset];
                             positions[i] = new Vector3
                             (
-                                edgex[0] + dx * i + perpDx * 0.25f * sample,
-                                edgey[0] + dy * i + perpDy * 0.25f * sample,
+                                rad * Mathf.Cos(ang) * AspectRatio.y + wavePosX,
+                                rad * Mathf.Sin(ang) * AspectRatio.x + wavePosY,
                                 0f
                             );
                         }
-                    }
-                    else
-                    {
-                        float sep = Mathf.Pow(wavePosY * 0.5f + 0.5f, 2);
+                        break;
 
-                        for (int i = 0; i < localNumVert; i++)
+                    case 2:
+                        if (Resolution.x < 1024)
                         {
-                            float sample = waveL[i + sampleOffset];
+                            alpha *= 0.09f;
+                        }
+                        else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                        {
+                            alpha *= 0.11f;
+                        }
+                        else
+                        {
+                            alpha *= 0.13f;
+                        }
+
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+
+                        localNumVert = waveL.Count;
+
+                        for (int i = 0; i < waveL.Count; i++)
+                        {
                             positions[i] = new Vector3
                             (
-                                edgex[0] + dx * i + perpDx * (0.25f * sample + sep),
-                                edgey[0] + dy * i + perpDy * (0.25f * sample + sep),
+                                waveR[i] * AspectRatio.y + wavePosX,
+                                waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
                                 0f
                             );
                         }
+                        break;
+                    
+                    case 3:
+                        if (Resolution.x < 1024)
+                        {
+                            alpha *= 0.15f;
+                        }
+                        else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                        {
+                            alpha *= 0.22f;
+                        }
+                        else
+                        {
+                            alpha *= 0.33f;
+                        }
+
+                        alpha *= 1.3f;
+                        alpha *= Treb * Treb;
+
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+
+                        localNumVert = waveL.Count;
+
+                        for (int i = 0; i < waveL.Count; i++)
+                        {
+                            positions[i] = new Vector3
+                            (
+                                waveR[i] * AspectRatio.y + wavePosX,
+                                waveL[(i + 32) % waveL.Count] * AspectRatio.x + wavePosY,
+                                0f
+                            );
+                        }
+                        break;
+                    
+                    case 4:
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+
+                        localNumVert = waveL.Count;
+
+                        if (localNumVert > Resolution.x / 3f)
+                        {
+                            localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
+                        }
+
+                        numVertInv = 1f / localNumVert;
+                        sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+
+                        float w1 = 0.45f + 0.5f * (fWaveParam2 * 0.5f + 0.5f);
+                        float w2 = 1.0f - w1;
 
                         for (int i = 0; i < localNumVert; i++)
                         {
-                            float sample = waveR[i + sampleOffset];
-                            positions2[i] = new Vector3
+                            float x =
+                                2.0f * i * numVertInv +
+                                (wavePosX - 1) +
+                                waveR[(i + 25 + sampleOffset) % waveL.Count] * 0.44f;
+                            float y = waveL[i + sampleOffset] * 0.47f + wavePosY;
+
+                            if (i > 1)
+                            {
+                                x =
+                                    x * w2 +
+                                    w1 *
+                                        (positions[i - 1].x * 2f -
+                                        positions[i - 2].x);
+                                y =
+                                    y * w2 +
+                                    w1 *
+                                        (positions[i - 1].y * 2f -
+                                        positions[i - 2].y);
+                            }
+
+                            positions[i] = new Vector3(x, y, 0f);
+                        }
+                        break;
+                    
+                    case 5:
+                        if (Resolution.x < 1024)
+                        {
+                            alpha *= 0.09f;
+                        }
+                        else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                        {
+                            alpha *= 0.11f;
+                        }
+                        else
+                        {
+                            alpha *= 0.13f;
+                        }
+
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+
+                        float cosRot = Mathf.Cos(CurrentTime * 0.3f);
+                        float sinRot = Mathf.Sin(CurrentTime * 0.3f);
+
+                        localNumVert = waveL.Count;
+
+                        for (int i = 0; i < waveL.Count; i++)
+                        {
+                            int ioff = (i + 32) % waveL.Count;
+                            float x0 = waveR[i] * waveL[ioff] + waveL[i] * waveR[ioff];
+                            float y0 = waveR[i] * waveR[i] - waveL[ioff] * waveL[ioff];
+
+                            positions[i] = new Vector3
                             (
-                                edgex[0] + dx * i + perpDx * (0.25f * sample - sep),
-                                edgey[0] + dy * i + perpDy * (0.25f * sample - sep),
+                                (x0 * cosRot - y0 * sinRot) * (AspectRatio.y + wavePosX),
+                                (x0 * sinRot + y0 * cosRot) * (AspectRatio.x + wavePosY),
                                 0f
                             );
                         }
-                    }
-                }
-                else
-                {
-                    UnityEngine.Profiling.Profiler.EndSample();
+                        break;
+                    
+                    case 6:
+                    case 7:
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
 
-                    return;
+                        localNumVert = Mathf.FloorToInt(waveL.Count / 2f);
+
+                        if (localNumVert > Resolution.x / 3f)
+                        {
+                            localNumVert = Mathf.FloorToInt(Resolution.x / 3f);
+                        }
+
+                        sampleOffset = Mathf.FloorToInt((waveL.Count - localNumVert) / 2f);
+                        ang = Mathf.PI * 0.5f * fWaveParam2;
+                        float dx = Mathf.Cos(ang);
+                        float dy = Mathf.Sin(ang);
+
+                        float[] edgex = new float[]
+                        {
+                            wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) - dx * 3.0f,
+                            wavePosX * Mathf.Cos(ang + Mathf.PI * 0.5f) + dx * 3.0f
+                        };
+
+                        float[] edgey = new float[]
+                        {
+                            wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) - dy * 3.0f,
+                            wavePosX * Mathf.Sin(ang + Mathf.PI * 0.5f) + dy * 3.0f
+                        };
+
+                        for (int i = 0; i < 2; i++)
+                        {
+                            for (int j = 0; j < 4; j++)
+                            {
+                                float t = 0f;
+                                bool bClip = false;
+
+                                switch (j)
+                                {
+                                    case 0:
+                                        if (edgex[i] > 1.1f)
+                                        {
+                                            t = (1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
+                                            bClip = true;
+                                        }
+                                        break;
+                                    case 1:
+                                        if (edgex[i] < -1.1f)
+                                        {
+                                            t = (-1.1f - edgex[1 - i]) / (edgex[i] - edgex[1 - i]);
+                                            bClip = true;
+                                        }
+                                        break;
+                                    case 2:
+                                        if (edgey[i] > 1.1f)
+                                        {
+                                            t = (1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
+                                            bClip = true;
+                                        }
+                                        break;
+                                    case 3:
+                                        if (edgey[i] < -1.1f)
+                                        {
+                                            t = (-1.1f - edgey[1 - i]) / (edgey[i] - edgey[1 - i]);
+                                            bClip = true;
+                                        }
+                                        break;
+                                }
+
+                                if (bClip)
+                                {
+                                    float dxi = edgex[i] - edgex[1 - i];
+                                    float dyi = edgey[i] - edgey[1 - i];
+                                    edgex[i] = edgex[1 - i] + dxi * t;
+                                    edgey[i] = edgey[1 - i] + dyi * t;
+                                }
+                            }
+                        }
+
+                        dx = (edgex[1] - edgex[0]) / localNumVert;
+                        dy = (edgey[1] - edgey[0]) / localNumVert;
+
+                        float ang2 = Mathf.Atan2(dy, dx);
+                        float perpDx = Mathf.Cos(ang2 + Mathf.PI * 0.5f);
+                        float perpDy = Mathf.Sin(ang2 + Mathf.PI * 0.5f);
+
+                        if (waveMode == 6)
+                        {
+                            for (int i = 0; i < localNumVert; i++)
+                            {
+                                float sample = waveL[i + sampleOffset];
+                                positions[i] = new Vector3
+                                (
+                                    edgex[0] + dx * i + perpDx * 0.25f * sample,
+                                    edgey[0] + dy * i + perpDy * 0.25f * sample,
+                                    0f
+                                );
+                            }
+                        }
+                        else
+                        {
+                            float sep = Mathf.Pow(wavePosY * 0.5f + 0.5f, 2);
+
+                            for (int i = 0; i < localNumVert; i++)
+                            {
+                                float sample = waveL[i + sampleOffset];
+                                positions[i] = new Vector3
+                                (
+                                    edgex[0] + dx * i + perpDx * (0.25f * sample + sep),
+                                    edgey[0] + dy * i + perpDy * (0.25f * sample + sep),
+                                    0f
+                                );
+                            }
+
+                            for (int i = 0; i < localNumVert; i++)
+                            {
+                                float sample = waveR[i + sampleOffset];
+                                positions2[i] = new Vector3
+                                (
+                                    edgex[0] + dx * i + perpDx * (0.25f * sample - sep),
+                                    edgey[0] + dy * i + perpDy * (0.25f * sample - sep),
+                                    0f
+                                );
+                            }
+                        }
+                        break;
+                    
+                    case 8:
+                        if (Resolution.x < 1024)
+                        {
+                            alpha *= 0.09f;
+                        }
+                        else if (Resolution.x >= 1024 && Resolution.x < 2048)
+                        {
+                            alpha *= 0.11f;
+                        }
+                        else
+                        {
+                            alpha *= 0.13f;
+                        }
+
+                        if (State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphabyvolume) > 0f)
+                        {
+                            float alphaDiff = State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphaend) - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart);
+                            alpha *= (vol - State.GetVariable(CurrentPreset.FrameVariables, Var.modwavealphastart)) / alphaDiff;
+                        }
+                        alpha = Mathf.Clamp01(alpha);
+
+                        localNumVert = waveL.Count;
+
+                        for (int i = 0; i < waveL.Count; i++)
+                        {
+                            positions[i] = new Vector3
+                            (
+                                waveL[i] * AspectRatio.y + wavePosX,
+                                -waveR[i] * AspectRatio.x + wavePosY,
+                                0f
+                            );
+                        }
+                        break;
+                    
+                    default:
+                        UnityEngine.Profiling.Profiler.EndSample();
+                        return;
                 }
 
                 if (it == 0)
@@ -3099,11 +2953,11 @@ namespace Milkstain
                 alpha = blendMix * globalAlpha + blendMix2 * globalAlphaOld;
             }
 
-            float r = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, "wave_r"));
-            float g = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, "wave_g"));
-            float b = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, "wave_b"));
+            float r = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, Var.wave_r));
+            float g = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, Var.wave_g));
+            float b = Mathf.Clamp01(State.GetVariable(CurrentPreset.FrameVariables, Var.wave_b));
 
-            if (State.GetVariable(CurrentPreset.FrameVariables, "wave_brighten") != 0f)
+            if (State.GetVariable(CurrentPreset.FrameVariables, Var.wave_brighten) != 0f)
             {
                 float maxc = Mathf.Max(r, g, b);
 
@@ -3219,16 +3073,25 @@ namespace Milkstain
                 }
             }
 
-            int smoothedNumVert = numVert * 2 - 1;
+            int smoothedNumVert;
 
-            SmoothWave(BasicWaveFormPositions, BasicWaveFormPositionsSmooth, numVert);
-
-            if (newWaveMode == 7 || oldWaveMode == 7)
+            if (OscilloscopeMode)
             {
-                SmoothWave(BasicWaveFormPositions2, BasicWaveFormPositionsSmooth2, numVert);
+                smoothedNumVert = numVert;
+                Array.Copy(BasicWaveFormPositions, BasicWaveFormPositionsSmooth, numVert);
+            }
+            else
+            {
+                smoothedNumVert = numVert * 2 - 1;
+                SmoothWave(BasicWaveFormPositions, BasicWaveFormPositionsSmooth, numVert);
+
+                if (newWaveMode == 7 || oldWaveMode == 7)
+                {
+                    SmoothWave(BasicWaveFormPositions2, BasicWaveFormPositionsSmooth2, numVert);
+                }
             }
 
-            if (State.GetVariable(CurrentPreset.FrameVariables, "wave_dots") != 0f)
+            if (State.GetVariable(CurrentPreset.FrameVariables, Var.wave_dots) != 0f)
             {
                 DotParent.localPosition = new Vector3(0f, 0f, -0.5f);
 
@@ -3283,12 +3146,12 @@ namespace Milkstain
             {
                 LineMaterial.mainTexture = TempTexture;
                 LineMaterial.SetColor("waveColor", color);
-                LineMaterial.SetFloat("additivewave", State.GetVariable(CurrentPreset.FrameVariables, "additivewave"));
+                LineMaterial.SetFloat("additivewave", State.GetVariable(CurrentPreset.FrameVariables, Var.additivewave));
                 LineMaterial.SetFloat("aspect_ratio", Resolution.x / (float)Resolution.y);
 
                 var line = new LineQueue();
                 line.LinePositions = BasicWaveFormPositionsSmooth.Take(smoothedNumVert).ToArray();
-                line.IsThick = State.GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f;
+                line.IsThick = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_thick) != 0f;
                 line.LineColors = new Color[] { Color.white };
                 line.LineMaterial = LineMaterial;
                 LinesToDraw.Add(line);
@@ -3297,7 +3160,7 @@ namespace Milkstain
                 {
                     line = new LineQueue();
                     line.LinePositions = BasicWaveFormPositionsSmooth2.Take(smoothedNumVert).ToArray();
-                    line.IsThick = State.GetVariable(CurrentPreset.FrameVariables, "wave_thick") != 0f;
+                    line.IsThick = State.GetVariable(CurrentPreset.FrameVariables, Var.wave_thick) != 0f;
                     line.LineColors = new Color[] { Color.white };
                     line.LineMaterial = LineMaterial;
                     LinesToDraw.Add(line);
@@ -3498,7 +3361,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0143f +
                         3f +
                         i * 21f +
-                        State.GetVariable(preset.FrameVariables, "rand_start.w")
+                        State.GetVariable(preset.FrameVariables, Var.rand_start_w)
                     );
                 hueBase[i * 3 + 1] =
                     0.6f +
@@ -3507,7 +3370,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0107f +
                         1f +
                         i * 13f +
-                        State.GetVariable(preset.FrameVariables, "rand_start.y")
+                        State.GetVariable(preset.FrameVariables, Var.rand_start_y)
                     );
                 hueBase[i * 3 + 2] =
                     0.6f +
@@ -3516,7 +3379,7 @@ namespace Milkstain
                         CurrentTime * 30.0f * 0.0129f +
                         6f +
                         i * 9f +
-                        State.GetVariable(preset.FrameVariables, "rand_start.z")
+                        State.GetVariable(preset.FrameVariables, Var.rand_start_z)
                     );
                 float maxShade = Mathf.Max(hueBase[i * 3], hueBase[i * 3 + 1], hueBase[i * 3 + 2]);
                 for (int k = 0; k < 3; k++)
@@ -3583,15 +3446,15 @@ namespace Milkstain
 
             preset.CompMaterial.SetFloat("blending", blending ? 1f : 0f);
 
-            preset.CompMaterial.SetFloat("gammaAdj", State.GetVariable(preset.FrameVariables, "gammaadj"));
-            preset.CompMaterial.SetFloat("echo_zoom", State.GetVariable(preset.FrameVariables, "echo_zoom"));
-            preset.CompMaterial.SetFloat("echo_alpha", State.GetVariable(preset.FrameVariables, "echo_alpha"));
-            preset.CompMaterial.SetFloat("echo_orientation", State.GetVariable(preset.FrameVariables, "echo_orient"));
-            preset.CompMaterial.SetFloat("invert", State.GetVariable(preset.FrameVariables, "invert"));
-            preset.CompMaterial.SetFloat("brighten", State.GetVariable(preset.FrameVariables, "brighten"));
-            preset.CompMaterial.SetFloat("_darken", State.GetVariable(preset.FrameVariables, "darken"));
-            preset.CompMaterial.SetFloat("solarize", State.GetVariable(preset.FrameVariables, "solarize"));
-            preset.CompMaterial.SetFloat("fShader", State.GetVariable(preset.FrameVariables, "fshader"));
+            preset.CompMaterial.SetFloat("gammaAdj", State.GetVariable(preset.FrameVariables, Var.gammaadj));
+            preset.CompMaterial.SetFloat("echo_zoom", State.GetVariable(preset.FrameVariables, Var.echo_zoom));
+            preset.CompMaterial.SetFloat("echo_alpha", State.GetVariable(preset.FrameVariables, Var.echo_alpha));
+            preset.CompMaterial.SetFloat("echo_orientation", State.GetVariable(preset.FrameVariables, Var.echo_orient));
+            preset.CompMaterial.SetFloat("invert", State.GetVariable(preset.FrameVariables, Var.invert));
+            preset.CompMaterial.SetFloat("brighten", State.GetVariable(preset.FrameVariables, Var.brighten));
+            preset.CompMaterial.SetFloat("_darken", State.GetVariable(preset.FrameVariables, Var.darken));
+            preset.CompMaterial.SetFloat("solarize", State.GetVariable(preset.FrameVariables, Var.solarize));
+            preset.CompMaterial.SetFloat("fShader", State.GetVariable(preset.FrameVariables, Var.shader));
 
             if (!SkipCustomShaded)
             {
@@ -3639,10 +3502,10 @@ namespace Milkstain
                 preset.CompMaterial.SetFloat("fps", FPS);
                 preset.CompMaterial.SetVector("rand_preset", 
                     new Vector4(
-                        State.GetVariable(preset.FrameVariables, "rand_preset.x"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.y"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.z"),
-                        State.GetVariable(preset.FrameVariables, "rand_preset.w")
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_x),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_y),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_z),
+                        State.GetVariable(preset.FrameVariables, Var.rand_preset_w)
                     )
                 );
                 preset.CompMaterial.SetVector("rand_frame", 
@@ -3655,66 +3518,66 @@ namespace Milkstain
                 );
                 preset.CompMaterial.SetVector("_qa", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q1"),
-                        State.GetVariable(preset.AfterFrameVariables, "q2"),
-                        State.GetVariable(preset.AfterFrameVariables, "q3"),
-                        State.GetVariable(preset.AfterFrameVariables, "q4")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q1),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q2),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q3),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q4)
                     )
                 );
                 preset.CompMaterial.SetVector("_qb", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q5"),
-                        State.GetVariable(preset.AfterFrameVariables, "q6"),
-                        State.GetVariable(preset.AfterFrameVariables, "q7"),
-                        State.GetVariable(preset.AfterFrameVariables, "q8")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q5),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q6),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q7),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q8)
                     )
                 );
                 preset.CompMaterial.SetVector("_qc", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q9"),
-                        State.GetVariable(preset.AfterFrameVariables, "q10"),
-                        State.GetVariable(preset.AfterFrameVariables, "q11"),
-                        State.GetVariable(preset.AfterFrameVariables, "q12")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q9),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q10),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q11),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q12)
                     )
                 );
                 preset.CompMaterial.SetVector("_qd", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q13"),
-                        State.GetVariable(preset.AfterFrameVariables, "q14"),
-                        State.GetVariable(preset.AfterFrameVariables, "q15"),
-                        State.GetVariable(preset.AfterFrameVariables, "q16")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q13),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q14),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q15),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q16)
                     )
                 );
                 preset.CompMaterial.SetVector("_qe", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q17"),
-                        State.GetVariable(preset.AfterFrameVariables, "q18"),
-                        State.GetVariable(preset.AfterFrameVariables, "q19"),
-                        State.GetVariable(preset.AfterFrameVariables, "q20")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q17),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q18),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q19),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q20)
                     )
                 );
                 preset.CompMaterial.SetVector("_qf", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q21"),
-                        State.GetVariable(preset.AfterFrameVariables, "q22"),
-                        State.GetVariable(preset.AfterFrameVariables, "q23"),
-                        State.GetVariable(preset.AfterFrameVariables, "q24")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q21),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q22),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q23),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q24)
                     )
                 );
                 preset.CompMaterial.SetVector("_qg", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q25"),
-                        State.GetVariable(preset.AfterFrameVariables, "q26"),
-                        State.GetVariable(preset.AfterFrameVariables, "q27"),
-                        State.GetVariable(preset.AfterFrameVariables, "q28")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q25),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q26),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q27),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q28)
                     )
                 );
                 preset.CompMaterial.SetVector("_qh", 
                     new Vector4(
-                        State.GetVariable(preset.AfterFrameVariables, "q29"),
-                        State.GetVariable(preset.AfterFrameVariables, "q30"),
-                        State.GetVariable(preset.AfterFrameVariables, "q31"),
-                        State.GetVariable(preset.AfterFrameVariables, "q32")
+                        State.GetVariable(preset.AfterFrameVariables, Var.q29),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q30),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q31),
+                        State.GetVariable(preset.AfterFrameVariables, Var.q32)
                     )
                 );
                 preset.CompMaterial.SetVector("slow_roam_cos", 
@@ -3976,27 +3839,32 @@ namespace Milkstain
                     }
 
                     string varName = arg.Split('_').Skip(2).Aggregate((a, b) => a + "_" + b);
-
-                    float result = 0f;
-
+                    
                     if (val == "." || val == "-")
                     {
                         val = "0";
                     }
 
-                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
                     {
-                        //Debug.LogError("Invalid number " + val + ": " + line);
+                        Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
                     }
 
-                    if (State.VariableNameLookup.ContainsKey(varName))
+                    if (State.VariableNameLookup.TryGetValue(varName, out Var properVarName))
                     {
-                        State.SetVariable(preset.Waves[num].BaseVariables, State.VariableNameLookup[varName], result);
+                        State.SetVariable(preset.Waves[num].BaseVariables, properVarName, result);
                     }
                     else
                     {
-                        State.SetVariable(preset.Waves[num].BaseVariables, varName, result);
+                        if (Enum.TryParse<Var>(varName, out Var varNameEnum))
+                        {
+                            State.SetVariable(preset.Waves[num].BaseVariables, varNameEnum, result);
+                        }
+                        else
+                        {
+                            Debug.LogError("Unknown variable name " + varName + ": " + line);
+                        }
                     }
                 }
                 else if (arg.StartsWith("shape_") && char.IsDigit(arg[6]))
@@ -4045,26 +3913,31 @@ namespace Milkstain
                     }
                     else
                     {
-                        float result = 0f;
-
                         if (val == "." || val == "-")
                         {
                             val = "0";
                         }
 
-                        if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+                        if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
                         {
-                            //Debug.LogError("Invalid number " + val + ": " + line);
+                            Debug.LogError("Invalid number " + val + ": " + line);
                             continue;
                         }
 
-                        if (State.VariableNameLookup.ContainsKey(varName))
+                        if (State.VariableNameLookup.TryGetValue(varName, out Var properVarName))
                         {
-                            State.SetVariable(preset.Shapes[num].BaseVariables, State.VariableNameLookup[varName], result);
+                            State.SetVariable(preset.Shapes[num].BaseVariables, properVarName, result);
                         }
                         else
                         {
-                            State.SetVariable(preset.Shapes[num].BaseVariables, varName, result);
+                            if (Enum.TryParse<Var>(varName, out Var varNameEnum))
+                            {
+                                State.SetVariable(preset.Shapes[num].BaseVariables, varNameEnum, result);
+                            }
+                            else
+                            {
+                                Debug.LogError("Unknown variable name " + varName + ": " + line);
+                            }
                         }
                     }
                 }
@@ -4105,26 +3978,31 @@ namespace Milkstain
                 }
                 else
                 {
-                    float result = 0f;
-
                     if (val == "." || val == "-")
                     {
                         val = "0";
                     }
 
-                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+                    if (!float.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
                     {
-                        //Debug.LogError("Invalid number " + val + ": " + line);
+                        Debug.LogError("Invalid number " + val + ": " + line);
                         continue;
                     }
 
-                    if (State.VariableNameLookup.ContainsKey(arg))
+                    if (State.VariableNameLookup.TryGetValue(arg, out Var properVarName))
                     {
-                        State.SetVariable(preset.BaseVariables, State.VariableNameLookup[arg], result);
+                        State.SetVariable(preset.BaseVariables, properVarName, result);
                     }
                     else
                     {
-                        State.SetVariable(preset.BaseVariables, arg, result);
+                        if (Enum.TryParse<Var>(arg, out Var varNameEnum))
+                        {
+                            State.SetVariable(preset.BaseVariables, varNameEnum, result);
+                        }
+                        else
+                        {
+                            Debug.LogError("Unknown variable name " + arg + ": " + line);
+                        }
                     }
                 }
             }
@@ -4369,50 +4247,53 @@ namespace Milkstain
 
             foreach (var v in CurrentPreset.BaseVariables.Keys)
             {
-                State.SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables.Heap[v]);
+                State.SetVariable(CurrentPreset.Variables, v, CurrentPreset.BaseVariables.Heap[(int)v]);
             }
 
             SetGlobalVars(CurrentPreset.Variables);
 
-            State.SetVariable(CurrentPreset.Variables, "rand_start.x", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_start.y", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_start.z", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_start.w", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_preset.x", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_preset.y", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_preset.z", UnityEngine.Random.Range(0f, 1f));
-            State.SetVariable(CurrentPreset.Variables, "rand_preset.w", UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_start_x, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_start_y, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_start_z, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_start_w, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_x, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_y, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_z, UnityEngine.Random.Range(0f, 1f));
+            State.SetVariable(CurrentPreset.Variables, Var.rand_preset_w, UnityEngine.Random.Range(0f, 1f));
 
-            List<int> nonUserKeys = new List<int>(CurrentPreset.Variables.Keys);
-            nonUserKeys.AddRange(regs);
+            List<Var> nonUserKeys = new List<Var>(CurrentPreset.Variables.Keys);
+            for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
+            {
+                nonUserKeys.Add((Var)i);
+            }
 
             var afterInit = new State(CurrentPreset.Variables);
 
             CurrentPreset.InitEquationCompiled(afterInit);
 
-            CurrentPreset.InitVariables = State.Pick(afterInit, qs);
+            CurrentPreset.InitVariables = State.PickQs(afterInit);
 
-            CurrentPreset.RegVariables = State.Pick(afterInit, regs);
+            CurrentPreset.RegVariables = State.PickRegs(afterInit);
             var initUserVars = State.Pick(afterInit, nonUserKeys.ToArray());
 
             CurrentPreset.FrameVariables = new State(CurrentPreset.Variables);
 
             foreach (var v in CurrentPreset.InitVariables.Keys)
             {
-                State.SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables.Heap[v]);
+                State.SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.InitVariables.Heap[(int)v]);
             }
 
             foreach (var v in CurrentPreset.RegVariables.Keys)
             {
-                State.SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.RegVariables.Heap[v]);
+                State.SetVariable(CurrentPreset.FrameVariables, v, CurrentPreset.RegVariables.Heap[(int)v]);
             }
 
             CurrentPreset.FrameEquationCompiled(CurrentPreset.FrameVariables);
 
             CurrentPreset.UserKeys = State.Omit(CurrentPreset.FrameVariables, nonUserKeys.ToArray()).Keys.ToArray();
             CurrentPreset.FrameMap = State.Pick(CurrentPreset.FrameVariables, CurrentPreset.UserKeys);
-            CurrentPreset.AfterFrameVariables = State.Pick(CurrentPreset.FrameVariables, qs);
-            CurrentPreset.RegVariables = State.Pick(CurrentPreset.FrameVariables, regs);
+            CurrentPreset.AfterFrameVariables = State.PickQs(CurrentPreset.FrameVariables);
+            CurrentPreset.RegVariables = State.PickRegs(CurrentPreset.FrameVariables);
 
             if (CurrentPreset.Waves.Count > 0)
             {
@@ -4426,48 +4307,54 @@ namespace Milkstain
                     CurrentWave.SmoothedPositions = new Vector3[MaxSamples * 2 - 1];
                     CurrentWave.SmoothedColors = new Color[MaxSamples * 2 - 1];
 
-                    if (State.GetVariable(CurrentWave.BaseVariables, varInd_enabled) != 0f)
+                    if (State.GetVariable(CurrentWave.BaseVariables, Var.enabled) != 0f)
                     {
                         foreach (var v in CurrentWave.BaseVariables.Keys)
                         {
-                            State.SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[v]);
+                            State.SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[(int)v]);
                         }
 
                         SetGlobalVars(CurrentWave.Variables);
 
-                        State.SetVariable(CurrentWave.Variables, "rand_start.x", State.GetVariable(CurrentWave.BaseVariables, "rand_start.x"));
-                        State.SetVariable(CurrentWave.Variables, "rand_start.y", State.GetVariable(CurrentWave.BaseVariables, "rand_start.y"));
-                        State.SetVariable(CurrentWave.Variables, "rand_start.z", State.GetVariable(CurrentWave.BaseVariables, "rand_start.z"));
-                        State.SetVariable(CurrentWave.Variables, "rand_start.w", State.GetVariable(CurrentWave.BaseVariables, "rand_start.w"));
-                        State.SetVariable(CurrentWave.Variables, "rand_preset.x", State.GetVariable(CurrentWave.BaseVariables, "rand_preset.x"));
-                        State.SetVariable(CurrentWave.Variables, "rand_preset.y", State.GetVariable(CurrentWave.BaseVariables, "rand_preset.y"));
-                        State.SetVariable(CurrentWave.Variables, "rand_preset.z", State.GetVariable(CurrentWave.BaseVariables, "rand_preset.z"));
-                        State.SetVariable(CurrentWave.Variables, "rand_preset.w", State.GetVariable(CurrentWave.BaseVariables, "rand_preset.w"));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_start_x, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_x));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_start_y, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_y));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_start_z, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_z));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_start_w, State.GetVariable(CurrentWave.BaseVariables, Var.rand_start_w));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_x, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_x));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_y, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_y));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_z, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_z));
+                        State.SetVariable(CurrentWave.Variables, Var.rand_preset_w, State.GetVariable(CurrentWave.BaseVariables, Var.rand_preset_w));
 
-                        List<int> nonUserWaveKeys = new List<int>(CurrentWave.Variables.Keys);
-                        nonUserWaveKeys.AddRange(regs);
-                        nonUserWaveKeys.AddRange(ts);
+                        List<Var> nonUserWaveKeys = new List<Var>(CurrentWave.Variables.Keys);
+                        for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
+                        {
+                            nonUserWaveKeys.Add((Var)i);
+                        }
+                        for (int i = (int)Var.t1; i <= (int)Var.t8; i++)
+                        {
+                            nonUserWaveKeys.Add((Var)i);
+                        }
 
                         foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
                         {
-                            State.SetVariable(CurrentWave.Variables, v, CurrentPreset.AfterFrameVariables.Heap[v]);
+                            State.SetVariable(CurrentWave.Variables, v, CurrentPreset.AfterFrameVariables.Heap[(int)v]);
                         }
 
                         foreach (var v in CurrentPreset.RegVariables.Keys)
                         {
-                            State.SetVariable(CurrentWave.Variables, v, CurrentPreset.RegVariables.Heap[v]);
+                            State.SetVariable(CurrentWave.Variables, v, CurrentPreset.RegVariables.Heap[(int)v]);
                         }
 
                         CurrentWave.InitEquationCompiled(CurrentWave.Variables);
                         
-                        CurrentPreset.RegVariables = State.Pick(CurrentWave.Variables, regs);
+                        CurrentPreset.RegVariables = State.PickRegs(CurrentWave.Variables);
 
                         foreach (var v in CurrentWave.BaseVariables.Keys)
                         {
-                            State.SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[v]);
+                            State.SetVariable(CurrentWave.Variables, v, CurrentWave.BaseVariables.Heap[(int)v]);
                         }
 
-                        CurrentWave.Inits = State.Pick(CurrentWave.Variables, ts);
+                        CurrentWave.Inits = State.PickTs(CurrentWave.Variables);
                         CurrentWave.UserKeys = State.Omit(CurrentWave.Variables, nonUserWaveKeys.ToArray()).Keys.ToArray();
                         CurrentWave.FrameMap = State.Pick(CurrentWave.Variables, CurrentWave.UserKeys);
                     }
@@ -4485,53 +4372,59 @@ namespace Milkstain
                     CurrentShape.UVs = new Vector2[MaxShapeSides + 2];
                     CurrentShape.BorderPositions = new Vector3[MaxShapeSides + 1];
 
-                    if (State.GetVariable(CurrentShape.BaseVariables, varInd_enabled) != 0f)
+                    if (State.GetVariable(CurrentShape.BaseVariables, Var.enabled) != 0f)
                     {
                         foreach (var v in CurrentShape.BaseVariables.Keys)
                         {
-                            State.SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[v]);
+                            State.SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[(int)v]);
                         }
 
                         SetGlobalVars(CurrentShape.Variables);
 
-                        State.SetVariable(CurrentShape.Variables, "rand_start.x", State.GetVariable(CurrentShape.BaseVariables, "rand_start.x"));
-                        State.SetVariable(CurrentShape.Variables, "rand_start.y", State.GetVariable(CurrentShape.BaseVariables, "rand_start.y"));
-                        State.SetVariable(CurrentShape.Variables, "rand_start.z", State.GetVariable(CurrentShape.BaseVariables, "rand_start.z"));
-                        State.SetVariable(CurrentShape.Variables, "rand_start.w", State.GetVariable(CurrentShape.BaseVariables, "rand_start.w"));
-                        State.SetVariable(CurrentShape.Variables, "rand_preset.x", State.GetVariable(CurrentShape.BaseVariables, "rand_preset.x"));
-                        State.SetVariable(CurrentShape.Variables, "rand_preset.y", State.GetVariable(CurrentShape.BaseVariables, "rand_preset.y"));
-                        State.SetVariable(CurrentShape.Variables, "rand_preset.z", State.GetVariable(CurrentShape.BaseVariables, "rand_preset.z"));
-                        State.SetVariable(CurrentShape.Variables, "rand_preset.w", State.GetVariable(CurrentShape.BaseVariables, "rand_preset.w"));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_start_x, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_x));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_start_y, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_y));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_start_z, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_z));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_start_w, State.GetVariable(CurrentShape.BaseVariables, Var.rand_start_w));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_x, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_x));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_y, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_y));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_z, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_z));
+                        State.SetVariable(CurrentShape.Variables, Var.rand_preset_w, State.GetVariable(CurrentShape.BaseVariables, Var.rand_preset_w));
 
-                        List<int> nonUserShapeKeys = new List<int>(CurrentShape.Variables.Keys);
-                        nonUserShapeKeys.AddRange(regs);
-                        nonUserShapeKeys.AddRange(ts);
+                        List<Var> nonUserShapeKeys = new List<Var>(CurrentShape.Variables.Keys);
+                        for (int i = (int)Var.reg00; i <= (int)Var.reg99; i++)
+                        {
+                            nonUserShapeKeys.Add((Var)i);
+                        }
+                        for (int i = (int)Var.t1; i <= (int)Var.t8; i++)
+                        {
+                            nonUserShapeKeys.Add((Var)i);
+                        }
 
                         foreach (var v in CurrentPreset.AfterFrameVariables.Keys)
                         {
-                            State.SetVariable(CurrentShape.Variables, v, CurrentPreset.AfterFrameVariables.Heap[v]);
+                            State.SetVariable(CurrentShape.Variables, v, CurrentPreset.AfterFrameVariables.Heap[(int)v]);
                         }
 
                         foreach (var v in CurrentPreset.RegVariables.Keys)
                         {
-                            State.SetVariable(CurrentShape.Variables, v, CurrentPreset.RegVariables.Heap[v]);
+                            State.SetVariable(CurrentShape.Variables, v, CurrentPreset.RegVariables.Heap[(int)v]);
                         }
 
                         CurrentShape.InitEquationCompiled(CurrentShape.Variables);
 
-                        CurrentPreset.RegVariables = State.Pick(CurrentShape.Variables, regs);
+                        CurrentPreset.RegVariables = State.PickRegs(CurrentShape.Variables);
 
                         foreach (var v in CurrentShape.BaseVariables.Keys)
                         {
-                            State.SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[v]);
+                            State.SetVariable(CurrentShape.Variables, v, CurrentShape.BaseVariables.Heap[(int)v]);
                         }
 
-                        CurrentShape.Inits = State.Pick(CurrentShape.Variables, ts);
+                        CurrentShape.Inits = State.PickTs(CurrentShape.Variables);
                         CurrentShape.UserKeys = State.Omit(CurrentShape.Variables, nonUserShapeKeys.ToArray()).Keys.ToArray();
                         CurrentShape.FrameMap = State.Pick(CurrentShape.Variables, CurrentShape.UserKeys);
                     }
 
-                    int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, varInd_num_inst), 1f, 1024f));
+                    int numInst = Mathf.FloorToInt(Mathf.Clamp(State.GetVariable(CurrentShape.BaseVariables, Var.num_inst), 1f, 1024f));
 
                     CurrentShape.ShapeMeshes = new Mesh[numInst];
                     CurrentShape.ShapeMaterials = new Material[numInst];
