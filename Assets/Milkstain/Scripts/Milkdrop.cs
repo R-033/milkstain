@@ -3851,6 +3851,12 @@ namespace Milkstain
 
                     int eqIndex = lineTrimmed.IndexOf('=');
 
+                    if (eqIndex < 0)
+                    {
+                        Debug.LogError("Unknown variable name: " + line);
+                        continue;
+                    }
+
                     arg = lineTrimmed.Substring(0, eqIndex);
                     val = lineTrimmed.Substring(eqIndex + 1);
                 }
@@ -4066,21 +4072,85 @@ namespace Milkstain
                 }
             }
 
-            preset.InitEquationCompiled = Equations.Compile(preset.InitEquationSource);
-            preset.FrameEquationCompiled = Equations.Compile(preset.FrameEquationSource);
-            preset.PixelEquationCompiled = Equations.Compile(preset.PixelEquationSource);
+            try
+            {
+                preset.InitEquationCompiled = Equations.Compile(preset.InitEquationSource);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                preset.InitEquationCompiled = x => { };
+            }
+            try
+            {
+                preset.FrameEquationCompiled = Equations.Compile(preset.FrameEquationSource);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                preset.FrameEquationCompiled = x => { };
+            }
+            try
+            {
+                preset.PixelEquationCompiled = Equations.Compile(preset.PixelEquationSource);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                preset.PixelEquationCompiled = x => { };
+            }
 
             foreach (var wave in preset.Waves)
             {
-                wave.InitEquationCompiled = Equations.Compile(wave.InitEquationSource);
-                wave.FrameEquationCompiled = Equations.Compile(wave.FrameEquationSource);
-                wave.PointEquationCompiled = Equations.Compile(wave.PointEquationSource);
+                try
+                {
+                    wave.InitEquationCompiled = Equations.Compile(wave.InitEquationSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    wave.InitEquationCompiled = x => { };
+                }
+                try
+                {
+                    wave.FrameEquationCompiled = Equations.Compile(wave.FrameEquationSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    wave.FrameEquationCompiled = x => { };
+                }
+                try
+                {
+                    wave.PointEquationCompiled = Equations.Compile(wave.PointEquationSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    wave.PointEquationCompiled = x => { };
+                }
             }
 
             foreach (var shape in preset.Shapes)
             {
-                shape.InitEquationCompiled = Equations.Compile(shape.InitEquationSource);
-                shape.FrameEquationCompiled = Equations.Compile(shape.FrameEquationSource);
+                try
+                {
+                    shape.InitEquationCompiled = Equations.Compile(shape.InitEquationSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    shape.InitEquationCompiled = x => { };
+                }
+                try
+                {
+                    shape.FrameEquationCompiled = Equations.Compile(shape.FrameEquationSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                    shape.FrameEquationCompiled = x => { };
+                }
             }
 
             return preset;

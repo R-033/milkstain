@@ -6,11 +6,18 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System.IO;
+using UnityEngine.Pool;
 
 namespace Milkstain
 {
     public class ShaderCompiler : EditorWindow
     {
+        [MenuItem ("GameObject/Add All Presets")]
+        public static void AddAllPresets()
+        {
+            FindObjectOfType<Milkdrop>().PresetFiles = Resources.FindObjectsOfTypeAll<TextAsset>().Where(x => x.text.StartsWith("MILKDROP") || x.text.StartsWith("[preset")).ToArray();
+        }
+
         [MenuItem ("Window/Milkdrop Shader Compiler")]
         public static void ShowWindow()
         {
@@ -229,6 +236,8 @@ namespace Milkstain
 
                 foreach (var preset in presets)
                 {
+                    Debug.Log("Compiling " + preset.name);
+
                     var presetData = Milkdrop.LoadPreset(preset.text);
 
                     if (!string.IsNullOrEmpty(presetData.Warp))
@@ -251,6 +260,28 @@ namespace Milkstain
                 }
 
                 AssetDatabase.Refresh();
+
+                List<Shader> warp = new List<Shader>();
+                List<Shader> comp = new List<Shader>();
+
+                foreach (var preset in presets)
+                {
+                    var w = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Milkstain/Shaders/Warp/Custom/" + preset.name + " - Warp" + ".shader");
+                    var c = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Milkstain/Shaders/Comp/Custom/" + preset.name + " - Comp" + ".shader");
+
+                    if (w != null)
+                    {
+                        warp.Add(w);
+                    }
+
+                    if (c != null)
+                    {
+                        comp.Add(c);
+                    }
+                }
+
+                milkdrop.PresetWarpShaders = warp.ToArray();
+                milkdrop.PresetCompShaders = comp.ToArray();
             }
         }
     }

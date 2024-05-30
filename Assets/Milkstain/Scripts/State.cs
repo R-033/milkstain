@@ -88,6 +88,14 @@ namespace Milkstain
         reg70, reg71, reg72, reg73, reg74, reg75, reg76, reg77, reg78, reg79,
         reg80, reg81, reg82, reg83, reg84, reg85, reg86, reg87, reg88, reg89,
         reg90, reg91, reg92, reg93, reg94, reg95, reg96, reg97, reg98, reg99,
+
+        drawback,
+        echowrap_x, echowrap_y,
+        wrapmode_x, wrapmode_y,
+        x_wrap_mode, y_wrap_mode,
+        tex_capture,
+        tex_cx, tex_cy,
+
         VariableCount
     }
     
@@ -236,7 +244,13 @@ namespace Milkstain
             {"bspectrum", Var.spectrum},
             {"bdrawthick", Var.thick},
             {"bmotionvectorson", Var.motionvectorson},
-            {"fshader", Var.shader}
+            {"fshader", Var.shader},
+
+            {"bdrawback", Var.drawback},
+            {"nechowrap_x", Var.echowrap_x},
+            {"nechowrap_y", Var.echowrap_y},
+            {"nwrapmode_x", Var.wrapmode_x},
+            {"nwrapmode_y", Var.wrapmode_y},
         };
 
         public static float GetVariable(State Variables, Var key)
